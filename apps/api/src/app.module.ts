@@ -11,6 +11,7 @@ import { IdentityModule } from './identity/identity.module';
 import { JobsModule } from './jobs/jobs.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SettingsModule } from './settings/settings.module';
 import { SourcesModule } from './sources/sources.module';
 import { TrackingModule } from './tracking/tracking.module';
 
@@ -48,6 +49,7 @@ export class AppModule {
         PaymentsModule,
         BookingModule,
         CommissionsModule,
+        SettingsModule,
         JobsModule,
       ],
       controllers: [HealthController],

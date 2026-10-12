@@ -27,6 +27,16 @@ export class NotFound extends DomainError {
   }
 }
 
+// By name too: the schemas in @ap/contracts may load a different copy of zod (CJS vs ESM).
+function isZodError(error: unknown): error is ZodError {
+  return (
+    error instanceof ZodError ||
+    (error instanceof Error &&
+      error.name === 'ZodError' &&
+      Array.isArray((error as Partial<ZodError>).issues))
+  );
+}
+
 /** Renders every error as `{ statusCode, error, message, details? }`. */
 @Catch()
 export class ApiErrorFilter implements ExceptionFilter {
@@ -41,7 +51,7 @@ export class ApiErrorFilter implements ExceptionFilter {
   }
 
   private toBody(exception: unknown): ApiError {
-    if (exception instanceof ZodError) {
+    if (isZodError(exception)) {
       return {
         statusCode: 400,
         error: 'Bad Request',
@@ -66,6 +76,21 @@ export class ApiErrorFilter implements ExceptionFilter {
         error: HttpStatus[status]?.toString().replace(/_/g, ' ').toLowerCase() ?? 'error',
         message,
         ...(payload.details === undefined ? {} : { details: payload.details }),
+      };
+    }
+    // Errors from the body parser (request too large, malformed JSON) carry a safe 4xx status.
+    const parser = exception as { status?: unknown; expose?: unknown; message?: unknown } | null;
+    if (
+      parser &&
+      parser.expose === true &&
+      typeof parser.status === 'number' &&
+      parser.status >= 400 &&
+      parser.status < 500
+    ) {
+      return {
+        statusCode: parser.status,
+        error: HttpStatus[parser.status]?.toString().replace(/_/g, ' ').toLowerCase() ?? 'error',
+        message: String(parser.message ?? 'bad request').toLowerCase(),
       };
     }
     return { statusCode: 500, error: 'Internal Server Error', message: 'something went wrong' };

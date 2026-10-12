@@ -113,6 +113,18 @@ export const createPlanBody = z.discriminatedUnion('kind', [
 ]);
 export type CreatePlanBody = z.infer<typeof createPlanBody>;
 
+/**
+ * New rules for an existing plan. The old version is archived and its affiliates move to the new
+ * one, so commissions already recorded keep the rules they were computed with.
+ */
+export const updatePlanBody = createPlanBody;
+export type UpdatePlanBody = z.infer<typeof updatePlanBody>;
+
+export interface ArchivePlanResultDto {
+  /** Affiliates that were on the archived plan and now use the default plan. */
+  affiliatesMoved: number;
+}
+
 export interface CommissionPlanDto {
   id: string;
   name: string;
@@ -122,6 +134,8 @@ export interface CommissionPlanDto {
   tiers: { fromSale: number; rateBps: number }[] | null;
   basis: 'gross' | 'net_of_tax';
   isDefault: boolean;
+  /** Affiliates assigned to this plan explicitly (the default plan also covers the unassigned). */
+  affiliateCount: number;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -166,37 +180,67 @@ export interface AffiliateWithStatsDto extends AffiliateDto {
 // Catalog
 // ---------------------------------------------------------------------------------------------
 
+const productSlug = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'lowercase letters, digits and dashes')
+  .max(80);
+const durationMinutes = z
+  .number()
+  .int()
+  .min(5)
+  .max(24 * 60);
+const priceCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9_]+$/)
+  .max(40);
+const priceFields = {
+  label: z.string().trim().min(1).max(80),
+  amountMinor: z.number().int().min(0),
+  taxRateBps: rateBps.default(0),
+  seats: z.number().int().min(0).max(10).default(1),
+};
+
 export const createProductBody = z.object({
   name: z.string().trim().min(1).max(120),
-  slug: z
-    .string()
-    .trim()
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'lowercase letters, digits and dashes')
-    .max(80),
+  slug: productSlug,
   description: z.string().trim().max(4000).optional(),
-  durationMinutes: z
-    .number()
-    .int()
-    .min(5)
-    .max(24 * 60),
+  durationMinutes,
   meetingPoint: z.string().trim().max(400).optional(),
+  prices: z
+    .array(z.object({ code: priceCodeSchema, ...priceFields }))
+    .min(1)
+    .max(20),
+});
+export type CreateProductBody = z.infer<typeof createProductBody>;
+
+/**
+ * Changes to a trip. `prices` replaces the whole price list: entries with an `id` update that
+ * ticket type, entries without one are added, and ticket types left out stop being sold (they
+ * stay on past bookings). Trips from the operator's own system only accept `active`.
+ */
+export const updateProductBody = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  slug: productSlug.optional(),
+  description: z.string().trim().max(4000).nullable().optional(),
+  durationMinutes: durationMinutes.optional(),
+  meetingPoint: z.string().trim().max(400).nullable().optional(),
+  /** False hides the trip from the booking page and from affiliates. */
+  active: z.boolean().optional(),
   prices: z
     .array(
       z.object({
-        code: z
-          .string()
-          .trim()
-          .regex(/^[a-z0-9_]+$/)
-          .max(40),
-        label: z.string().trim().min(1).max(80),
-        amountMinor: z.number().int().min(0),
-        taxRateBps: rateBps.default(0),
-        seats: z.number().int().min(0).max(10).default(1),
+        id: z.string().uuid().optional(),
+        code: priceCodeSchema.optional(),
+        ...priceFields,
       }),
     )
-    .min(1),
+    .min(1)
+    .max(20)
+    .optional(),
 });
-export type CreateProductBody = z.infer<typeof createProductBody>;
+export type UpdateProductBody = z.infer<typeof updateProductBody>;
 
 export interface PriceDto {
   id: string;
@@ -221,6 +265,8 @@ export interface ProductDto {
   fromMinor: number;
   /** True when prices and departures come from the operator's own system (not editable here). */
   managedExternally: boolean;
+  /** False when the operator has paused sales of this trip (only operators see inactive trips). */
+  active: boolean;
 }
 
 /** Generates departures for a date range: every day in range, at each local time. */
@@ -242,6 +288,42 @@ export interface SlotDto {
   endsAt: string;
   capacity: number;
   available: number;
+}
+
+/** A departure as the operator sees it: also closed ones, with seats already taken. */
+export interface OperatorSlotDto extends SlotDto {
+  reserved: number;
+  closed: boolean;
+}
+
+/**
+ * Changes several departures of one trip at once (one departure, or a whole day when the weather
+ * turns). Capacity can't go below the seats already taken.
+ */
+export const updateSlotsBody = z
+  .object({
+    slotIds: z.array(z.string().uuid()).min(1).max(500),
+    closed: z.boolean().optional(),
+    capacity: z.number().int().min(1).max(10_000).optional(),
+  })
+  .refine((b) => b.closed !== undefined || b.capacity !== undefined, {
+    message: 'nothing to change',
+  });
+export type UpdateSlotsBody = z.infer<typeof updateSlotsBody>;
+
+export const deleteSlotsBody = z.object({ slotIds: z.array(z.string().uuid()).min(1).max(500) });
+export type DeleteSlotsBody = z.infer<typeof deleteSlotsBody>;
+
+export interface UpdateSlotsResultDto {
+  slots: OperatorSlotDto[];
+  /** Departures whose capacity was raised to the seats already taken instead of the asked value. */
+  capacityRaised: number;
+}
+
+export interface DeleteSlotsResultDto {
+  deleted: number;
+  /** Departures that have bookings: they were closed to new sales instead of deleted. */
+  closedInstead: number;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -407,6 +489,7 @@ export interface TicketDto {
   currency: string;
   /** The operator's timezone: departure times are shown in it. */
   timezone: string;
+  branding: BrandingDto;
 }
 
 export const checkInBody = z.object({ token: z.string().min(16).max(2000) });
@@ -541,6 +624,63 @@ export interface OperatorDashboardDto {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Operator settings
+// ---------------------------------------------------------------------------------------------
+
+/** The operator's look on the booking page and tickets. */
+export interface BrandingDto {
+  /** An https address or a small inline image (data:image/png|jpeg|webp;base64,...). */
+  logoUrl?: string;
+  /** #rrggbb */
+  primaryColor?: string;
+}
+
+/** Inline logos are resized in the browser before upload; this keeps requests small. */
+export const MAX_INLINE_LOGO_CHARS = 90_000;
+
+export const logoUrlSchema = z
+  .string()
+  .trim()
+  .max(MAX_INLINE_LOGO_CHARS, 'the logo is too large')
+  .refine(
+    (v) =>
+      /^data:image\/(png|jpeg|webp);base64,[a-z0-9+/]+=*$/i.test(v) ||
+      (/^https:\/\/[^\s"'<>]+$/.test(v) && v.length <= 2000),
+    'use an https address or a png, jpeg or webp image',
+  );
+
+export const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9a-fA-F]{6}$/, 'a color like #0369a1')
+  .transform((v) => v.toLowerCase());
+
+export const updateSettingsBody = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  /** Null removes the logo. */
+  logoUrl: logoUrlSchema.nullable().optional(),
+  /** Null goes back to the platform color. */
+  primaryColor: hexColorSchema.nullable().optional(),
+  /** Whether affiliates may book with payment at boarding. */
+  allowPayOnSite: z.boolean().optional(),
+  /** How long after a click a booking still counts for the affiliate. */
+  attributionWindowDays: z.number().int().min(1).max(365).optional(),
+});
+export type UpdateSettingsBody = z.infer<typeof updateSettingsBody>;
+
+export interface OperatorSettingsDto {
+  slug: string;
+  name: string;
+  currency: string;
+  timezone: string;
+  branding: BrandingDto;
+  allowPayOnSite: boolean;
+  attributionWindowDays: number;
+  /** Only owners change settings; staff see them read-only. */
+  canEdit: boolean;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Public pages
 // ---------------------------------------------------------------------------------------------
 
@@ -549,6 +689,6 @@ export interface PublicTenantDto {
   name: string;
   currency: string;
   timezone: string;
-  branding: { logoUrl?: string; primaryColor?: string };
+  branding: BrandingDto;
   products: ProductDto[];
 }
