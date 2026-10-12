@@ -350,8 +350,10 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       await h.http.get(`/public/tickets/${second.booking.id}?k=${keyOf(second)}`).expect(200)
     ).body as TicketDto;
     expect(ticket).toMatchObject({ status: 'void', qrToken: null });
-    const notice = await h.lastMessage('+40733000000');
-    expect(notice?.text).toContain(`rezervarea ${second.booking.reference}`);
+    await h.notifications.deliverDue();
+    const notice = h.messages.sent.find(
+      (m) => m.to === '+40733000000' && m.text.includes(`rezervarea ${second.booking.reference}`),
+    );
     expect(notice?.text).toContain('a fost anulata. Banii iti sunt returnati');
   });
 

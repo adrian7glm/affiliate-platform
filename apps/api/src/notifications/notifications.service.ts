@@ -167,10 +167,10 @@ export class NotificationsService {
           lt(notifications.attempts, MAX_ATTEMPTS),
         ),
       )
-      .orderBy(asc(notifications.nextAttemptAt))
+      .orderBy(asc(notifications.nextAttemptAt), asc(notifications.createdAt))
       .limit(BATCH)
       .for('update', { skipLocked: true });
-    return this.db
+    const claimed = await this.db
       .update(notifications)
       .set({
         status: 'sending',
@@ -179,6 +179,8 @@ export class NotificationsService {
       })
       .where(inArray(notifications.id, due))
       .returning();
+    // UPDATE ... RETURNING has no order: send in the order the messages were created.
+    return claimed.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
   private async deliverRow(row: NotificationRow): Promise<boolean> {
