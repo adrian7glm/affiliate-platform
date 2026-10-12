@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ChannelBars } from '@/components/charts/ChannelBars';
 import { DailySalesChart } from '@/components/charts/DailySalesChart';
+import { useT } from '@/components/I18nProvider';
 import { IconPlus, IconScan } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
@@ -16,10 +17,10 @@ import { StatusChip } from '@/components/StatusChip';
 import { percentChange, share, tierRatio } from '@/lib/analytics';
 import { currentPeriod, formatPeriod } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
-import { formatBps } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
-import { COMMISSION_STATUS } from '@/lib/labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { formatBps, formatMoney } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
+import { affiliateStatus, commissionStatus } from '@/lib/labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from './OperatorContext';
 
 type Analytics = OperatorAnalyticsDto;
@@ -29,6 +30,8 @@ type AffiliateRow = Analytics['affiliates'][number];
 const AFFILIATES_SHOWN = 8;
 
 export function Dashboard() {
+  const tr = useT();
+  const { t, lang } = tr;
   const { tenant } = useOperator();
   const thisMonth = currentPeriod(tenant.timezone);
   const [period, setPeriod] = useState(thisMonth);
@@ -45,14 +48,14 @@ export function Dashboard() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Panou"
+        title={t('operator.dashboard.title')}
         actions={
           <>
             <ButtonLink href="/o/scan" icon={<IconScan />}>
-              Scanează bilete
+              {t('operator.dashboard.scan')}
             </ButtonLink>
             <ButtonLink href="/o/affiliates#invite" variant="secondary" icon={<IconPlus />}>
-              Invită afiliat
+              {t('operator.dashboard.invite')}
             </ButtonLink>
           </>
         }
@@ -68,11 +71,11 @@ export function Dashboard() {
           tone="error"
           action={
             <Button variant="secondary" onClick={analytics.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(analytics.error)}
+          {errorMessage(analytics.error, tr)}
         </Alert>
       ) : null}
 
@@ -84,8 +87,8 @@ export function Dashboard() {
           <Kpis data={data} />
 
           <Card
-            title="Vânzări pe zile"
-            description="Încasări din rezervările plătite, în ziua plății"
+            title={t('operator.dashboard.dailyTitle')}
+            description={t('operator.dashboard.dailyDescription')}
           >
             <DailySalesChart
               daily={data.daily}
@@ -93,14 +96,19 @@ export function Dashboard() {
               currency={data.currency}
               summaryTitle={
                 data.throughDate.slice(0, 7) === thisMonth
-                  ? 'Luna aceasta, până azi'
-                  : `Toată luna ${formatPeriod(data.periodKey)}`
+                  ? t('operator.dashboard.thisMonthSoFar')
+                  : t('operator.dashboard.wholeMonth', {
+                      month: formatPeriod(data.periodKey, lang),
+                    })
               }
             />
           </Card>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <Card title="De unde vin rezervările" description="Încasări pe canal de vânzare">
+            <Card
+              title={t('operator.dashboard.channelsTitle')}
+              description={t('operator.dashboard.channelsDescription')}
+            >
               <ChannelBars channels={data.channels} currency={data.currency} />
             </Card>
             <CommissionsCard data={data} />
@@ -108,10 +116,8 @@ export function Dashboard() {
 
           <AffiliatesCard data={data} />
 
-          <Card title="Pagina publică de rezervări">
-            <p className="text-muted">
-              Turiștii fără afiliat rezervă aici. Linkurile afiliaților duc tot aici, cu atribuire.
-            </p>
+          <Card title={t('operator.dashboard.publicPageTitle')}>
+            <p className="text-muted">{t('operator.dashboard.publicPageText')}</p>
             <a
               href={`/b/${tenant.slug}`}
               className="mt-2 inline-flex min-h-12 items-center break-all font-semibold text-brand underline"
@@ -151,13 +157,16 @@ function Change({
   previous: number;
   data: Analytics;
 }) {
+  const { t, lang } = useT();
   const change = percentChange(current, previous);
   // A finished month is compared with the whole previous month, the current one day for day.
   const fullMonth = data.daily.length === Number(data.throughDate.slice(8));
-  const prevName = formatPeriod(data.previous.periodKey).split(' ')[0];
-  const against = fullMonth ? prevName : `1–${data.previous.throughDay} ${prevName}`;
+  const prevName = formatPeriod(data.previous.periodKey, lang).split(' ')[0] ?? '';
+  const against = fullMonth
+    ? prevName
+    : t('operator.dashboard.dayRange', { day: data.previous.throughDay, month: prevName });
   if (change === null) {
-    return <>Nicio vânzare în {against}</>;
+    return <>{t('operator.dashboard.noSalesIn', { period: against })}</>;
   }
   const up = change > 0;
   const flat = change === 0;
@@ -183,51 +192,51 @@ function Change({
         {up ? '+' : ''}
         {change}%
       </span>
-      față de {against}
+      {t('operator.dashboard.comparedWith', { period: against })}
     </span>
   );
 }
 
 function Kpis({ data }: { data: Analytics }) {
+  const { t, tp, lang } = useT();
   const { totals, commissions, currency } = data;
+  const money = (minor: number) => formatMoney(minor, currency, lang);
   return (
     <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Stat
-        label="Încasări"
+        label={t('operator.dashboard.revenue')}
         value={<MoneyText amountMinor={totals.revenueMinor} currency={currency} />}
         hint={
           <Change current={totals.revenueMinor} previous={data.previous.revenueMinor} data={data} />
         }
       />
       <Stat
-        label="Rezervări"
+        label={t('operator.dashboard.bookings')}
         value={totals.bookings}
         hint={<Change current={totals.bookings} previous={data.previous.bookings} data={data} />}
       />
       <Stat
-        label="Prin afiliați"
+        label={t('operator.dashboard.viaAffiliates')}
         value={`${share(totals.affiliateRevenueMinor, totals.revenueMinor)}%`}
         hint={
           <>
-            <MoneyText amountMinor={totals.affiliateRevenueMinor} currency={currency} /> din{' '}
-            {pluralRo(totals.affiliateBookings, 'rezervare', 'rezervări')}
+            {tp('operator.dashboard.affiliateBookings', totals.affiliateBookings, {
+              amount: money(totals.affiliateRevenueMinor),
+            })}
             {totals.clicks > 0
-              ? ` · ${pluralRo(totals.clicks, 'vizită', 'vizite')} din QR și linkuri`
+              ? ` · ${tp('operator.dashboard.affiliateVisits', totals.clicks)}`
               : ''}
           </>
         }
       />
       <Stat
-        label="De plătit afiliaților"
+        label={t('operator.dashboard.payable')}
         value={<MoneyText amountMinor={commissions.payableMinor} currency={currency} />}
         hint={
           commissions.pendingMinor > 0 ? (
-            <>
-              încă <MoneyText amountMinor={commissions.pendingMinor} currency={currency} /> după
-              excursiile din luna aceasta
-            </>
+            t('operator.dashboard.pendingAfterTrips', { amount: money(commissions.pendingMinor) })
           ) : (
-            'Aprobat și neplătit încă'
+            t('operator.dashboard.approvedUnpaid')
           )
         }
       />
@@ -240,24 +249,28 @@ function Kpis({ data }: { data: Analytics }) {
 // ------------------------------------------------------------------------------------------------
 
 function CommissionsCard({ data }: { data: Analytics }) {
+  const tr = useT();
+  const { t, lang } = tr;
   const { commissions, currency } = data;
   const rows = [
     {
       status: 'pending' as const,
       amount: commissions.pendingMinor,
-      hint: 'Excursia nu a avut loc încă',
+      hint: t('operator.dashboard.pendingHint'),
     },
     {
       status: 'approved' as const,
       amount: commissions.approvedMinor,
-      hint: 'Turistul s-a îmbarcat; intră la plată',
+      hint: t('operator.dashboard.approvedHint'),
     },
-    { status: 'paid' as const, amount: commissions.paidMinor, hint: 'Plătit afiliaților' },
+    { status: 'paid' as const, amount: commissions.paidMinor, hint: t('operator.dashboard.paidHint') },
   ];
   return (
     <Card
-      title="Comisioane"
-      description={`Câștigate de afiliați în ${formatPeriod(data.periodKey)}`}
+      title={t('operator.dashboard.commissionsTitle')}
+      description={t('operator.dashboard.commissionsDescription', {
+        period: formatPeriod(data.periodKey, lang),
+      })}
     >
       <p className="text-3xl font-extrabold tracking-tight">
         <MoneyText amountMinor={commissions.totalMinor} currency={currency} />
@@ -266,8 +279,8 @@ function CommissionsCard({ data }: { data: Analytics }) {
         {rows.map((r) => (
           <li key={r.status} className="flex items-center justify-between gap-3 py-3">
             <div className="min-w-0">
-              <StatusChip tone={COMMISSION_STATUS[r.status].tone}>
-                {COMMISSION_STATUS[r.status].label}
+              <StatusChip tone={commissionStatus(tr, r.status).tone}>
+                {commissionStatus(tr, r.status).label}
               </StatusChip>
               <p className="mt-1 text-sm text-muted">{r.hint}</p>
             </div>
@@ -277,13 +290,15 @@ function CommissionsCard({ data }: { data: Analytics }) {
       </ul>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-2 p-3">
         <div>
-          <p className="text-sm font-semibold text-muted">De plătit acum, din toate lunile</p>
+          <p className="text-sm font-semibold text-muted">
+            {t('operator.dashboard.payableNow')}
+          </p>
           <p className="text-xl font-bold">
             <MoneyText amountMinor={commissions.payableMinor} currency={currency} />
           </p>
         </div>
         <ButtonLink href="/o/payouts" variant="secondary">
-          Vezi plățile
+          {t('operator.dashboard.seePayouts')}
         </ButtonLink>
       </div>
     </Card>
@@ -294,23 +309,42 @@ function CommissionsCard({ data }: { data: Analytics }) {
 // Affiliates and their tiers
 // ------------------------------------------------------------------------------------------------
 
-function tierText(a: AffiliateRow): { now: string; next: string | null } {
+function tierText(a: AffiliateRow, tr: Translator): { now: string; next: string | null } {
+  const { t, tp, lang } = tr;
   const p = a.progress;
-  if (a.planKind === null) return { now: 'Fără plan de comision', next: null };
+  if (a.planKind === null) return { now: t('operator.dashboard.noPlan'), next: null };
   if (a.planKind === 'fixed')
-    return { now: `Comision fix ${formatBps(p.currentRateBps)}`, next: null };
-  const now = `Treapta ${p.tierIndex + 1} din ${p.tierCount} · ${formatBps(p.currentRateBps)}`;
+    return {
+      now: t('operator.dashboard.fixedRate', { rate: formatBps(p.currentRateBps, lang) }),
+      next: null,
+    };
+  const now = t('operator.dashboard.tierLevel', {
+    level: p.tierIndex + 1,
+    total: p.tierCount,
+    rate: formatBps(p.currentRateBps, lang),
+  });
   if (p.salesToNextTier === null || p.nextRateBps === null) {
-    return { now, next: 'A atins treapta maximă' };
+    return { now, next: t('operator.dashboard.topTier') };
   }
   return {
     now,
-    next: `Încă ${pluralRo(p.salesToNextTier, 'vânzare', 'vânzări')} până la ${formatBps(p.nextRateBps)}`,
+    next: tp('operator.dashboard.salesToNext', p.salesToNextTier, {
+      rate: formatBps(p.nextRateBps, lang),
+    }),
   };
 }
 
 function AffiliateItem({ a, currency }: { a: AffiliateRow; currency: string }) {
-  const tier = tierText(a);
+  const tr = useT();
+  const { t, tp, lang } = tr;
+  const money = (minor: number) => formatMoney(minor, currency, lang);
+  const tier = tierText(a, tr);
+  const sales =
+    a.clicks > 0
+      ? tp('operator.dashboard.salesFromVisits', a.paidSales, {
+          visits: tp('operator.dashboard.visits', a.clicks),
+        })
+      : tp('operator.dashboard.sales', a.paidSales);
   const ratio = tierRatio(a.progress);
   return (
     <li className="py-4 first:pt-0 last:pb-0">
@@ -319,22 +353,17 @@ function AffiliateItem({ a, currency }: { a: AffiliateRow; currency: string }) {
           {a.name}
           {a.status === 'suspended' ? (
             <span className="ml-2 align-middle">
-              <StatusChip tone="neutral">Suspendat</StatusChip>
+              <StatusChip tone="neutral">{affiliateStatus(tr, 'suspended').label}</StatusChip>
             </span>
           ) : null}
         </p>
         <MoneyText amountMinor={a.salesMinor} currency={currency} className="font-semibold" />
       </div>
       <p className="text-sm text-muted">
-        {pluralRo(a.paidSales, 'vânzare', 'vânzări')}
-        {a.clicks > 0 ? ` din ${pluralRo(a.clicks, 'vizită', 'vizite')}` : ''} · comision{' '}
-        <MoneyText amountMinor={a.commissionMinor} currency={currency} />
-        {a.payableMinor > 0 ? (
-          <>
-            {' '}
-            · de plătit <MoneyText amountMinor={a.payableMinor} currency={currency} />
-          </>
-        ) : null}
+        {sales} · {t('operator.dashboard.commission', { amount: money(a.commissionMinor) })}
+        {a.payableMinor > 0
+          ? ` · ${t('operator.dashboard.toPay', { amount: money(a.payableMinor) })}`
+          : null}
       </p>
       {a.planKind === 'tiered' ? (
         <div className="mt-2">
@@ -357,27 +386,25 @@ function AffiliateItem({ a, currency }: { a: AffiliateRow; currency: string }) {
 }
 
 function AffiliatesCard({ data }: { data: Analytics }) {
+  const { t } = useT();
   const [showAll, setShowAll] = useState(false);
   const list = data.affiliates;
   const shown = showAll ? list : list.slice(0, AFFILIATES_SHOWN);
   return (
     <Card
-      title="Afiliații tăi"
-      description="Vânzările lunii și cât mai au până la următorul procent"
+      title={t('operator.dashboard.affiliatesTitle')}
+      description={t('operator.dashboard.affiliatesDescription')}
       action={
         <ButtonLink href="/o/affiliates" variant="ghost">
-          Toți afiliații
+          {t('operator.dashboard.allAffiliates')}
         </ButtonLink>
       }
     >
       {list.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-muted">
-            Încă nu ai afiliați activi. Invită recepționerii hotelurilor partenere: primesc un cod
-            QR și un link, iar vânzările lor apar aici.
-          </p>
+          <p className="text-muted">{t('operator.dashboard.noAffiliates')}</p>
           <ButtonLink href="/o/affiliates#invite" icon={<IconPlus />}>
-            Invită afiliat
+            {t('operator.dashboard.invite')}
           </ButtonLink>
         </div>
       ) : (
@@ -389,7 +416,9 @@ function AffiliatesCard({ data }: { data: Analytics }) {
           </ul>
           {list.length > AFFILIATES_SHOWN ? (
             <Button variant="ghost" className="mt-2 -ml-3" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? 'Arată mai puțini' : `Arată toți (${list.length})`}
+              {showAll
+                ? t('operator.dashboard.showFewer')
+                : t('operator.dashboard.showAll', { total: list.length })}
             </Button>
           ) : null}
         </>

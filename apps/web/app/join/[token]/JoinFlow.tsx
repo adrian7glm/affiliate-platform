@@ -8,15 +8,18 @@ import { Alert } from '@/components/Alert';
 import { Button, ButtonLink } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Field } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LoadingBlock } from '@/components/Spinner';
 import { isApiError } from '@/lib/api';
-import { APP_NAME } from '@/lib/brand';
 import { authApi } from '@/lib/endpoints';
 import { clearSession, getCachedMe, getToken, setCachedMe, setTenantId } from '@/lib/session';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 export function JoinFlow({ token }: { token: string }) {
   const router = useRouter();
+  const i18n = useT();
+  const { t } = i18n;
   const preview = useApi(`invite:${token}`, (signal) => authApi.invitePreview(token, { signal }));
   const [me, setMe] = useState<MeDto | null>(null);
   const [signedIn, setSignedIn] = useState(false);
@@ -62,8 +65,8 @@ export function JoinFlow({ token }: { token: string }) {
       }
       setError(
         isApiError(err) && (err.status === 409 || err.status === 422 || err.status === 410)
-          ? err.message || 'Invitația nu mai poate fi folosită.'
-          : errorMessageRo(err),
+          ? err.message || t('auth.join.cannotUse')
+          : errorMessage(err, i18n),
       );
       setBusy(false);
     }
@@ -79,44 +82,46 @@ export function JoinFlow({ token }: { token: string }) {
       className="page-x mx-auto flex min-h-dvh w-full max-w-md flex-col py-6"
       style={{ paddingTop: 'max(1.5rem, var(--safe-top))' }}
     >
-      <Link href="/" className="mb-8 flex min-h-12 items-center gap-2 self-start text-lg font-bold">
-        <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
-        {APP_NAME}
-      </Link>
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
+          <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
+          {t('common.appName')}
+        </Link>
+        <LanguageSwitcher />
+      </div>
 
       {preview.loading && !preview.data ? <LoadingBlock /> : null}
 
       {preview.error ? (
-        <Alert tone="error" title="Invitația nu poate fi deschisă">
+        <Alert tone="error" title={t('auth.join.cannotOpen')}>
           {isApiError(preview.error) && preview.error.isNotFound
-            ? 'Linkul nu este valid sau invitația a fost deja folosită. Cere operatorului o invitație nouă.'
-            : errorMessageRo(preview.error)}
+            ? t('auth.join.invalidLink')
+            : errorMessage(preview.error, i18n)}
         </Alert>
       ) : null}
 
       {preview.data ? (
         <div className="flex flex-col gap-5">
           <div>
-            <p className="font-semibold text-brand">Invitație</p>
+            <p className="font-semibold text-brand">{t('auth.join.eyebrow')}</p>
             <h1 className="mt-1 text-3xl font-bold">
-              {preview.data.tenantName} te invită ca afiliat
+              {t('auth.join.title', { tenant: preview.data.tenantName })}
             </h1>
             <p className="mt-2 text-muted">
-              Recomanzi excursiile lor turiștilor, cu codul tău QR sau rezervând pentru ei, și
-              primești comision pentru fiecare rezervare plătită.
+              {t('auth.join.intro')}
             </p>
           </div>
 
           {preview.data.expired ? (
-            <Alert tone="warning" title="Invitația a expirat">
-              Cere operatorului să îți trimită o invitație nouă.
+            <Alert tone="warning" title={t('auth.join.expiredTitle')}>
+              {t('auth.join.expiredBody')}
             </Alert>
           ) : signedIn ? (
             <Card>
               <form onSubmit={accept} method="post" className="flex flex-col gap-4">
                 <Field
-                  label="Numele tău"
-                  hint="Așa te vor vedea operatorul și colegii."
+                  label={t('auth.join.nameLabel')}
+                  hint={t('auth.join.nameHint')}
                   name="name"
                   autoComplete="name"
                   enterKeyHint="done"
@@ -125,18 +130,20 @@ export function JoinFlow({ token }: { token: string }) {
                   maxLength={120}
                 />
                 {error ? <Alert tone="error">{error}</Alert> : null}
-                <Button type="submit" size="lg" block loading={busy} loadingText="Se acceptă…">
-                  Acceptă invitația
+                <Button type="submit" size="lg" block loading={busy} loadingText={t('auth.join.accepting')}>
+                  {t('auth.join.accept')}
                 </Button>
                 {me ? (
                   <p className="text-sm text-muted">
-                    Ești conectat ca {me.user.phone ?? me.user.email ?? me.user.name}.{' '}
+                    {t('auth.join.signedInAs', {
+                      who: me.user.phone ?? me.user.email ?? me.user.name ?? '',
+                    })}{' '}
                     <button
                       type="button"
                       className="font-semibold text-brand underline"
                       onClick={() => void switchAccount()}
                     >
-                      Folosește alt cont
+                      {t('auth.useAnotherAccount')}
                     </button>
                   </p>
                 ) : null}
@@ -145,11 +152,12 @@ export function JoinFlow({ token }: { token: string }) {
           ) : (
             <Card>
               <p className="mb-4">
-                Invitația este pentru <strong>{preview.data.affiliateName}</strong>. Intră în cont
-                cu numărul de telefon sau emailul tău ca să o accepți.
+                {t('auth.join.forBefore')}
+                <strong>{preview.data.affiliateName}</strong>
+                {t('auth.join.forAfter')}
               </p>
               <ButtonLink href={loginHref} size="lg" block>
-                Continuă
+                {t('auth.join.continue')}
               </ButtonLink>
             </Card>
           )}

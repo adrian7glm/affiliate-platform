@@ -1,4 +1,5 @@
 import { create as createQr } from 'qrcode';
+import type { Translator } from './i18n';
 
 /**
  * Printable QR materials (posters, a table tent, cut-out cards), drawn on a canvas so the
@@ -6,6 +7,9 @@ import { create as createQr } from 'qrcode';
  *
  * Everything is laid out in millimetres on the printed page; `renderKitPage` turns that into
  * pixels at the requested resolution.
+ *
+ * Every text (format names, the printed headline, the price line) comes from the `kit` section
+ * of the language files, so the materials can be printed in any language.
  */
 
 export type KitFormat = 'poster-a4' | 'poster-a5' | 'tent' | 'cards';
@@ -22,11 +26,8 @@ export interface KitPanel {
 
 export interface KitFormatSpec {
   id: KitFormat;
-  label: string;
-  /** What it is for, shown under the label. */
-  description: string;
-  /** How to print and finish it. */
-  howTo: string;
+  /** Its texts in the language files: `kit.format.<textKey>.label` / `.description` / `.howTo`. */
+  textKey: 'posterA4' | 'posterA5' | 'tent' | 'cards';
   page: { w: number; h: number };
   panels: KitPanel[];
   /** Dashed fold lines (horizontal, mm from the top). */
@@ -40,25 +41,19 @@ const A4 = { w: 210, h: 297 };
 export const KIT_FORMATS: KitFormatSpec[] = [
   {
     id: 'poster-a4',
-    label: 'Afiș A4',
-    description: 'Pe perete sau la intrare',
-    howTo: 'Tipărește pe A4, fără margini dacă imprimanta poate.',
+    textKey: 'posterA4',
     page: A4,
     panels: [{ x: 0, y: 0, ...A4 }],
   },
   {
     id: 'poster-a5',
-    label: 'Afiș A5',
-    description: 'Pe tejghea, în ramă sau suport',
-    howTo: 'Tipărește pe A5, sau pe A4 cu „Potrivește în pagină”.',
+    textKey: 'posterA5',
     page: { w: 148, h: 210 },
     panels: [{ x: 0, y: 0, w: 148, h: 210 }],
   },
   {
     id: 'tent',
-    label: 'Cort de masă',
-    description: 'Stă singur pe recepție, se vede din ambele părți',
-    howTo: 'Tipărește pe A4 (ideal carton), pliază pe linia punctată și așază-l pe tejghea.',
+    textKey: 'tent',
     page: A4,
     panels: [
       { x: 0, y: 0, w: 210, h: A4.h / 2, flipped: true },
@@ -68,9 +63,7 @@ export const KIT_FORMATS: KitFormatSpec[] = [
   },
   {
     id: 'cards',
-    label: 'Cartonașe',
-    description: '8 pe o foaie A4, de dat turiștilor',
-    howTo: 'Tipărește pe A4 și taie pe liniile gri. Dă câte unul turiștilor interesați.',
+    textKey: 'cards',
     page: A4,
     panels: Array.from({ length: 8 }, (_, i) => ({
       x: (i % 2) * 105,
@@ -86,12 +79,33 @@ export function kitFormat(id: string | null | undefined): KitFormatSpec {
   return KIT_FORMATS.find((f) => f.id === id) ?? KIT_FORMATS[0]!;
 }
 
+/** Name, purpose ("On a wall or at the entrance") and printing advice of a format. */
+export function kitFormatTexts(
+  spec: KitFormatSpec,
+  { tk }: Translator,
+): { label: string; description: string; howTo: string } {
+  return {
+    label: tk(`kit.format.${spec.textKey}.label`),
+    description: tk(`kit.format.${spec.textKey}.description`),
+    howTo: tk(`kit.format.${spec.textKey}.howTo`),
+  };
+}
+
+/** The printed call to action, in the language the kit is printed in. */
+export function kitPrintTexts({ t }: Translator): Pick<KitContent, 'headline' | 'subline'> {
+  return { headline: t('kit.print.headline'), subline: t('kit.print.subline') };
+}
+
 export interface KitContent {
   tenantName: string;
   /** The excursion, or null for a link to all of them. */
   productName: string | null;
   /** E.g. "de la / from 120 RON". */
   priceText: string | null;
+  /** Big call to action under the code ("Scan & book"). */
+  headline: string;
+  /** Smaller line under it (another language, or a hint). Empty to leave it out. */
+  subline: string;
   qrUrl: string;
   /** Shown small under the code, for people who type it. */
   displayUrl: string;
@@ -373,14 +387,14 @@ function drawPortrait(ctx: Ctx, c: KitContent, w: number, h: number) {
   const qrBox = drawQr(ctx, c.qrUrl, w / 2, (top + bottom) / 2, qrSize, c.color);
 
   let ty = (top + bottom) / 2 + qrBox / 2 + h * 0.022;
-  ty += drawText(ctx, 'Scanează și rezervă', {
+  ty += drawText(ctx, c.headline, {
     x: w / 2,
     y: ty,
     maxWidth: w - pad * 2,
     size: headline,
     weight: 800,
   });
-  ty += drawText(ctx, 'Scan & book online', {
+  ty += drawText(ctx, c.subline, {
     x: w / 2,
     y: ty + sub * 0.1,
     maxWidth: w - pad * 2,
@@ -424,7 +438,7 @@ function drawLandscape(ctx: Ctx, c: KitContent, w: number, h: number) {
     : null;
   const headLines = fitText(
     measurer(ctx, 800),
-    'Scanează și rezervă',
+    c.headline,
     colW,
     headline,
     headline * 0.6,
@@ -464,7 +478,7 @@ function drawLandscape(ctx: Ctx, c: KitContent, w: number, h: number) {
   } else {
     y += h * 0.03;
   }
-  y += drawText(ctx, 'Scanează și rezervă', {
+  y += drawText(ctx, c.headline, {
     x: pad,
     y,
     maxWidth: colW,
@@ -473,7 +487,7 @@ function drawLandscape(ctx: Ctx, c: KitContent, w: number, h: number) {
     weight: 800,
     align: 'left',
   });
-  drawText(ctx, 'Scan & book online', {
+  drawText(ctx, c.subline, {
     x: pad,
     y,
     maxWidth: colW,

@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import { Clock } from '../common/clock';
 import { DomainError } from '../common/errors';
 import { DB, type DbOrTx } from '../database/database.module';
+import { I18nService } from '../i18n/i18n.service';
 import { QR_CONTENT_ID, type TemplateName, type TemplateParams, render } from './templates';
 import {
   type DeliveryReceipt,
@@ -49,6 +50,7 @@ export class NotificationsService {
     private readonly clock: Clock,
     private readonly email: EmailTransport,
     private readonly sms: SmsTransport,
+    private readonly i18n: I18nService,
   ) {}
 
   /**
@@ -109,12 +111,11 @@ export class NotificationsService {
       await this.db
         .insert(notifications)
         .values({ ...base, status: 'failed', lastError: failure.message });
-      throw new DomainError(
-        failure.permanent
-          ? `we could not send a message to ${message.to}, check that it is correct`
-          : 'we could not send the message right now, please try again in a minute',
-        failure.permanent ? HttpStatus.BAD_REQUEST : HttpStatus.SERVICE_UNAVAILABLE,
-      );
+      throw failure.permanent
+        ? new DomainError('errors.notifications.invalidRecipient', HttpStatus.BAD_REQUEST, undefined, {
+            to: message.to,
+          })
+        : new DomainError('errors.notifications.unavailable', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
@@ -229,12 +230,14 @@ export class NotificationsService {
     locale: string,
     params: TemplateParams[TemplateName],
   ): Promise<DeliveryReceipt> {
-    const message = render(template, locale, params);
+    // Any language the platform offers; English when the recipient's is not offered.
+    const t = this.i18n.translator(this.i18n.pick(locale, 'en'));
+    const message = render(template, t, params);
     if (channel === 'sms') return this.sms.send({ to, text: message.sms });
     const attachments = message.qr
       ? [
           {
-            filename: 'bilet-qr.png',
+            filename: message.qrFileName,
             contentType: 'image/png',
             contentId: QR_CONTENT_ID,
             content: await QRCode.toBuffer(message.qr, {

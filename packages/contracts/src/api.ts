@@ -20,7 +20,10 @@ export interface Money {
 export interface ApiError {
   statusCode: number;
   error: string;
+  /** Message in the request's language (Accept-Language). */
   message: string;
+  /** Translation key of the message (`errors.notFound.product`), when it has one. */
+  code?: string;
   details?: unknown;
 }
 
@@ -37,7 +40,11 @@ export const destinationSchema = z.union([phone, email]);
 // Auth
 // ---------------------------------------------------------------------------------------------
 
-export const requestOtpBody = z.object({ destination: destinationSchema });
+export const requestOtpBody = z.object({
+  destination: destinationSchema,
+  /** UI language of the login screen, so the code arrives in that language. */
+  locale: z.string().max(20).optional(),
+});
 export type RequestOtpBody = z.infer<typeof requestOtpBody>;
 
 export const verifyOtpBody = z.object({

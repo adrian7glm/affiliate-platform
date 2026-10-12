@@ -1,9 +1,11 @@
+'use client';
+
 import type { AffiliateMonthDto } from '@ap/contracts';
 import Link from 'next/link';
 import { formatPeriod } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
 import { shortMonth } from '@/lib/insights';
+import { useT } from './I18nProvider';
 
 /**
  * Commission per month as columns, the current month last and highlighted. Each column opens
@@ -17,6 +19,7 @@ export function EarningsChart({
   history: AffiliateMonthDto[];
   currency: string;
 }) {
+  const { t, lang } = useT();
   const values = history.map((m) => Math.max(0, m.commissionMinor));
   const max = Math.max(...values, 1);
   const bestIndex = values.indexOf(Math.max(...values));
@@ -27,7 +30,7 @@ export function EarningsChart({
       <ol
         className="grid h-44 items-end gap-2"
         style={{ gridTemplateColumns: `repeat(${history.length}, minmax(0, 1fr))` }}
-        aria-label="Comisionul pe ultimele luni"
+        aria-label={t('charts.earningsLabel')}
       >
         {history.map((month, i) => {
           const current = i === last;
@@ -40,13 +43,17 @@ export function EarningsChart({
               <Link
                 href={`/a/earnings?period=${month.periodKey}`}
                 className="group flex h-full flex-col items-center justify-end gap-1 rounded-xl pt-1"
-                aria-label={`${formatPeriod(month.periodKey)}: ${formatMoney(month.commissionMinor, currency)}, ${pluralRo(month.paidSales, 'vânzare', 'vânzări')}`}
+                aria-label={t('charts.earningsBar', {
+                  month: formatPeriod(month.periodKey, lang),
+                  amount: formatMoney(month.commissionMinor, currency, lang),
+                  count: month.paidSales,
+                })}
               >
                 <span
                   className={`whitespace-nowrap text-xs font-semibold tabular-nums ${showValue ? '' : 'invisible'} ${current ? 'text-fg' : 'text-muted'}`}
                   aria-hidden="true"
                 >
-                  {formatMoney(value, currency)}
+                  {formatMoney(value, currency, lang)}
                 </span>
                 <span
                   className={`block w-full max-w-12 rounded-t-[4px] transition-opacity group-hover:opacity-80 ${current ? 'bg-brand' : 'bg-line-strong/45'}`}
@@ -65,7 +72,7 @@ export function EarningsChart({
       >
         {history.map((month, i) => (
           <span key={month.periodKey} className={i === last ? 'font-bold text-fg' : ''}>
-            {shortMonth(month.periodKey)}
+            {shortMonth(month.periodKey, lang)}
           </span>
         ))}
       </div>
@@ -73,17 +80,17 @@ export function EarningsChart({
         <table>
           <thead>
             <tr>
-              <th scope="col">Luna</th>
-              <th scope="col">Vânzări</th>
-              <th scope="col">Comision</th>
+              <th scope="col">{t('charts.colMonth')}</th>
+              <th scope="col">{t('charts.colSales')}</th>
+              <th scope="col">{t('charts.colCommission')}</th>
             </tr>
           </thead>
           <tbody>
             {history.map((m) => (
               <tr key={m.periodKey}>
-                <th scope="row">{formatPeriod(m.periodKey)}</th>
+                <th scope="row">{formatPeriod(m.periodKey, lang)}</th>
                 <td>{m.paidSales}</td>
-                <td>{formatMoney(m.commissionMinor, currency)}</td>
+                <td>{formatMoney(m.commissionMinor, currency, lang)}</td>
               </tr>
             ))}
           </tbody>

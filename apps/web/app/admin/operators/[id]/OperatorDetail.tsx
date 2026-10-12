@@ -8,6 +8,7 @@ import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
 import { Field, SelectField, TextareaField } from '@/components/Field';
 import { IconCheck, IconExternal, IconX } from '@/components/icons';
+import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingBlock } from '@/components/Spinner';
@@ -20,20 +21,20 @@ import {
   parseMoneyInput,
   percentToBps,
 } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/i18n';
 import { adminApi } from '@/lib/platform-endpoints';
-import { ONBOARDING_STEPS, SUBSCRIPTION_STATUS, TENANT_STATUS } from '@/lib/platform-labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { onboardingStep, subscriptionStatus, tenantStatus } from '@/lib/platform-labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 const PLATFORM_TZ = 'Europe/Bucharest';
 
-const AUDIT_LABELS: Record<string, string> = {
-  'tenant.created': 'Cont deschis',
-  'tenant.suspended': 'Suspendat',
-  'tenant.reactivated': 'Reactivat',
-  'subscription.updated': 'Abonament modificat',
-  'subscription.plan_chosen': 'Operatorul a ales alt plan',
-  'subscription.stripe_sync': 'Actualizare de la Stripe',
+const AUDIT_LABELS: Record<string, MessageKey> = {
+  'tenant.created': 'admin.operators.audit.tenantCreated',
+  'tenant.suspended': 'admin.operators.audit.tenantSuspended',
+  'tenant.reactivated': 'admin.operators.audit.tenantReactivated',
+  'subscription.updated': 'admin.operators.audit.subscriptionUpdated',
+  'subscription.plan_chosen': 'admin.operators.audit.subscriptionPlanChosen',
+  'subscription.stripe_sync': 'admin.operators.audit.subscriptionStripeSync',
 };
 
 /** "2026-11-05" (a date input) -> end of that day, as an ISO instant. */
@@ -47,6 +48,8 @@ function dateKeyOf(iso: string | null, fallbackDays = 0): string {
 }
 
 export function OperatorDetail({ id }: { id: string }) {
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const detail = useApi(`admin-tenant:${id}`, (signal) => adminApi.tenant(id, { signal }));
   const plans = useApi('admin-plans', (signal) => adminApi.plans({ signal }));
   const [suspendOpen, setSuspendOpen] = useState(false);
@@ -54,86 +57,118 @@ export function OperatorDetail({ id }: { id: string }) {
   if (detail.error) {
     return (
       <div className="pt-4">
-        <PageHeader title="Operator" backHref="/admin" backLabel="Operatori" />
+        <PageHeader
+          title={t('admin.operators.title')}
+          backHref="/admin"
+          backLabel={t('admin.nav.operators')}
+        />
         <Alert
           tone="error"
           action={
             <Button variant="secondary" onClick={detail.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(detail.error)}
+          {errorMessage(detail.error, i18n)}
         </Alert>
       </div>
     );
   }
   if (!detail.data) return <LoadingBlock />;
-  const t = detail.data;
-  const status = TENANT_STATUS[t.status];
-  const thisMonth = t.months.at(-1);
+  const tenant = detail.data;
+  const status = tenantStatus(i18n, tenant.status);
+  const thisMonth = tenant.months.at(-1);
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title={t.name}
+        title={tenant.name}
         backHref="/admin"
-        backLabel="Operatori"
-        description={`Pe platformă din ${formatDate(t.createdAt, PLATFORM_TZ)} · ${t.currency} · ${t.timezone}`}
+        backLabel={t('admin.nav.operators')}
+        description={t('admin.operators.since', {
+          date: formatDate(tenant.createdAt, PLATFORM_TZ, lang),
+          currency: tenant.currency,
+          timezone: tenant.timezone,
+        })}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatusChip tone={status.tone}>{status.label}</StatusChip>
             <a
-              href={`/b/${t.slug}`}
+              href={`/b/${tenant.slug}`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex min-h-12 items-center gap-1.5 rounded-2xl px-3 font-semibold text-brand hover:bg-brand-soft"
             >
-              Pagina publică <IconExternal size={18} />
+              {t('admin.operators.publicPage')} <IconExternal size={18} />
             </a>
           </div>
         }
       />
 
-      {t.status === 'suspended' ? (
+      {tenant.status === 'suspended' ? (
         <Alert
           tone="error"
-          title={`Suspendat pe ${t.suspendedAt ? formatDate(t.suspendedAt, PLATFORM_TZ) : ''}`}
-          action={<ReactivateButton id={t.id} onDone={(next) => detail.setData(next)} />}
+          title={
+            tenant.suspendedAt
+              ? t('admin.operators.suspendedOn', {
+                  date: formatDate(tenant.suspendedAt, PLATFORM_TZ, lang),
+                })
+              : t('admin.operators.suspended')
+          }
+          action={<ReactivateButton id={tenant.id} onDone={(next) => detail.setData(next)} />}
         >
-          {t.suspendedReason}. Operatorul nu poate intra în administrare, afiliații nu pot rezerva,
-          iar paginile de rezervare sunt oprite.
+          {t('admin.operators.suspendedBody', { reason: tenant.suspendedReason ?? '' })}
         </Alert>
       ) : null}
 
-      <section aria-label="Luna aceasta" className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Rezervări luna aceasta" value={thisMonth?.bookings ?? 0} />
+      <section
+        aria-label={t('admin.operators.thisMonth')}
+        className="grid grid-cols-2 gap-3 md:grid-cols-4"
+      >
+        <Stat label={t('admin.operators.bookingsThisMonth')} value={thisMonth?.bookings ?? 0} />
         <Stat
-          label="Valoare vândută"
-          value={<MoneyText amountMinor={thisMonth?.grossMinor ?? 0} currency={t.currency} />}
-        />
-        <Stat
-          label="Comision platformă"
+          label={t('admin.operators.gross')}
           value={
-            <MoneyText amountMinor={thisMonth?.platformFeesMinor ?? 0} currency={t.currency} />
+            <MoneyText
+              amountMinor={thisMonth?.grossMinor ?? 0}
+              currency={tenant.currency}
+              lang={lang}
+            />
           }
         />
         <Stat
-          label="Rețea"
-          value={pluralRo(t.affiliates, 'afiliat', 'afiliați')}
-          hint={pluralRo(t.products, 'excursie', 'excursii')}
+          label={t('admin.operators.platformFee')}
+          value={
+            <MoneyText
+              amountMinor={thisMonth?.platformFeesMinor ?? 0}
+              currency={tenant.currency}
+              lang={lang}
+            />
+          }
+        />
+        <Stat
+          label={t('admin.operators.network')}
+          value={tp('admin.count.affiliates', tenant.affiliates)}
+          hint={tp('admin.count.trips', tenant.products)}
         />
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <SubscriptionCard detail={t} plans={plans.data ?? []} onSaved={() => detail.reload()} />
-        <MonthsCard detail={t} />
+        <SubscriptionCard detail={tenant} plans={plans.data ?? []} onSaved={() => detail.reload()} />
+        <MonthsCard detail={tenant} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title="Pornire" description={`${t.setup.completed} din ${t.setup.total} pași făcuți`}>
+        <Card
+          title={t('admin.operators.setupTitle')}
+          description={t('admin.operators.setupProgress', {
+            done: tenant.setup.completed,
+            total: tenant.setup.total,
+          })}
+        >
           <ul className="flex flex-col gap-2">
-            {t.setup.steps.map((step) => (
+            {tenant.setup.steps.map((step) => (
               <li key={step.key} className="flex items-center gap-2">
                 {step.done ? (
                   <IconCheck className="shrink-0 text-success" size={20} />
@@ -144,22 +179,24 @@ export function OperatorDetail({ id }: { id: string }) {
                   />
                 )}
                 <span className={step.done ? '' : 'text-muted'}>
-                  {ONBOARDING_STEPS[step.key].label}
-                  <span className="visually-hidden">{step.done ? ': făcut' : ': de făcut'}</span>
+                  {onboardingStep(i18n, step.key).label}
+                  <span className="visually-hidden">
+                    {step.done ? t('admin.operators.stepDone') : t('admin.operators.stepTodo')}
+                  </span>
                 </span>
               </li>
             ))}
           </ul>
         </Card>
 
-        <Card title="Contact">
-          {t.owners.length === 0 ? (
-            <p className="text-muted">Niciun administrator.</p>
+        <Card title={t('admin.operators.contactTitle')}>
+          {tenant.owners.length === 0 ? (
+            <p className="text-muted">{t('admin.operators.noOwners')}</p>
           ) : (
             <ul className="flex flex-col gap-3">
-              {t.owners.map((o) => (
+              {tenant.owners.map((o) => (
                 <li key={o.userId}>
-                  <p className="font-semibold">{o.name ?? 'Administrator'}</p>
+                  <p className="font-semibold">{o.name ?? t('admin.operators.ownerFallback')}</p>
                   <p className="flex flex-wrap gap-x-3 text-sm">
                     {o.email ? (
                       <a className="text-brand underline" href={`mailto:${o.email}`}>
@@ -177,30 +214,29 @@ export function OperatorDetail({ id }: { id: string }) {
             </ul>
           )}
           <p className="mt-3 text-sm text-muted">
-            Plăți online:{' '}
-            {t.stripeAccountConnected
-              ? 'cont Stripe conectat'
-              : 'prin contul platformei (fără cont Stripe propriu)'}
+            {tenant.stripeAccountConnected
+              ? t('admin.operators.paymentsStripe')
+              : t('admin.operators.paymentsPlatform')}
           </p>
         </Card>
       </div>
 
-      <Card title="Istoric">
-        {t.audit.length === 0 ? (
-          <p className="text-muted">Nimic încă.</p>
+      <Card title={t('admin.operators.historyTitle')}>
+        {tenant.audit.length === 0 ? (
+          <p className="text-muted">{t('admin.operators.historyEmpty')}</p>
         ) : (
           <ul className="divide-y divide-line">
-            {t.audit.map((entry) => (
+            {tenant.audit.map((entry) => (
               <li key={entry.id} className="flex flex-wrap justify-between gap-2 py-2.5">
                 <span>
                   <span className="font-semibold">
-                    {AUDIT_LABELS[entry.action] ?? entry.action}
+                    {AUDIT_LABELS[entry.action] ? t(AUDIT_LABELS[entry.action]!) : entry.action}
                   </span>
                   {typeof entry.data.reason === 'string' ? ` · ${entry.data.reason}` : ''}
                   {entry.actor ? <span className="text-muted"> · {entry.actor}</span> : null}
                 </span>
                 <span className="text-sm text-muted">
-                  {formatDateTime(entry.createdAt, PLATFORM_TZ)}
+                  {formatDateTime(entry.createdAt, PLATFORM_TZ, lang)}
                 </span>
               </li>
             ))}
@@ -208,20 +244,20 @@ export function OperatorDetail({ id }: { id: string }) {
         )}
       </Card>
 
-      {t.status === 'active' ? (
+      {tenant.status === 'active' ? (
         <Card
-          title="Suspendare"
-          description="Oprește accesul operatorului și paginile lui de rezervare, de exemplu pentru abonament neplătit. Datele rămân și poți reactiva oricând."
+          title={t('admin.operators.suspendTitle')}
+          description={t('admin.operators.suspendDescription')}
         >
           <Button variant="danger" onClick={() => setSuspendOpen(true)}>
-            Suspendă operatorul
+            {t('admin.operators.suspendButton')}
           </Button>
         </Card>
       ) : null}
 
       <SuspendDialog
         open={suspendOpen}
-        tenant={t}
+        tenant={tenant}
         onClose={() => setSuspendOpen(false)}
         onDone={(next) => {
           setSuspendOpen(false);
@@ -243,13 +279,17 @@ function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: 
 }
 
 function MonthsCard({ detail }: { detail: AdminTenantDetailDto }) {
+  const { t, tp, lang } = useT();
   const max = Math.max(1, ...detail.months.map((m) => m.platformFeesMinor));
   return (
-    <Card title="Comision platformă pe luni" description="Ultimele șase luni">
+    <Card
+      title={t('admin.operators.monthsTitle')}
+      description={t('admin.operators.monthsDescription')}
+    >
       <ul className="flex flex-col gap-2.5">
         {detail.months.map((m) => (
           <li key={m.period} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3">
-            <span className="text-sm capitalize text-muted">{formatPeriod(m.period)}</span>
+            <span className="text-sm capitalize text-muted">{formatPeriod(m.period, lang)}</span>
             <span className="h-3 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
               <span
                 className="block h-full rounded-full bg-brand"
@@ -260,10 +300,11 @@ function MonthsCard({ detail }: { detail: AdminTenantDetailDto }) {
               <MoneyText
                 amountMinor={m.platformFeesMinor}
                 currency={detail.currency}
+                lang={lang}
                 className="font-semibold"
               />
               <span className="block text-muted">
-                {pluralRo(m.bookings, 'rezervare', 'rezervări')}
+                {tp('admin.count.bookings', m.bookings)}
               </span>
             </span>
           </li>
@@ -282,6 +323,8 @@ function SubscriptionCard({
   plans: PlatformPlanDto[];
   onSaved: () => void;
 }) {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const sub = detail.subscription;
   const [editing, setEditing] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -302,16 +345,16 @@ function SubscriptionCard({
       setTrialOpen(false);
       onSaved();
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
   }
 
-  const state = sub ? SUBSCRIPTION_STATUS[sub.status] : null;
+  const state = sub ? subscriptionStatus(i18n, sub.status) : null;
   return (
     <Card
-      title="Abonament"
+      title={t('admin.operators.subscription.title')}
       action={state ? <StatusChip tone={state.tone}>{state.label}</StatusChip> : null}
     >
       {message ? (
@@ -326,43 +369,55 @@ function SubscriptionCard({
       ) : null}
       {sub ? (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <Term label="Plan">{sub.planName}</Term>
-          <Term label="Abonament lunar">
-            <MoneyText amountMinor={sub.monthlyPriceMinor} currency={sub.currency} />
+          <Term label={t('admin.operators.subscription.plan')}>{sub.planName}</Term>
+          <Term label={t('admin.operators.subscription.monthly')}>
+            <MoneyText amountMinor={sub.monthlyPriceMinor} currency={sub.currency} lang={lang} />
             {sub.priceMinorOverride !== null ? <Negotiated /> : null}
           </Term>
-          <Term label="Comision pe rezervare">
-            {formatBps(sub.platformFeeBps)}
+          <Term label={t('admin.operators.subscription.fee')}>
+            {formatBps(sub.platformFeeBps, lang)}
             {sub.feeBpsOverride !== null ? <Negotiated /> : null}
           </Term>
-          <Term label="Afiliați incluși">
-            {sub.maxAffiliates === null ? 'nelimitat' : `până la ${sub.maxAffiliates}`}
+          <Term label={t('admin.operators.subscription.affiliatesIncluded')}>
+            {sub.maxAffiliates === null
+              ? t('admin.operators.subscription.unlimited')
+              : t('admin.operators.subscription.upTo', { count: sub.maxAffiliates })}
           </Term>
           {sub.trialEndsAt && (sub.status === 'trialing' || sub.status === 'past_due') ? (
-            <Term label="Proba se termină">{formatDate(sub.trialEndsAt, PLATFORM_TZ)}</Term>
+            <Term label={t('admin.operators.subscription.trialEnds')}>
+              {formatDate(sub.trialEndsAt, PLATFORM_TZ, lang)}
+            </Term>
           ) : null}
           {sub.currentPeriodEnd ? (
-            <Term label="Plătit până la">{formatDate(sub.currentPeriodEnd, PLATFORM_TZ)}</Term>
+            <Term label={t('admin.operators.subscription.paidUntil')}>
+              {formatDate(sub.currentPeriodEnd, PLATFORM_TZ, lang)}
+            </Term>
           ) : null}
-          <Term label="Facturare">{sub.billedByStripe ? 'card, prin Stripe' : 'manuală'}</Term>
+          <Term label={t('admin.operators.subscription.billing')}>
+            {sub.billedByStripe
+              ? t('admin.operators.subscription.billingStripe')
+              : t('admin.operators.subscription.billingManual')}
+          </Term>
         </dl>
       ) : (
-        <p className="text-muted">Operatorul nu are încă un abonament. Alege un plan.</p>
+        <p className="text-muted">{t('admin.operators.subscription.none')}</p>
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => setEditing(true)}>
-          {sub ? 'Schimbă planul sau tarifele' : 'Alege planul'}
+          {sub
+            ? t('admin.operators.subscription.change')
+            : t('admin.operators.subscription.choose')}
         </Button>
         {sub && !sub.billedByStripe ? (
           <Button variant="secondary" icon={<IconCheck />} onClick={() => setPaymentOpen(true)}>
-            Înregistrează o plată
+            {t('admin.operators.subscription.recordPayment')}
           </Button>
         ) : null}
         {sub &&
         (sub.status === 'trialing' || (sub.status === 'past_due' && !sub.currentPeriodEnd)) ? (
           <Button variant="ghost" onClick={() => setTrialOpen(true)}>
-            Prelungește proba
+            {t('admin.operators.subscription.extendTrial')}
           </Button>
         ) : null}
       </div>
@@ -374,29 +429,36 @@ function SubscriptionCard({
         busy={busy}
         error={error}
         onClose={() => setEditing(false)}
-        onSave={(body) => void save(body, 'Abonamentul a fost actualizat.')}
+        onSave={(body) => void save(body, t('admin.operators.subscription.updated'))}
       />
 
       <DateDialog
         open={paymentOpen}
-        title="Înregistrează o plată"
-        description="Abonamentul devine activ până la data aleasă. Folosește-l când operatorul a plătit factura."
-        label="Plătit până la"
+        title={t('admin.operators.subscription.recordPayment')}
+        description={t('admin.operators.subscription.paymentDescription')}
+        label={t('admin.operators.subscription.paidUntil')}
         initial={dateKeyOf(null, 31)}
         busy={busy}
         error={error}
-        submitLabel="Marchează plătit"
+        submitLabel={t('admin.operators.subscription.markPaid')}
         onClose={() => setPaymentOpen(false)}
-        onSave={(day) => void save({ paidUntil: endOfDay(day) }, 'Plata a fost înregistrată.')}
+        onSave={(day) =>
+          void save(
+            { paidUntil: endOfDay(day) },
+            t('admin.operators.subscription.paymentRecorded'),
+          )
+        }
         extra={
           sub && sub.status !== 'canceled' ? (
             <Button
               variant="ghost"
               icon={<IconX />}
               disabled={busy}
-              onClick={() => void save({ cancel: true }, 'Abonamentul a fost oprit.')}
+              onClick={() =>
+                void save({ cancel: true }, t('admin.operators.subscription.stopped'))
+              }
             >
-              Oprește abonamentul
+              {t('admin.operators.subscription.stop')}
             </Button>
           ) : null
         }
@@ -404,21 +466,31 @@ function SubscriptionCard({
 
       <DateDialog
         open={trialOpen}
-        title="Prelungește perioada de probă"
-        label="Proba se termină pe"
+        title={t('admin.operators.subscription.trialTitle')}
+        label={t('admin.operators.subscription.trialLabel')}
         initial={dateKeyOf(sub?.trialEndsAt ?? null, 14)}
         busy={busy}
         error={error}
-        submitLabel="Salvează"
+        submitLabel={t('admin.operators.subscription.save')}
         onClose={() => setTrialOpen(false)}
-        onSave={(day) => void save({ trialEndsAt: endOfDay(day) }, 'Proba a fost prelungită.')}
+        onSave={(day) =>
+          void save(
+            { trialEndsAt: endOfDay(day) },
+            t('admin.operators.subscription.trialExtended'),
+          )
+        }
       />
     </Card>
   );
 }
 
 function Negotiated() {
-  return <span className="ml-1.5 text-sm font-normal text-muted">(negociat)</span>;
+  const { t } = useT();
+  return (
+    <span className="ml-1.5 text-sm font-normal text-muted">
+      {t('admin.operators.subscription.negotiated')}
+    </span>
+  );
 }
 
 function Term({ label, children }: { label: string; children: ReactNode }) {
@@ -447,6 +519,7 @@ function TariffDialog({
   onClose: () => void;
   onSave: (body: UpdateTenantBillingBody) => void;
 }) {
+  const { t, lang } = useT();
   const sub = detail.subscription;
   const offered = plans.filter((p) => p.isActive || p.id === sub?.planId);
   const [chosenPlanId, setPlanId] = useState(sub?.planId ?? '');
@@ -465,12 +538,12 @@ function TariffDialog({
     event.preventDefault();
     const feeBps = fee.trim() ? percentToBps(fee) : null;
     if (fee.trim() && (feeBps === null || feeBps > 5_000)) {
-      setFieldError('Comisionul este un procent între 0 și 50.');
+      setFieldError(t('admin.operators.tariff.feeError'));
       return;
     }
     const priceMinor = price.trim() ? parseMoneyInput(price, currency) : null;
     if (price.trim() && priceMinor === null) {
-      setFieldError('Prețul nu este un număr valid.');
+      setFieldError(t('admin.validation.price'));
       return;
     }
     setFieldError(null);
@@ -482,38 +555,58 @@ function TariffDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="Plan și tarife">
+    <Dialog open={open} onClose={onClose} title={t('admin.operators.tariff.title')}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         {error ? <Alert tone="error">{error}</Alert> : null}
-        <SelectField label="Plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
+        <SelectField
+          label={t('admin.operators.tariff.plan')}
+          value={planId}
+          onChange={(e) => setPlanId(e.target.value)}
+        >
           {offered.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name} · {minorToInput(p.monthlyPriceMinor, p.currency)} {p.currency}/lună ·{' '}
-              {formatBps(p.platformFeeBps)}
+              {t('admin.operators.tariff.planOption', {
+                name: p.name,
+                price: minorToInput(p.monthlyPriceMinor, p.currency),
+                currency: p.currency,
+                fee: formatBps(p.platformFeeBps, lang),
+              })}
             </option>
           ))}
         </SelectField>
         <Field
-          label="Comision negociat pe rezervare (%)"
-          hint={`Gol = comisionul planului${plan ? ` (${formatBps(plan.platformFeeBps)})` : ''}.`}
+          label={t('admin.operators.tariff.fee')}
+          hint={
+            plan
+              ? t('admin.operators.tariff.feeHintWith', {
+                  fee: formatBps(plan.platformFeeBps, lang),
+                })
+              : t('admin.operators.tariff.feeHint')
+          }
           inputMode="decimal"
           value={fee}
           onChange={(e) => setFee(e.target.value)}
           placeholder={plan ? bpsToPercentInput(plan.platformFeeBps) : ''}
         />
         <Field
-          label={`Preț lunar negociat (${currency})`}
-          hint={`Gol = prețul planului${plan ? ` (${minorToInput(plan.monthlyPriceMinor, plan.currency)} ${plan.currency})` : ''}.`}
+          label={t('admin.operators.tariff.price', { currency })}
+          hint={
+            plan
+              ? t('admin.operators.tariff.priceHintWith', {
+                  price: `${minorToInput(plan.monthlyPriceMinor, plan.currency)} ${plan.currency}`,
+                })
+              : t('admin.operators.tariff.priceHint')
+          }
           inputMode="decimal"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           error={fieldError ?? undefined}
         />
         <p className="text-sm text-muted">
-          Comisionul nou se aplică rezervărilor făcute de acum înainte.
+          {t('admin.operators.tariff.note')}
         </p>
         <Button type="submit" loading={busy} size="lg">
-          Salvează
+          {t('admin.operators.tariff.save')}
         </Button>
       </form>
     </Dialog>
@@ -583,6 +676,8 @@ function SuspendDialog({
   onClose: () => void;
   onDone: (next: AdminTenantDetailDto) => void;
 }) {
+  const i18n = useT();
+  const { t } = i18n;
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -590,7 +685,7 @@ function SuspendDialog({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (reason.trim().length < 3) {
-      setError('Scrie motivul (cel puțin 3 caractere).');
+      setError(t('admin.operators.suspendDialog.reasonError'));
       return;
     }
     setBusy(true);
@@ -599,7 +694,7 @@ function SuspendDialog({
       onDone(await adminApi.setStatus(tenant.id, { status: 'suspended', reason: reason.trim() }));
       setReason('');
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
@@ -609,20 +704,20 @@ function SuspendDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={`Suspenzi ${tenant.name}?`}
-      description="Operatorul și personalul lui nu mai pot intra în administrare, afiliații nu mai pot rezerva, iar paginile publice de rezervare se opresc. Rezervările deja plătite rămân valabile."
+      title={t('admin.operators.suspendDialog.title', { name: tenant.name })}
+      description={t('admin.operators.suspendDialog.description')}
     >
       <form onSubmit={submit} className="flex flex-col gap-4">
         <TextareaField
-          label="Motiv"
+          label={t('admin.operators.suspendDialog.reason')}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="De exemplu: abonament neplătit din septembrie"
+          placeholder={t('admin.operators.suspendDialog.placeholder')}
           error={error ?? undefined}
           rows={3}
         />
         <Button type="submit" variant="danger" loading={busy} size="lg">
-          Suspendă
+          {t('admin.operators.suspendDialog.submit')}
         </Button>
       </form>
     </Dialog>
@@ -636,6 +731,7 @@ function ReactivateButton({
   id: string;
   onDone: (next: AdminTenantDetailDto) => void;
 }) {
+  const i18n = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -649,13 +745,13 @@ function ReactivateButton({
           try {
             onDone(await adminApi.setStatus(id, { status: 'active' }));
           } catch (err) {
-            setError(errorMessageRo(err));
+            setError(errorMessage(err, i18n));
           } finally {
             setBusy(false);
           }
         }}
       >
-        Reactivează operatorul
+        {i18n.t('admin.operators.reactivate')}
       </Button>
       {error ? <p className="text-sm">{error}</p> : null}
     </div>

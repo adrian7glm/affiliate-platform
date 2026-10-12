@@ -1,8 +1,8 @@
 import {
-  BadRequestException,
   Controller,
   Headers,
   HttpCode,
+  HttpStatus,
   Inject,
   Logger,
   Post,
@@ -13,7 +13,7 @@ import { type Database, processedWebhookEvents } from '@ap/db';
 import { eq } from 'drizzle-orm';
 import type { Request } from 'express';
 import type Stripe from 'stripe';
-import { NotFound } from '../common/errors';
+import { DomainError, NotFound } from '../common/errors';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB } from '../database/database.module';
 import { BookingService } from '../booking/booking.service';
@@ -48,7 +48,7 @@ export class StripeWebhookController {
         this.config.STRIPE_WEBHOOK_SECRET ?? '',
       );
     } catch {
-      throw new BadRequestException('invalid Stripe signature');
+      throw new DomainError('errors.webhooks.invalidSignature', HttpStatus.BAD_REQUEST);
     }
 
     const [seen] = await this.db

@@ -8,18 +8,22 @@ import { Alert } from '@/components/Alert';
 import { isActivePath } from '@/components/BottomNav';
 import { Button, ButtonLink } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
-import { IconGauge, IconLink, IconLogout, IconMenu, IconPercent } from '@/components/icons';
+import { useT } from '@/components/I18nProvider';
+import { IconGauge, IconGlobe, IconLink, IconLogout, IconMenu, IconPercent } from '@/components/icons';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LoadingBlock } from '@/components/Spinner';
 import { isApiError } from '@/lib/api';
 import { APP_NAME } from '@/lib/brand';
 import { authApi } from '@/lib/endpoints';
 import { clearSession, getCachedMe, getToken, setCachedMe } from '@/lib/session';
-import { errorMessageRo } from '@/lib/useApi';
+import type { MessageKey } from '@/lib/i18n';
+import { errorMessage } from '@/lib/useApi';
 
-const NAV = [
-  { href: '/admin', label: 'Operatori', icon: <IconGauge />, exact: true },
-  { href: '/admin/plans', label: 'Planuri și tarife', icon: <IconPercent /> },
-  { href: '/admin/invites', label: 'Invitații', icon: <IconLink /> },
+const NAV: { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }[] = [
+  { href: '/admin', label: 'admin.nav.operators', icon: <IconGauge />, exact: true },
+  { href: '/admin/plans', label: 'admin.nav.plans', icon: <IconPercent /> },
+  { href: '/admin/invites', label: 'admin.nav.invites', icon: <IconLink /> },
+  { href: '/admin/translations', label: 'admin.nav.translations', icon: <IconGlobe /> },
 ];
 
 const AdminContext = createContext<MeDto | null>(null);
@@ -39,6 +43,8 @@ type GateState =
 /** The platform owner's area. Only accounts marked as platform admin get past the gate. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const i18n = useT();
+  const { t } = i18n;
   const [state, setState] = useState<GateState>({ status: 'checking' });
   const [attempt, setAttempt] = useState(0);
 
@@ -87,14 +93,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <main className="page-x mx-auto max-w-xl py-10">
         <Alert
           tone="error"
-          title="Nu am putut încărca contul"
+          title={t('admin.shell.loadError')}
           action={
             <Button variant="secondary" onClick={() => setAttempt((a) => a + 1)}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(state.error)}
+          {errorMessage(state.error, i18n)}
         </Alert>
       </main>
     );
@@ -102,15 +108,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
   if (state.status === 'denied') {
     return (
       <main className="page-x mx-auto flex max-w-xl flex-col gap-4 py-10">
-        <h1 className="text-2xl font-bold">Zona proprietarului platformei</h1>
+        <div className="flex justify-end">
+          <LanguageSwitcher />
+        </div>
+        <h1 className="text-2xl font-bold">{t('admin.shell.deniedTitle')}</h1>
         <p className="text-muted">
-          Contul {state.me.user.email ?? state.me.user.phone} nu are acces aici. Dacă ești
-          proprietarul platformei, intră cu adresa de email setată ca administrator.
+          {t('admin.shell.deniedBody', {
+            account: state.me.user.email ?? state.me.user.phone ?? '',
+          })}
         </p>
         <div className="flex flex-wrap gap-2">
-          <ButtonLink href="/login">Alege alt cont</ButtonLink>
+          <ButtonLink href="/login">{t('admin.shell.otherAccount')}</ButtonLink>
           <Button variant="secondary" icon={<IconLogout />} onClick={() => void logout()}>
-            Ieși din cont
+            {t('admin.shell.logout')}
           </Button>
         </div>
       </main>
@@ -128,6 +138,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? '';
+  const { t } = useT();
   return (
     <ul className="flex flex-col gap-1">
       {NAV.map((item) => {
@@ -145,7 +156,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               }`}
             >
               {item.icon}
-              {item.label}
+              {t(item.label)}
             </Link>
           </li>
         );
@@ -155,6 +166,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function OperatorConsoles({ me, onNavigate }: { me: MeDto; onNavigate?: () => void }) {
+  const { t } = useT();
   const own = me.memberships.filter((m) => m.role !== 'affiliate');
   if (own.length === 0) return null;
   return (
@@ -163,7 +175,7 @@ function OperatorConsoles({ me, onNavigate }: { me: MeDto; onNavigate?: () => vo
       onClick={onNavigate}
       className="flex min-h-12 items-center rounded-xl px-3 text-sm font-semibold text-brand hover:bg-surface-2"
     >
-      Mergi la contul tău de operator
+      {t('admin.shell.operatorConsole')}
     </Link>
   );
 }
@@ -177,34 +189,31 @@ function AdminFrame({
   onLogout: () => void;
   children: ReactNode;
 }) {
+  const { t } = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const who = me.user.name ?? me.user.email ?? '';
   return (
     <>
       <a href="#content" className="skip-link visually-hidden">
-        Sari la conținut
+        {t('admin.shell.skipToContent')}
       </a>
       <div className="lg:grid lg:min-h-dvh lg:grid-cols-[16rem_minmax(0,1fr)]">
         <aside className="hidden border-r border-line bg-surface lg:block">
           <div className="sticky top-0 flex max-h-dvh flex-col gap-5 overflow-y-auto p-4">
             <div>
-              <p className="text-sm text-muted">Administrare platformă</p>
+              <p className="text-sm text-muted">{t('admin.shell.area')}</p>
               <p className="text-lg font-bold">{APP_NAME}</p>
             </div>
-            <nav aria-label="Secțiuni">
+            <nav aria-label={t('admin.shell.sections')}>
               <NavList />
             </nav>
             <div className="mt-auto border-t border-line pt-4">
               <OperatorConsoles me={me} />
               <p className="truncate text-sm font-semibold">{who}</p>
-              <p className="text-sm text-muted">Proprietar platformă</p>
-              <Button
-                variant="ghost"
-                icon={<IconLogout />}
-                onClick={onLogout}
-                className="-ml-3 mt-2"
-              >
-                Ieși din cont
+              <p className="text-sm text-muted">{t('admin.shell.role')}</p>
+              <LanguageSwitcher className="-ml-2 mt-2" />
+              <Button variant="ghost" icon={<IconLogout />} onClick={onLogout} className="-ml-3">
+                {t('admin.shell.logout')}
               </Button>
             </div>
           </div>
@@ -215,15 +224,18 @@ function AdminFrame({
             className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-surface/95 py-2 page-x backdrop-blur lg:hidden"
             style={{ paddingTop: 'max(0.5rem, var(--safe-top))' }}
           >
-            <p className="min-w-0 truncate font-bold">Administrare platformă</p>
-            <Button
-              variant="secondary"
-              icon={<IconMenu />}
-              onClick={() => setMenuOpen(true)}
-              aria-haspopup="dialog"
-            >
-              Meniu
-            </Button>
+            <p className="min-w-0 truncate font-bold">{t('admin.shell.area')}</p>
+            <div className="flex shrink-0 items-center gap-1">
+              <LanguageSwitcher compact />
+              <Button
+                variant="secondary"
+                icon={<IconMenu />}
+                onClick={() => setMenuOpen(true)}
+                aria-haspopup="dialog"
+              >
+                {t('admin.shell.menu')}
+              </Button>
+            </div>
           </header>
           <main
             id="content"
@@ -235,16 +247,19 @@ function AdminFrame({
         </div>
       </div>
 
-      <Dialog open={menuOpen} onClose={() => setMenuOpen(false)} title="Meniu">
+      <Dialog open={menuOpen} onClose={() => setMenuOpen(false)} title={t('admin.shell.menu')}>
         <div className="flex flex-col gap-4">
-          <nav aria-label="Secțiuni">
+          <nav aria-label={t('admin.shell.sections')}>
             <NavList onNavigate={() => setMenuOpen(false)} />
           </nav>
           <div className="border-t border-line pt-3">
             <OperatorConsoles me={me} onNavigate={() => setMenuOpen(false)} />
-            <p className="truncate text-sm text-muted">{who} · Proprietar platformă</p>
+            <p className="truncate text-sm text-muted">
+              {t('admin.shell.whoWithRole', { name: who })}
+            </p>
+            <LanguageSwitcher className="-ml-2" />
             <Button variant="ghost" icon={<IconLogout />} onClick={onLogout} className="-ml-3">
-              Ieși din cont
+              {t('admin.shell.logout')}
             </Button>
           </div>
         </div>

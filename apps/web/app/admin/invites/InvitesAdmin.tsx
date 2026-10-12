@@ -7,6 +7,7 @@ import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Field, SelectField } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { PageHeader } from '@/components/PageHeader';
 import { ShareActions } from '@/components/ShareActions';
 import { LoadingBlock } from '@/components/Spinner';
@@ -15,12 +16,14 @@ import { isValidEmail, normalizeEmail } from '@/lib/contact';
 import { formatDate } from '@/lib/dates';
 import { formatBps, percentToBps } from '@/lib/format';
 import { adminApi } from '@/lib/platform-endpoints';
-import { INVITE_STATUS } from '@/lib/platform-labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { inviteStatus } from '@/lib/platform-labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 const PLATFORM_TZ = 'Europe/Bucharest';
 
 export function InvitesAdmin() {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const invites = useApi('admin-invites', (signal) => adminApi.invites({ signal }));
   const plans = useApi('admin-plans', (signal) => adminApi.plans({ signal }));
   const [created, setCreated] = useState<OperatorInviteDto | null>(null);
@@ -28,28 +31,29 @@ export function InvitesAdmin() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Invitații"
-        description="Invită un operator: primește pe email un link cu care își deschide contul, cu planul și tarifele stabilite de tine."
+        title={t('admin.invites.title')}
+        description={t('admin.invites.description')}
       />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
         <div className="flex flex-col gap-4">
           {created ? (
-            <Card title="Invitația a fost trimisă">
+            <Card title={t('admin.invites.sentTitle')}>
               <p className="mb-3 text-muted">
-                Am trimis linkul pe {created.email}. Îl poți trimite și pe WhatsApp; funcționează
-                doar cu această adresă de email și expiră pe{' '}
-                {formatDate(created.expiresAt, PLATFORM_TZ)}.
+                {t('admin.invites.sentBody', {
+                  email: created.email,
+                  date: formatDate(created.expiresAt, PLATFORM_TZ, lang),
+                })}
               </p>
               <p className="mb-3 break-all rounded-xl bg-surface-2 p-3 font-mono text-sm">
                 {created.inviteUrl}
               </p>
               <ShareActions
                 url={created.inviteUrl!}
-                title={`Invitație ${created.businessName}`}
-                text={`Deschide contul ${created.businessName} pe platforma de afiliere:`}
+                title={t('admin.invites.shareTitle', { business: created.businessName })}
+                text={t('admin.invites.shareText', { business: created.businessName })}
               />
               <Button variant="ghost" className="mt-2" onClick={() => setCreated(null)}>
-                Invită alt operator
+                {t('admin.invites.inviteAnother')}
               </Button>
             </Card>
           ) : (
@@ -63,11 +67,13 @@ export function InvitesAdmin() {
           )}
         </div>
 
-        <Card title="Trimise">
-          {invites.error ? <Alert tone="error">{errorMessageRo(invites.error)}</Alert> : null}
+        <Card title={t('admin.invites.listTitle')}>
+          {invites.error ? (
+            <Alert tone="error">{errorMessage(invites.error, i18n)}</Alert>
+          ) : null}
           {invites.loading && !invites.data ? <LoadingBlock /> : null}
           {invites.data && invites.data.length === 0 ? (
-            <p className="text-muted">Nicio invitație încă.</p>
+            <p className="text-muted">{t('admin.invites.empty')}</p>
           ) : null}
           <ul className="divide-y divide-line">
             {(invites.data ?? []).map((invite) => (
@@ -81,8 +87,10 @@ export function InvitesAdmin() {
 }
 
 function InviteRow({ invite, onChanged }: { invite: OperatorInviteDto; onChanged: () => void }) {
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const [busy, setBusy] = useState(false);
-  const status = INVITE_STATUS[invite.status];
+  const status = inviteStatus(i18n, invite.status);
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 py-3">
       <div className="min-w-0">
@@ -99,11 +107,18 @@ function InviteRow({ invite, onChanged }: { invite: OperatorInviteDto; onChanged
           )}
         </p>
         <p className="truncate text-sm text-muted">
-          {invite.email} · {invite.planName ?? 'plan implicit'}
-          {invite.feeBpsOverride !== null ? ` · ${formatBps(invite.feeBpsOverride)}` : ''}
-          {invite.trialDays !== null ? ` · ${invite.trialDays} zile probă` : ''}
+          {[
+            invite.email,
+            invite.planName ?? t('admin.invites.defaultPlanShort'),
+            invite.feeBpsOverride !== null ? formatBps(invite.feeBpsOverride, lang) : null,
+            invite.trialDays !== null ? tp('admin.invites.trialDays', invite.trialDays) : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
-        <p className="text-sm text-muted">Trimisă pe {formatDate(invite.createdAt, PLATFORM_TZ)}</p>
+        <p className="text-sm text-muted">
+          {t('admin.invites.sentOn', { date: formatDate(invite.createdAt, PLATFORM_TZ, lang) })}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <StatusChip tone={status.tone}>{status.label}</StatusChip>
@@ -121,7 +136,7 @@ function InviteRow({ invite, onChanged }: { invite: OperatorInviteDto; onChanged
               }
             }}
           >
-            Anulează
+            {t('admin.invites.revoke')}
           </Button>
         ) : null}
       </div>
@@ -142,6 +157,8 @@ function InviteForm({
   }[];
   onCreated: (invite: OperatorInviteDto) => void;
 }) {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const [email, setEmail] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [planId, setPlanId] = useState('');
@@ -150,7 +167,8 @@ function InviteForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const plan = plans.find((p) => p.id === planId) ?? plans.find((p) => p.isDefault) ?? plans[0];
+  const defaultPlan = plans.find((p) => p.isDefault);
+  const plan = plans.find((p) => p.id === planId) ?? defaultPlan ?? plans[0];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -158,11 +176,12 @@ function InviteForm({
     const cleanEmail = normalizeEmail(email);
     const feeBps = fee.trim() ? percentToBps(fee) : null;
     const trial = trialDays.trim() ? Number(trialDays) : null;
-    if (!isValidEmail(cleanEmail)) next.email = 'Scrie o adresă de email validă.';
-    if (businessName.trim().length < 2) next.businessName = 'Scrie numele afacerii.';
-    if (fee.trim() && (feeBps === null || feeBps > 5_000)) next.fee = 'Un procent între 0 și 50.';
+    if (!isValidEmail(cleanEmail)) next.email = t('admin.invites.emailError');
+    if (businessName.trim().length < 2) next.businessName = t('admin.validation.businessName');
+    if (fee.trim() && (feeBps === null || feeBps > 5_000))
+      next.fee = t('admin.validation.percent50');
     if (trial !== null && (!Number.isInteger(trial) || trial < 0 || trial > 365))
-      next.trial = 'Între 0 și 365 de zile.';
+      next.trial = t('admin.validation.trialDays');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
     setBusy(true);
@@ -181,25 +200,25 @@ function InviteForm({
       setTrialDays('');
       onCreated(invite);
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Card title="Invită un operator">
+    <Card title={t('admin.invites.formTitle')}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {error ? <Alert tone="error">{error}</Alert> : null}
         <Field
-          label="Numele afacerii"
+          label={t('admin.invites.businessName')}
           value={businessName}
           onChange={(e) => setBusinessName(e.target.value)}
-          placeholder="Delta Boat Tours"
+          placeholder={t('admin.invites.businessPlaceholder')}
           error={errors.businessName}
         />
         <Field
-          label="Emailul operatorului"
+          label={t('admin.invites.email')}
           type="email"
           inputMode="email"
           autoComplete="off"
@@ -207,10 +226,11 @@ function InviteForm({
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
         />
-        <SelectField label="Plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
+        <SelectField label={t('admin.invites.plan')} value={planId} onChange={(e) => setPlanId(e.target.value)}>
           <option value="">
-            Planul implicit
-            {plans.find((p) => p.isDefault) ? ` (${plans.find((p) => p.isDefault)!.name})` : ''}
+            {defaultPlan
+              ? t('admin.invites.defaultPlanNamed', { name: defaultPlan.name })
+              : t('admin.invites.defaultPlan')}
           </option>
           {plans.map((p) => (
             <option key={p.id} value={p.id}>
@@ -220,16 +240,22 @@ function InviteForm({
         </SelectField>
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label="Comision negociat (%)"
-            hint={plan ? `Gol = ${formatBps(plan.platformFeeBps)}` : undefined}
+            label={t('admin.invites.fee')}
+            hint={
+              plan
+                ? t('admin.validation.emptyMeans', { value: formatBps(plan.platformFeeBps, lang) })
+                : undefined
+            }
             inputMode="decimal"
             value={fee}
             onChange={(e) => setFee(e.target.value)}
             error={errors.fee}
           />
           <Field
-            label="Zile de probă"
-            hint={plan ? `Gol = ${plan.trialDays}` : undefined}
+            label={t('admin.invites.trialDaysLabel')}
+            hint={
+              plan ? t('admin.validation.emptyMeans', { value: plan.trialDays }) : undefined
+            }
             inputMode="numeric"
             value={trialDays}
             onChange={(e) => setTrialDays(e.target.value)}
@@ -237,7 +263,7 @@ function InviteForm({
           />
         </div>
         <Button type="submit" size="lg" loading={busy}>
-          Trimite invitația
+          {t('admin.invites.submit')}
         </Button>
       </form>
     </Card>

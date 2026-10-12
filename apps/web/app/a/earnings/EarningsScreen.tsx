@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
 import { PeriodPicker } from '@/components/PeriodPicker';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip } from '@/components/StatusChip';
-import { PLAN_MODE_EXPLANATION, tierRows } from '@/lib/commission';
+import { planModeExplanation, tierRows } from '@/lib/commission';
 import {
   DEFAULT_TIMEZONE,
   currentPeriod,
@@ -19,13 +20,15 @@ import {
 } from '@/lib/dates';
 import { affiliateApi } from '@/lib/endpoints';
 import { formatBps, formatMoney } from '@/lib/format';
-import { COMMISSION_KIND, COMMISSION_STATUS } from '@/lib/labels';
+import { commissionKind, commissionStatus } from '@/lib/labels';
 import { useAffiliateHome } from '@/lib/useAffiliateHome';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 const TZ = DEFAULT_TIMEZONE;
 
 export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const thisMonth = currentPeriod(TZ);
   const [period, setPeriod] = useState(() =>
     isPeriodKey(initialPeriod) && initialPeriod <= thisMonth ? initialPeriod : thisMonth,
@@ -39,7 +42,7 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
 
   return (
     <div className="page-x mx-auto flex max-w-xl flex-col gap-4">
-      <PageHeader title="Câștigurile mele" />
+      <PageHeader title={t('affiliate.earnings.title')} />
 
       <PeriodPicker period={period} onChange={setPeriod} maxPeriod={thisMonth} />
 
@@ -49,30 +52,34 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
           tone="error"
           action={
             <Button variant="secondary" onClick={earnings.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(earnings.error)}
+          {errorMessage(earnings.error, i18n)}
         </Alert>
       ) : null}
 
       {data ? (
         <>
           <Card>
-            <p className="font-semibold text-muted">Total în {formatPeriod(data.periodKey)}</p>
+            <p className="font-semibold text-muted">
+              {t('affiliate.earnings.totalIn', { period: formatPeriod(data.periodKey, lang) })}
+            </p>
             <p className="mt-1 text-4xl font-extrabold tracking-tight">
-              <MoneyText amountMinor={data.totalMinor} currency={data.currency} />
+              <MoneyText amountMinor={data.totalMinor} currency={data.currency} lang={lang} />
             </p>
           </Card>
 
-          <Card title="Vânzări și ajustări">
+          <Card title={t('affiliate.earnings.entriesTitle')}>
             {data.entries.length === 0 ? (
-              <p className="text-muted">Nicio vânzare în {formatPeriod(data.periodKey)}.</p>
+              <p className="text-muted">
+                {t('affiliate.earnings.noSales', { period: formatPeriod(data.periodKey, lang) })}
+              </p>
             ) : (
               <ul className="divide-y divide-line">
                 {data.entries.map((entry) => {
-                  const status = COMMISSION_STATUS[entry.status];
+                  const status = commissionStatus(i18n, entry.status);
                   const negative = entry.amountMinor < 0;
                   return (
                     <li key={entry.id} className="flex flex-col gap-1.5 py-3">
@@ -80,20 +87,26 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
                         <div className="min-w-0">
                           <p className="font-semibold">{entry.productName}</p>
                           <p className="text-sm text-muted">
-                            {entry.kind !== 'sale' ? `${COMMISSION_KIND[entry.kind]} · ` : ''}
-                            {formatDate(entry.createdAt, TZ)} · cod {entry.bookingReference}
+                            {entry.kind !== 'sale' ? `${commissionKind(i18n, entry.kind)} · ` : ''}
+                            {t('affiliate.earnings.entryMeta', {
+                              date: formatDate(entry.createdAt, TZ, lang),
+                              reference: entry.bookingReference,
+                            })}
                           </p>
                         </div>
                         <MoneyText
                           amountMinor={entry.amountMinor}
                           currency={data.currency}
+                          lang={lang}
                           className={`text-lg font-bold ${negative ? 'text-danger-fg' : ''}`}
                         />
                       </div>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm text-muted">
-                          {formatBps(entry.rateBps)} din{' '}
-                          {formatMoney(entry.baseMinor, data.currency)}
+                          {t('affiliate.earnings.rateOf', {
+                            rate: formatBps(entry.rateBps, lang),
+                            amount: formatMoney(entry.baseMinor, data.currency, lang),
+                          })}
                         </span>
                         <StatusChip tone={status.tone}>{status.label}</StatusChip>
                       </div>
@@ -109,34 +122,37 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
         </>
       ) : null}
 
-      <Card title="Cum se calculează">
+      <Card title={t('affiliate.earnings.howTitle')}>
         {plan ? (
           plan.kind === 'fixed' || plan.tiers.length <= 1 ? (
             <p>
-              Primești{' '}
+              {t('affiliate.earnings.fixedBefore')}
               <strong>
-                {formatBps(home.data?.progress.currentRateBps ?? plan.tiers[0]?.rateBps ?? 0)}
-              </strong>{' '}
-              din fiecare rezervare plătită.
+                {formatBps(
+                  home.data?.progress.currentRateBps ?? plan.tiers[0]?.rateBps ?? 0,
+                  lang,
+                )}
+              </strong>
+              {t('affiliate.earnings.fixedAfter')}
             </p>
           ) : (
             <>
               <table className="w-full border-collapse text-left">
                 <caption className="mb-2 text-left text-muted">
-                  Procentul crește cu numărul de vânzări din lună.
+                  {t('affiliate.earnings.tierCaption')}
                 </caption>
                 <thead>
                   <tr className="border-b border-line">
                     <th scope="col" className="py-2 font-semibold">
-                      Vânzări în lună
+                      {t('affiliate.earnings.salesInMonth')}
                     </th>
                     <th scope="col" className="py-2 text-right font-semibold">
-                      Comision
+                      {t('affiliate.earnings.commission')}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {tierRows(plan.tiers).map((row, i) => (
+                  {tierRows(plan.tiers, i18n).map((row, i) => (
                     <tr
                       key={row.label}
                       className={`border-b border-line ${home.data?.progress.tierIndex === i ? 'font-semibold text-brand' : ''}`}
@@ -144,55 +160,55 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
                       <th scope="row" className="py-2.5 font-normal">
                         {row.label}
                         {home.data?.progress.tierIndex === i ? (
-                          <span className="ml-2 text-sm">(acum)</span>
+                          <span className="ml-2 text-sm">{t('affiliate.earnings.now')}</span>
                         ) : null}
                       </th>
-                      <td className="py-2.5 text-right tabular-nums">{formatBps(row.rateBps)}</td>
+                      <td className="py-2.5 text-right tabular-nums">{formatBps(row.rateBps, lang)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {plan.mode ? (
-                <p className="mt-3 text-sm text-muted">{PLAN_MODE_EXPLANATION[plan.mode]}</p>
+                <p className="mt-3 text-sm text-muted">{planModeExplanation(i18n, plan.mode)}</p>
               ) : null}
             </>
           )
         ) : (
-          <p className="text-muted">Planul de comision se încarcă…</p>
+          <p className="text-muted">{t('affiliate.earnings.planLoading')}</p>
         )}
 
         <dl className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
           <div>
             <dt>
-              <StatusChip tone={COMMISSION_STATUS.pending.tone}>
-                {COMMISSION_STATUS.pending.label}
+              <StatusChip tone={commissionStatus(i18n, 'pending').tone}>
+                {commissionStatus(i18n, 'pending').label}
               </StatusChip>
             </dt>
             <dd className="mt-1 text-sm text-muted">
-              Rezervarea e plătită, dar excursia nu a avut loc încă.
+              {t('affiliate.earnings.pendingHelp')}
             </dd>
           </div>
           <div>
             <dt>
-              <StatusChip tone={COMMISSION_STATUS.approved.tone}>
-                {COMMISSION_STATUS.approved.label}
+              <StatusChip tone={commissionStatus(i18n, 'approved').tone}>
+                {commissionStatus(i18n, 'approved').label}
               </StatusChip>
             </dt>
             <dd className="mt-1 text-sm text-muted">
-              Excursia a avut loc. Suma intră la următoarea plată de la operator.
+              {t('affiliate.earnings.approvedHelp')}
             </dd>
           </div>
           <div>
             <dt>
-              <StatusChip tone={COMMISSION_STATUS.paid.tone}>
-                {COMMISSION_STATUS.paid.label}
+              <StatusChip tone={commissionStatus(i18n, 'paid').tone}>
+                {commissionStatus(i18n, 'paid').label}
               </StatusChip>
             </dt>
-            <dd className="mt-1 text-sm text-muted">Operatorul ți-a plătit suma.</dd>
+            <dd className="mt-1 text-sm text-muted">{t('affiliate.earnings.paidHelp')}</dd>
           </div>
         </dl>
         <p className="mt-3 text-sm text-muted">
-          Dacă o rezervare este anulată și rambursată, comisionul ei se scade.
+          {t('affiliate.earnings.refundNote')}
         </p>
       </Card>
     </div>

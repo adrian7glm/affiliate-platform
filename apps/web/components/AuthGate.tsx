@@ -25,9 +25,10 @@ import {
   setTenantId,
   type Area,
 } from '@/lib/session';
-import { errorMessageRo } from '@/lib/useApi';
+import { errorMessage } from '@/lib/useApi';
 import { Alert } from './Alert';
 import { Button } from './Button';
+import { useT } from './I18nProvider';
 import { LoadingBlock } from './Spinner';
 
 export interface SessionValue {
@@ -63,6 +64,8 @@ export function AuthGate({ area, children }: { area: Area; children: ReactNode }
   const pathname = usePathname() ?? '/';
   const [state, setState] = useState<GateState>({ status: 'checking' });
   const [attempt, setAttempt] = useState(0);
+  const i18n = useT();
+  const { t } = i18n;
 
   const goToLogin = useCallback(() => {
     const search = typeof window !== 'undefined' ? window.location.search : '';
@@ -153,14 +156,14 @@ export function AuthGate({ area, children }: { area: Area; children: ReactNode }
       <main className="page-x mx-auto max-w-xl py-10">
         <Alert
           tone="error"
-          title="Nu am putut încărca contul"
+          title={t('common.session.loadFailed')}
           action={
             <Button variant="secondary" onClick={() => setAttempt((a) => a + 1)}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(state.error)}
+          {errorMessage(state.error, i18n)}
         </Alert>
       </main>
     );
@@ -190,15 +193,16 @@ export function AuthGate({ area, children }: { area: Area; children: ReactNode }
 
 /** A suspended operator: nothing works until the platform reactivates the account. */
 function SuspendedNotice({ session }: { session: SessionValue }) {
+  const { t } = useT();
   const others = session.memberships.filter(
     (m) => m.tenantId !== session.membership.tenantId && m.tenantStatus !== 'suspended',
   );
   return (
     <main className="page-x mx-auto flex max-w-xl flex-col gap-4 py-10">
-      <Alert tone="error" title={`Contul ${session.membership.tenantName} este suspendat`}>
+      <Alert tone="error" title={t('common.session.suspendedTitle', { name: session.membership.tenantName })}>
         {session.membership.role === 'affiliate'
-          ? 'Operatorul nu primește rezervări momentan. Reîncearcă mai târziu.'
-          : 'Administrarea și paginile de rezervare sunt oprite. Scrie-ne ca să reactivăm contul; datele tale sunt păstrate.'}
+          ? t('common.session.suspendedAffiliate')
+          : t('common.session.suspendedOperator')}
       </Alert>
       {others.map((m) => (
         <Button
@@ -206,11 +210,11 @@ function SuspendedNotice({ session }: { session: SessionValue }) {
           variant="secondary"
           onClick={() => session.switchTenant(m.tenantId)}
         >
-          Mergi la {m.tenantName}
+          {t('common.session.goTo', { name: m.tenantName })}
         </Button>
       ))}
       <Button variant="ghost" onClick={() => void session.logout()}>
-        Ieși din cont
+        {t('common.signOut')}
       </Button>
     </main>
   );

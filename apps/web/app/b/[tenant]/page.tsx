@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { buttonClasses } from '@/components/Button';
 import { PublicMessage, PublicShell } from '@/components/public/PublicShell';
 import { formatMoney } from '@/lib/format';
-import { formatDuration, getT } from '@/lib/i18n';
+import { formatDuration } from '@/lib/i18n';
+import { getServerT } from '@/lib/i18n-server';
 import { loadTenant, requestLang, withLang } from '@/lib/public-server';
 
 interface Props {
@@ -13,10 +14,13 @@ interface Props {
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tenant: slug } = await params;
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const [{ tenant: slug }, query] = await Promise.all([params, searchParams]);
   const tenant = await loadTenant(slug);
-  if (!tenant.ok) return { title: 'Not found', robots: { index: false } };
+  if (!tenant.ok) {
+    const { t } = await getServerT(await requestLang(query.lang));
+    return { title: t('public.notFoundTitle'), robots: { index: false } };
+  }
   return {
     title: { absolute: tenant.data.name },
     description: tenant.data.products.map((p) => p.name).join(' · '),
@@ -27,17 +31,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TenantPage({ params, searchParams }: Props) {
   const [{ tenant: slug }, query] = await Promise.all([params, searchParams]);
   const lang = await requestLang(query.lang);
-  const { t } = getT(lang);
+  const { t } = await getServerT(lang);
   const path = `/b/${encodeURIComponent(slug)}`;
   const tenant = await loadTenant(slug);
 
   if (!tenant.ok) {
     return (
       <PublicShell lang={lang} path={path}>
-        <PublicMessage title={tenant.notFound ? t('tenantNotFound') : t('errorGeneric')}>
+        <PublicMessage title={tenant.notFound ? t('public.tenantNotFound') : t('common.errorGeneric')}>
           {!tenant.notFound ? (
             <a href={withLang(path, lang)} className={buttonClasses('secondary')}>
-              {t('retry')}
+              {t('common.retry')}
             </a>
           ) : null}
         </PublicMessage>
@@ -48,8 +52,8 @@ export default async function TenantPage({ params, searchParams }: Props) {
   const { data } = tenant;
   return (
     <PublicShell lang={lang} path={path} tenantName={data.name} branding={data.branding}>
-      <h1 className="pb-4 pt-6 text-2xl font-bold sm:text-3xl">{t('productsTitle')}</h1>
-      {data.products.length === 0 ? <p className="text-muted">{t('noProducts')}</p> : null}
+      <h1 className="pb-4 pt-6 text-2xl font-bold sm:text-3xl">{t('public.productsTitle')}</h1>
+      {data.products.length === 0 ? <p className="text-muted">{t('public.noProducts')}</p> : null}
       <ul className="grid gap-4 sm:grid-cols-2">
         {data.products.map((product) => {
           const href = withLang(`${path}/${encodeURIComponent(product.slug)}`, lang);
@@ -77,20 +81,22 @@ export default async function TenantPage({ params, searchParams }: Props) {
                     <p className="line-clamp-3 text-muted">{product.description}</p>
                   ) : null}
                   <p className="text-sm text-muted">
-                    {t('duration')}: {formatDuration(product.durationMinutes)}
+                    {t('public.durationValue', {
+                      duration: formatDuration(product.durationMinutes, lang),
+                    })}
                   </p>
                   <div className="mt-auto flex items-center justify-between gap-3 pt-2">
                     <p className="font-semibold">
-                      {t('fromPrice', {
+                      {t('public.fromPrice', {
                         price: formatMoney(product.fromMinor, product.currency, lang),
                       })}
                     </p>
                     <Link
                       href={href}
                       className={buttonClasses('primary')}
-                      aria-label={`${t('book')}: ${product.name}`}
+                      aria-label={t('public.bookTrip', { name: product.name })}
                     >
-                      {t('book')}
+                      {t('public.book')}
                     </Link>
                   </div>
                 </div>

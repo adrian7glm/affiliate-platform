@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { useT } from './I18nProvider';
 import { IconChevronLeft } from './icons';
 
 interface PageHeaderProps {
@@ -14,9 +17,10 @@ export function PageHeader({
   title,
   description,
   backHref,
-  backLabel = 'Înapoi',
+  backLabel,
   actions,
 }: PageHeaderProps) {
+  const { t } = useT();
   return (
     <header className="flex flex-col gap-2 pb-4 pt-4">
       {backHref ? (
@@ -25,7 +29,7 @@ export function PageHeader({
           className="-ml-2 inline-flex min-h-12 items-center gap-1 self-start rounded-xl px-2 font-semibold text-brand"
         >
           <IconChevronLeft size={20} />
-          {backLabel}
+          {backLabel ?? t('common.back')}
         </Link>
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-3">

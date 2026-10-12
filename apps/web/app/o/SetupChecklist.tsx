@@ -6,8 +6,9 @@ import { Alert } from '@/components/Alert';
 import { ButtonLink } from '@/components/Button';
 import { IconCheck, IconChevronRight } from '@/components/icons';
 import { useSession } from '@/components/AuthGate';
+import { useT } from '@/components/I18nProvider';
 import { operatorPlatformApi } from '@/lib/platform-endpoints';
-import { ONBOARDING_STEPS, daysUntil } from '@/lib/platform-labels';
+import { daysUntil, onboardingStep } from '@/lib/platform-labels';
 import { useApi } from '@/lib/useApi';
 import { useOperator } from './OperatorContext';
 
@@ -16,6 +17,8 @@ import { useOperator } from './OperatorContext';
  * Disappears once every step is done.
  */
 export function SetupChecklist() {
+  const tr = useT();
+  const { t, tp } = tr;
   const { tenant } = useOperator();
   const { membership } = useSession();
   const [welcome, setWelcome] = useState(false);
@@ -38,8 +41,8 @@ export function SetupChecklist() {
   return (
     <div className="flex flex-col gap-4 pt-4 empty:hidden">
       {welcome ? (
-        <Alert tone="success" title={`Bun venit, ${tenant.name}!`}>
-          Contul este gata. Urmează pașii de mai jos ca să primești prima rezervare prin afiliați.
+        <Alert tone="success" title={t('operator.setup.welcomeTitle', { name: tenant.name })}>
+          {t('operator.setup.welcomeText')}
         </Alert>
       ) : null}
 
@@ -47,15 +50,17 @@ export function SetupChecklist() {
         <Alert
           tone="warning"
           title={
-            sub.currentPeriodEnd ? 'Abonamentul nu este plătit' : 'Perioada de probă s-a încheiat'
+            sub.currentPeriodEnd
+              ? t('operator.setup.unpaidTitle')
+              : t('operator.setup.trialEndedTitle')
           }
           action={
             <ButtonLink href="/o/billing" variant="secondary">
-              Vezi abonamentul
+              {t('operator.setup.seeSubscription')}
             </ButtonLink>
           }
         >
-          Totul funcționează în continuare; alege un plan ca să nu se întrerupă rezervările.
+          {t('operator.setup.pastDueText')}
         </Alert>
       ) : null}
 
@@ -66,19 +71,22 @@ export function SetupChecklist() {
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="setup-title" className="text-lg font-semibold">
-              Pornește în {setup.data.total} pași
+              {tp('operator.setup.title', setup.data.total)}
             </h2>
             <p className="text-sm text-muted">
-              {setup.data.completed} din {setup.data.total} gata
+              {t('operator.setup.progress', {
+                done: setup.data.completed,
+                total: setup.data.total,
+              })}
               {sub?.status === 'trialing' && sub.trialEndsAt
-                ? ` · ${daysUntil(sub.trialEndsAt)} zile de probă rămase`
+                ? ` · ${tp('operator.setup.trialDaysLeft', daysUntil(sub.trialEndsAt))}`
                 : ''}
             </p>
           </div>
           <div
             className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2"
             role="progressbar"
-            aria-label="Progres"
+            aria-label={t('operator.setup.progressLabel')}
             aria-valuemin={0}
             aria-valuemax={setup.data.total}
             aria-valuenow={setup.data.completed}
@@ -90,7 +98,7 @@ export function SetupChecklist() {
           </div>
           <ol className="mt-4 flex flex-col gap-1">
             {steps.map((step) => {
-              const info = ONBOARDING_STEPS[step.key];
+              const info = onboardingStep(tr, step.key);
               const isNext = step.key === next?.key;
               return (
                 <li key={step.key}>
@@ -117,7 +125,7 @@ export function SetupChecklist() {
                         className={`block font-semibold ${step.done ? 'text-muted line-through' : ''}`}
                       >
                         {info.label}
-                        <span className="visually-hidden">{step.done ? ' (făcut)' : ''}</span>
+                        <span className="visually-hidden">{step.done ? ` ${t('operator.setup.stepDone')}` : ''}</span>
                       </span>
                       {isNext ? (
                         <>

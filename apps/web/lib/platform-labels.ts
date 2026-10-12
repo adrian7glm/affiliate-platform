@@ -5,63 +5,59 @@ import type {
   TenantStatus,
 } from '@ap/contracts';
 import type { Tone } from '@/components/StatusChip';
+import type { Translator } from './i18n';
+import type { StatusLabel } from './labels';
 
-/** Romanian labels for the platform owner's screens, operator signup and billing. */
+/** Labels for the platform owner's screens, operator signup and billing. */
 
-export const SUBSCRIPTION_STATUS: Record<SubscriptionStatus, { label: string; tone: Tone }> = {
-  trialing: { label: 'Perioadă de probă', tone: 'brand' },
-  active: { label: 'Plătește', tone: 'success' },
-  past_due: { label: 'Restanță', tone: 'warning' },
-  canceled: { label: 'Abonament oprit', tone: 'neutral' },
+const SUBSCRIPTION_STATUS_TONE: Record<SubscriptionStatus, Tone> = {
+  trialing: 'brand',
+  active: 'success',
+  past_due: 'warning',
+  canceled: 'neutral',
 };
 
-export const TENANT_STATUS: Record<TenantStatus, { label: string; tone: Tone }> = {
-  active: { label: 'Activ', tone: 'success' },
-  suspended: { label: 'Suspendat', tone: 'danger' },
+export const subscriptionStatus = (t: Translator, status: SubscriptionStatus): StatusLabel => ({
+  label: t.tk(`labels.subscriptionStatus.${status}`),
+  tone: SUBSCRIPTION_STATUS_TONE[status],
+});
+
+const TENANT_STATUS_TONE: Record<TenantStatus, Tone> = { active: 'success', suspended: 'danger' };
+
+export const tenantStatus = (t: Translator, status: TenantStatus): StatusLabel => ({
+  label: t.tk(`labels.tenantStatus.${status}`),
+  tone: TENANT_STATUS_TONE[status],
+});
+
+const INVITE_STATUS_TONE: Record<OperatorInviteStatus, Tone> = {
+  pending: 'brand',
+  accepted: 'success',
+  expired: 'neutral',
+  revoked: 'neutral',
 };
 
-export const INVITE_STATUS: Record<OperatorInviteStatus, { label: string; tone: Tone }> = {
-  pending: { label: 'Trimisă', tone: 'brand' },
-  accepted: { label: 'Cont deschis', tone: 'success' },
-  expired: { label: 'Expirată', tone: 'neutral' },
-  revoked: { label: 'Anulată', tone: 'neutral' },
+export const inviteStatus = (t: Translator, status: OperatorInviteStatus): StatusLabel => ({
+  label: t.tk(`labels.inviteStatus.${status}`),
+  tone: INVITE_STATUS_TONE[status],
+});
+
+const ONBOARDING_HREF: Record<OnboardingStepKey, string> = {
+  product: '/o/products',
+  departures: '/o/products',
+  commission_plan: '/o/plans',
+  affiliate: '/o/affiliates',
+  first_booking: '/o/bookings',
 };
 
-export const ONBOARDING_STEPS: Record<
-  OnboardingStepKey,
-  { label: string; description: string; href: string; cta: string }
-> = {
-  product: {
-    label: 'Adaugă prima excursie',
-    description: 'Numele, durata, locul de îmbarcare și prețurile pe categorii.',
-    href: '/o/products',
-    cta: 'Adaugă excursia',
-  },
-  departures: {
-    label: 'Programează plecările',
-    description: 'Zilele, orele și locurile disponibile, sau conectează sistemul tău de rezervări.',
-    href: '/o/products',
-    cta: 'Adaugă plecări',
-  },
-  commission_plan: {
-    label: 'Stabilește comisionul afiliaților',
-    description: 'Un procent fix sau niveluri care cresc cu vânzările din lună.',
-    href: '/o/plans',
-    cta: 'Creează planul',
-  },
-  affiliate: {
-    label: 'Invită primul afiliat',
-    description: 'Un recepționer sau concierge primește linkul și codul QR pe telefon.',
-    href: '/o/affiliates',
-    cta: 'Invită un afiliat',
-  },
-  first_booking: {
-    label: 'Prima rezervare',
-    description: 'Când un turist rezervă prin afiliat sau pe pagina ta, pasul se bifează singur.',
-    href: '/o/bookings',
-    cta: 'Vezi rezervările',
-  },
-};
+export const onboardingStep = (
+  t: Translator,
+  step: OnboardingStepKey,
+): { label: string; description: string; href: string; cta: string } => ({
+  label: t.tk(`labels.onboarding.${step}.label`),
+  description: t.tk(`labels.onboarding.${step}.description`),
+  cta: t.tk(`labels.onboarding.${step}.cta`),
+  href: ONBOARDING_HREF[step],
+});
 
 export const CURRENCIES = ['RON', 'EUR', 'BGN', 'HUF', 'USD', 'GBP'] as const;
 

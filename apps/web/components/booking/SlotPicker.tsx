@@ -5,12 +5,14 @@ import { useMemo } from 'react';
 import { groupSlotsByDay } from '@/lib/booking';
 import { formatDayLabel, formatTime } from '@/lib/dates';
 import type { Translator } from '@/lib/i18n';
+import { useT } from '../I18nProvider';
 
 interface SlotPickerProps {
   days: string[];
   slots: SlotDto[];
   timezone: string;
-  t: Translator;
+  /** Defaults to the page language from the provider. */
+  t?: Translator;
   date: string | null;
   onDateChange: (date: string) => void;
   slotId: string | null;
@@ -27,25 +29,27 @@ export function SlotPicker({
   days,
   slots,
   timezone,
-  t,
+  t: given,
   date,
   onDateChange,
   slotId,
   onSlotChange,
   error,
 }: SlotPickerProps) {
+  const current = useT();
+  const t = given ?? current;
   const byDay = useMemo(() => groupSlotsByDay(slots, timezone), [slots, timezone]);
   const daySlots = date ? (byDay.get(date) ?? []) : [];
 
   return (
     <div className="flex flex-col gap-5">
       <fieldset className="min-w-0">
-        <legend className="mb-2 text-lg font-semibold">{t.t('chooseDate')}</legend>
+        <legend className="mb-2 text-lg font-semibold">{t.t('public.chooseDate')}</legend>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
           {days.map((day, index) => {
             const label = formatDayLabel(day, t.lang);
             const hasSeats = (byDay.get(day) ?? []).some((s) => s.available > 0);
-            const top = index === 0 ? t.t('today') : index === 1 ? t.t('tomorrow') : label.weekday;
+            const top = index === 0 ? t.t('public.today') : index === 1 ? t.t('public.tomorrow') : label.weekday;
             return (
               <label key={day} className="choice">
                 <input
@@ -63,7 +67,7 @@ export function SlotPicker({
                   <span className="text-base font-bold">{label.day}</span>
                   {hasSeats ? null : (
                     <span id={`nodep-${day}`} className="visually-hidden">
-                      {t.t('noDeparturesOnDay')}
+                      {t.t('public.noDeparturesOnDay')}
                     </span>
                   )}
                 </span>
@@ -75,9 +79,9 @@ export function SlotPicker({
 
       {date ? (
         <fieldset className="min-w-0" aria-describedby={error ? 'slot-error' : undefined}>
-          <legend className="mb-2 text-lg font-semibold">{t.t('chooseTime')}</legend>
+          <legend className="mb-2 text-lg font-semibold">{t.t('public.chooseTime')}</legend>
           {daySlots.length === 0 ? (
-            <p className="rounded-2xl bg-surface-2 p-4 text-muted">{t.t('noDeparturesOnDay')}</p>
+            <p className="rounded-2xl bg-surface-2 p-4 text-muted">{t.t('public.noDeparturesOnDay')}</p>
           ) : (
             <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3">
               {daySlots.map((slot) => {
@@ -97,7 +101,7 @@ export function SlotPicker({
                         {formatTime(slot.startsAt, timezone, t.lang)}
                       </span>
                       <span className="text-sm">
-                        {soldOut ? t.t('soldOut') : t.tp('seatsLeft', slot.available)}
+                        {soldOut ? t.t('public.soldOut') : t.tp('public.seatsLeft', slot.available)}
                       </span>
                     </span>
                   </label>

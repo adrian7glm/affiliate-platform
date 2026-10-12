@@ -1,6 +1,9 @@
 import type { TierProgressDto } from '@ap/contracts';
 import { describe, expect, it } from 'vitest';
 import { tierProgressFraction, tierProgressSentence, tierRows } from './commission';
+import { getT } from './i18n';
+
+const ro = getT('ro');
 
 const tiers = [
   { fromSale: 1, rateBps: 1000 },
@@ -30,6 +33,7 @@ describe('tierProgressSentence', () => {
         tierProgressSentence(
           progress({ paidSales: 9, tierIndex: 1, salesToNextTier: 2, nextRateBps: 2500 }),
           'tiered',
+          ro,
         ),
       ),
     ).toBe('Încă 2 vânzări până la 25 %');
@@ -37,8 +41,14 @@ describe('tierProgressSentence', () => {
 
   it('says "o vânzare" for one sale', () => {
     expect(
-      plain(tierProgressSentence(progress({ paidSales: 5, salesToNextTier: 1 }), 'tiered')),
+      plain(tierProgressSentence(progress({ paidSales: 5, salesToNextTier: 1 }), 'tiered', ro)),
     ).toBe('Încă o vânzare până la 15 %');
+  });
+
+  it('speaks English too', () => {
+    expect(
+      plain(tierProgressSentence(progress({ paidSales: 3, salesToNextTier: 3 }), 'tiered', getT('en'))),
+    ).toBe('3 more sales to reach 15%');
   });
 
   it('handles the top tier and fixed plans', () => {
@@ -52,10 +62,11 @@ describe('tierProgressSentence', () => {
             salesToNextTier: null,
           }),
           'tiered',
+          ro,
         ),
       ),
     ).toBe('Ai atins nivelul maxim: 25 % din fiecare vânzare.');
-    expect(plain(tierProgressSentence(progress({ tierCount: 1 }), 'fixed'))).toBe(
+    expect(plain(tierProgressSentence(progress({ tierCount: 1 }), 'fixed', ro))).toBe(
       'Câștigi 10 % din fiecare vânzare.',
     );
   });
@@ -82,17 +93,17 @@ describe('tierProgressFraction', () => {
 
 describe('tierRows', () => {
   it('labels sale ranges', () => {
-    expect(tierRows(tiers).map((r) => r.label)).toEqual([
+    expect(tierRows(tiers, ro).map((r) => r.label)).toEqual([
       'Vânzările 1–5',
       'Vânzările 6–10',
       'De la vânzarea 11',
     ]);
-    expect(tierRows([{ fromSale: 1, rateBps: 1000 }])[0]?.label).toBe('Toate vânzările');
+    expect(tierRows([{ fromSale: 1, rateBps: 1000 }], ro)[0]?.label).toBe('Toate vânzările');
     expect(
       tierRows([
         { fromSale: 1, rateBps: 1000 },
         { fromSale: 2, rateBps: 2000 },
-      ])[0]?.label,
+      ], ro)[0]?.label,
     ).toBe('Vânzarea 1');
   });
 });

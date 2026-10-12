@@ -1,5 +1,6 @@
 import type { AffiliateMonthDto, TierProgressDto } from '@ap/contracts';
 import { intlLocale } from './format';
+import { DEFAULT_LANG, type Lang } from './i18n';
 
 /**
  * Small numbers for the affiliate dashboard: how the month compares, how many days are left,
@@ -48,7 +49,7 @@ export function bestPastMonth(history: AffiliateMonthDto[]): AffiliateMonthDto |
 }
 
 /** "oct." – short month name for chart axes. */
-export function shortMonth(periodKey: string, lang = 'ro'): string {
+export function shortMonth(periodKey: string, lang: Lang = DEFAULT_LANG): string {
   const [y, m] = periodKey.split('-').map(Number) as [number, number];
   return new Intl.DateTimeFormat(intlLocale(lang), { month: 'short', timeZone: 'UTC' })
     .format(new Date(Date.UTC(y, m - 1, 15)))

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useT } from './I18nProvider';
 import { IconX } from './icons';
 
 interface DialogProps {
@@ -9,7 +10,7 @@ interface DialogProps {
   title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
-  /** Close button label (localized by the caller). */
+  /** Close button label (default: common.close). */
   closeLabel?: string;
   /** Allow closing by tapping the backdrop (default true). */
   lightDismiss?: boolean;
@@ -26,9 +27,10 @@ export function Dialog({
   title,
   description,
   children,
-  closeLabel = 'Închide',
+  closeLabel,
   lightDismiss = true,
 }: DialogProps) {
+  const { t } = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -101,7 +103,7 @@ export function Dialog({
               type="button"
               onClick={() => ref.current?.close()}
               className="-mr-2 -mt-1 inline-flex size-12 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-2"
-              aria-label={closeLabel}
+              aria-label={closeLabel ?? t('common.close')}
             >
               <IconX />
             </button>

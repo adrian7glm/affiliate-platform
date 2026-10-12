@@ -140,7 +140,7 @@ export class SubscriptionsService {
       .where(and(eq(platformPlans.isActive, true)))
       .orderBy(sql`${platformPlans.isDefault} desc`, asc(platformPlans.sortOrder))
       .limit(1);
-    if (!row) throw new DomainError('no plan is available for new operators yet');
+    if (!row) throw new DomainError('errors.platform.noDefaultPlan');
     return row;
   }
 
@@ -151,7 +151,9 @@ export class SubscriptionsService {
         .from(platformPlans)
         .where(eq(platformPlans.code, body.code));
       if (existing) {
-        throw new DomainError(`a plan with the code "${body.code}" already exists`, 409);
+        throw new DomainError('errors.platform.planCodeTaken', HttpStatus.CONFLICT, undefined, {
+          code: body.code,
+        });
       }
       if (body.isDefault) await tx.update(platformPlans).set({ isDefault: false });
       const [created] = await tx.insert(platformPlans).values(body).returning();
@@ -169,7 +171,7 @@ export class SubscriptionsService {
     await this.db.transaction(async (tx) => {
       const current = await this.plan(id, tx);
       if (body.isActive === false && (body.isDefault ?? current.isDefault)) {
-        throw new DomainError('the plan for new operators cannot be retired; choose another first');
+        throw new DomainError('errors.platform.defaultPlanRetire');
       }
       if (body.isDefault) {
         await tx.update(platformPlans).set({ isDefault: false }).where(ne(platformPlans.id, id));
@@ -199,7 +201,7 @@ export class SubscriptionsService {
   /** Subscribes a brand-new operator to a plan, starting with the plan's free trial. */
   async start(tx: DbOrTx, tenantId: string, options: StartSubscriptionOptions = {}) {
     const plan = options.planId ? await this.plan(options.planId, tx) : await this.defaultPlan(tx);
-    if (!plan.isActive) throw new DomainError('this plan is no longer offered');
+    if (!plan.isActive) throw new DomainError('errors.platform.planRetired');
     const now = this.clock.now();
     const trialDays = options.trialDays ?? plan.trialDays;
     await tx.insert(tenantSubscriptions).values({
@@ -327,9 +329,10 @@ export class SubscriptionsService {
       .where(and(eq(affiliates.tenantId, tenantId), ne(affiliates.status, 'suspended')));
     if ((count?.n ?? 0) >= row.max) {
       throw new DomainError(
-        `the ${row.plan} plan includes up to ${row.max} affiliates; upgrade the plan to add more`,
+        'errors.platform.affiliateLimit',
         HttpStatus.PAYMENT_REQUIRED,
         { limit: row.max },
+        { plan: row.plan, count: row.max },
       );
     }
   }
@@ -343,18 +346,14 @@ export class SubscriptionsService {
     const current = await this.row(tenantId);
     const stripeManaged = current?.stripeSubscriptionId != null;
     if (stripeManaged && (body.paidUntil || body.cancel)) {
-      throw new DomainError(
-        'Stripe manages this subscription: payments and cancellation happen in Stripe',
-      );
+      throw new DomainError('errors.platform.stripeManaged');
     }
 
     const plan = body.planId ? await this.plan(body.planId) : null;
-    if (plan && !plan.isActive) throw new DomainError('this plan is no longer offered');
+    if (plan && !plan.isActive) throw new DomainError('errors.platform.planRetired');
     if (plan && stripeManaged) {
       if (!plan.stripePriceId) {
-        throw new DomainError(
-          'this plan has no Stripe price; add one before moving a Stripe customer',
-        );
+        throw new DomainError('errors.platform.noStripePrice');
       }
       await this.billing.changePrice(current!.stripeSubscriptionId!, plan.stripePriceId);
     }
@@ -370,7 +369,7 @@ export class SubscriptionsService {
       if (body.priceMinorOverride !== undefined) patch.priceMinorOverride = body.priceMinorOverride;
       if (body.trialEndsAt) {
         const status = current ? current.status : 'trialing';
-        if (status !== 'trialing') throw new DomainError('only a trial can be extended');
+        if (status !== 'trialing') throw new DomainError('errors.platform.onlyTrialExtend');
         patch.trialEndsAt = new Date(body.trialEndsAt);
       }
       if (body.paidUntil) {
@@ -408,7 +407,7 @@ export class SubscriptionsService {
       current = (await this.row(tenantId))!;
     }
     const plan = await this.plan(planId ?? current.planId);
-    if (!plan.isActive) throw new DomainError('this plan is no longer offered');
+    if (!plan.isActive) throw new DomainError('errors.platform.planRetired');
 
     if (this.billing.name === 'manual') {
       if (plan.id !== current.planId) {
@@ -431,7 +430,7 @@ export class SubscriptionsService {
       return this.portal(tenantId);
     }
     if (!plan.stripePriceId) {
-      throw new DomainError('this plan cannot be paid by card yet; contact us');
+      throw new DomainError('errors.platform.noCardPayment');
     }
     const [tenant] = await this.db.select().from(tenants).where(eq(tenants.id, tenantId));
     const [owner] = await this.db
@@ -466,7 +465,7 @@ export class SubscriptionsService {
   async portal(tenantId: string): Promise<BillingRedirectDto> {
     const current = await this.row(tenantId);
     if (this.billing.name !== 'stripe' || !current?.stripeCustomerId) {
-      throw new DomainError('there is no card subscription to manage', HttpStatus.CONFLICT);
+      throw new DomainError('errors.platform.noCardSubscription', HttpStatus.CONFLICT);
     }
     return this.billing.createPortal(current.stripeCustomerId, `${this.config.WEB_URL}/o/billing`);
   }

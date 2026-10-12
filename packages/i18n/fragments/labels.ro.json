@@ -1,0 +1,85 @@
+{
+  "bookingStatus": {
+    "pending_payment": "Așteaptă plata",
+    "confirmed": "Confirmată",
+    "cancelled": "Anulată",
+    "refunded": "Rambursată",
+    "expired": "Expirată"
+  },
+  "bookingChannel": {
+    "link": "Link",
+    "qr": "Cod QR",
+    "affiliate_assisted": "Rezervare de afiliat",
+    "promo_code": "Cod promoțional",
+    "direct": "Direct"
+  },
+  "commissionStatus": { "pending": "În așteptare", "approved": "Aprobat", "paid": "Plătit" },
+  "commissionKind": { "sale": "Vânzare", "adjustment": "Ajustare", "reversal": "Anulare" },
+  "affiliateStatus": { "invited": "Invitat", "active": "Activ", "suspended": "Suspendat" },
+  "payoutStatus": { "draft": "Ciornă", "approved": "De plătit", "paid": "Plătit", "failed": "Eșuat" },
+  "payoutMethod": { "manual": "Manual", "stripe_connect": "Stripe Connect" },
+  "subscriptionStatus": {
+    "trialing": "Perioadă de probă",
+    "active": "Plătește",
+    "past_due": "Restanță",
+    "canceled": "Abonament oprit"
+  },
+  "tenantStatus": { "active": "Activ", "suspended": "Suspendat" },
+  "inviteStatus": {
+    "pending": "Trimisă",
+    "accepted": "Cont deschis",
+    "expired": "Expirată",
+    "revoked": "Anulată"
+  },
+  "onboarding": {
+    "product": {
+      "label": "Adaugă prima excursie",
+      "description": "Numele, durata, locul de îmbarcare și prețurile pe categorii.",
+      "cta": "Adaugă excursia"
+    },
+    "departures": {
+      "label": "Programează plecările",
+      "description": "Zilele, orele și locurile disponibile, sau conectează sistemul tău de rezervări.",
+      "cta": "Adaugă plecări"
+    },
+    "commission_plan": {
+      "label": "Stabilește comisionul afiliaților",
+      "description": "Un procent fix sau niveluri care cresc cu vânzările din lună.",
+      "cta": "Creează planul"
+    },
+    "affiliate": {
+      "label": "Invită primul afiliat",
+      "description": "Un recepționer sau concierge primește linkul și codul QR pe telefon.",
+      "cta": "Invită un afiliat"
+    },
+    "first_booking": {
+      "label": "Prima rezervare",
+      "description": "Când un turist rezervă prin afiliat sau pe pagina ta, pasul se bifează singur.",
+      "cta": "Vezi rezervările"
+    }
+  },
+  "tier": {
+    "fixed": "Câștigi {rate} din fiecare vânzare.",
+    "top": "Ai atins nivelul maxim: {rate} din fiecare vânzare.",
+    "nextSale": "Următoarea vânzare intră la {rate}.",
+    "salesToNext_one": "Încă o vânzare până la {rate}",
+    "salesToNext_few": "Încă {count} vânzări până la {rate}",
+    "salesToNext_other": "Încă {count} de vânzări până la {rate}",
+    "allSales": "Toate vânzările",
+    "fromSale": "De la vânzarea {from}",
+    "oneSale": "Vânzarea {from}",
+    "salesRange": "Vânzările {from}–{to}"
+  },
+  "planMode": {
+    "marginal": "Fiecare vânzare primește procentul nivelului în care intră. Numărătoarea începe de la zero în fiecare lună.",
+    "retroactive": "Când treci într-un nivel nou, procentul nou se aplică tuturor vânzărilor din luna respectivă. Numărătoarea începe de la zero în fiecare lună."
+  },
+  "tierEditor": {
+    "atLeastOne": "Adaugă cel puțin un nivel.",
+    "atMost": "Cel mult {count} de niveluri.",
+    "saleNumber": "Scrie numărul vânzării (1, 2, 3…).",
+    "greaterThan": "Trebuie să fie mai mare decât {previous}.",
+    "percent": "Scrie un procent între 0 și 100."
+  },
+  "greeting": { "morning": "Bună dimineața", "afternoon": "Bună ziua", "evening": "Bună seara" }
+}

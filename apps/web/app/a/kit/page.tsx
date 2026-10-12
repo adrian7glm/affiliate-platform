@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import { KitScreen } from './KitScreen';
+import { getServerT, serverLang } from '@/lib/i18n-server';
 
-export const metadata: Metadata = { title: 'Kit QR de tipărit' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerT(await serverLang());
+  return { title: t('kit.meta.title') };
+}
 
 export default async function KitPage({
   searchParams,

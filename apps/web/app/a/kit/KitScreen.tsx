@@ -6,11 +6,14 @@ import { Alert } from '@/components/Alert';
 import { useSession } from '@/components/AuthGate';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { SelectField } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconDownload, IconPrinter, IconShare } from '@/components/icons';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingBlock, Spinner } from '@/components/Spinner';
 import { affiliateApi } from '@/lib/endpoints';
 import { formatMoney, slugify } from '@/lib/format';
+import { getT } from '@/lib/i18n';
 import { jpegPdf } from '@/lib/pdf';
 import {
   KIT_FORMATS,
@@ -20,18 +23,23 @@ import {
   canvasBlob,
   displayUrl,
   kitFormat,
+  kitFormatTexts,
+  kitPrintTexts,
   loadLogo,
   normalizeColor,
   renderKitPage,
 } from '@/lib/qrKit';
 import { useAffiliateHome } from '@/lib/useAffiliateHome';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { linkTitle } from '../links/LinksScreen';
 
 /** Print resolution of the exported files; the on-screen preview is drawn lighter. */
 const PRINT_DPI = 300;
 const PREVIEW_DPI = 110;
-/** Label of the links the kit creates, so the affiliate can tell them apart. */
+/**
+ * Label of the links the kit creates, so the affiliate can tell them apart. Stored with the
+ * link and used to find it again, so it stays the same in every language.
+ */
 const KIT_LINK_LABEL = 'Kit QR';
 const ALL = '';
 
@@ -43,6 +51,12 @@ type Busy = 'pdf' | 'png' | 'share' | 'print' | null;
  */
 export function KitScreen({ linkId, format }: { linkId?: string; format?: string }) {
   const { membership } = useSession();
+  const i18n = useT();
+  const { t, lang, languages } = i18n;
+  // The materials can be printed in another language than the app (e.g. English for tourists).
+  const [kitLangChoice, setKitLang] = useState<string | null>(null);
+  const kitLang = kitLangChoice ?? lang;
+  const kitT = useMemo(() => (kitLang === lang ? i18n : getT(kitLang)), [kitLang, lang, i18n]);
   const home = useAffiliateHome();
   const links = useApi('affiliate-links', (signal) => affiliateApi.links({ signal }));
   const products = useApi('affiliate-products', (signal) => affiliateApi.products({ signal }));
@@ -89,9 +103,9 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
     affiliateApi
       .createLink({ productId, label: KIT_LINK_LABEL })
       .then((created) => links.setData((prev) => [created, ...(prev ?? [])]))
-      .catch((err) => setCreateError(errorMessageRo(err)))
+      .catch((err) => setCreateError(errorMessage(err, i18n)))
       .finally(() => setCreating(false));
-  }, [pinned, productId, links, link]);
+  }, [pinned, productId, links, link, i18n]);
 
   useEffect(() => {
     if (!branding?.logoUrl) {
@@ -118,14 +132,17 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
       productName: product?.name ?? null,
       priceText:
         product && product.fromMinor > 0
-          ? `de la / from ${formatMoney(product.fromMinor, product.currency)}`
+          ? kitT.t('kit.print.fromPrice', {
+              price: formatMoney(product.fromMinor, product.currency, kitT.lang),
+            })
           : null,
+      ...kitPrintTexts(kitT),
       qrUrl: link.qrUrl,
       displayUrl: displayUrl(link.url),
       color: normalizeColor(branding?.primaryColor),
       logo,
     };
-  }, [link, logoState, tenantName, product, branding?.primaryColor, logo]);
+  }, [link, logoState, tenantName, product, branding?.primaryColor, logo, kitT]);
 
   // Live preview.
   useEffect(() => {
@@ -139,13 +156,13 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
         setPreview(url);
       })
       .catch(() => {
-        if (!cancelled) setError('Previzualizarea nu a putut fi desenată pe acest telefon.');
+        if (!cancelled) setError(t('kit.previewFailed'));
       });
     return () => {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [spec, content]);
+  }, [spec, content, t]);
 
   // Print once the full-resolution image is in the page.
   useEffect(() => {
@@ -158,7 +175,8 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
     return () => window.removeEventListener('afterprint', after);
   }, [printUrl]);
 
-  const fileBase = `qr-${slugify(product?.name ?? tenantName) || 'afis'}-${spec.id}`;
+  const fileBase = `qr-${slugify(product?.name ?? tenantName) || 'kit'}-${spec.id}`;
+  const specTexts = kitFormatTexts(spec, i18n);
 
   async function exportFile(kind: 'pdf' | 'png'): Promise<File> {
     if (!content) throw new Error('not ready');
@@ -179,7 +197,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
       await action();
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') return;
-      setError('Fișierul nu a putut fi generat. Încearcă din nou.');
+      setError(t('kit.exportFailed'));
     } finally {
       setBusy(null);
     }
@@ -228,22 +246,24 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
 
       <div className="no-print">
         <PageHeader
-          title="Kit QR de tipărit"
-          description="Materiale gata de tipărit cu codul tău QR. Fiecare scanare și rezervare îți aduce comision."
+          title={t('kit.title')}
+          description={t('kit.description')}
           backHref="/a"
-          backLabel="Acasă"
+          backLabel={t('affiliate.nav.home')}
         />
       </div>
 
       {loading ? <LoadingBlock /> : null}
-      {home.error && !data ? <Alert tone="error">{errorMessageRo(home.error)}</Alert> : null}
+      {home.error && !data ? (
+        <Alert tone="error">{errorMessage(home.error, i18n)}</Alert>
+      ) : null}
 
       <div className="no-print flex flex-col gap-4">
-        <Card title="1. Excursia">
+        <Card title={t('kit.stepProduct')}>
           <fieldset className="flex flex-col gap-2">
-            <legend className="visually-hidden">Excursia de pe afiș</legend>
+            <legend className="visually-hidden">{t('kit.productLegend')}</legend>
             {[
-              { id: ALL, name: 'Toate excursiile', fromMinor: 0, currency: '' },
+              { id: ALL, name: t('kit.allProducts'), fromMinor: 0, currency: '' },
               ...(products.data ?? []),
             ].map((p) => (
               <label key={p.id || 'all'} className="choice">
@@ -261,7 +281,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
                   <span className="font-semibold">{p.name}</span>
                   {p.fromMinor > 0 ? (
                     <span className="shrink-0 text-sm">
-                      de la {formatMoney(p.fromMinor, p.currency)}
+                      {t('kit.fromPrice', { price: formatMoney(p.fromMinor, p.currency, lang) })}
                     </span>
                   ) : null}
                 </span>
@@ -269,17 +289,18 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
             ))}
           </fieldset>
           {products.error ? (
-            <p className="mt-2 text-sm text-danger-fg">{errorMessageRo(products.error)}</p>
+            <p className="mt-2 text-sm text-danger-fg">{errorMessage(products.error, i18n)}</p>
           ) : null}
           {link ? (
             <p className="mt-3 text-sm text-muted">
-              Link folosit: <strong className="text-fg">{linkTitle(link)}</strong> · {link.clicks}{' '}
-              accesări · {link.sales} vânzări
+              {t('kit.linkUsed')}{' '}
+              <strong className="text-fg">{linkTitle(link, i18n)}</strong>{' '}
+              {t('kit.linkStats', { clicks: link.clicks, sales: link.sales })}
             </p>
           ) : null}
           {creating ? (
             <p className="mt-3 flex items-center gap-2 text-sm text-muted" role="status">
-              <Spinner size={16} /> Pregătim un link pentru această excursie…
+              <Spinner size={16} /> {t('kit.creatingLink')}
             </p>
           ) : null}
           {createError ? (
@@ -289,10 +310,12 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
           ) : null}
         </Card>
 
-        <Card title="2. Formatul">
+        <Card title={t('kit.stepFormat')}>
           <fieldset className="grid grid-cols-2 gap-2">
-            <legend className="visually-hidden">Formatul materialului</legend>
-            {KIT_FORMATS.map((f) => (
+            <legend className="visually-hidden">{t('kit.formatLegend')}</legend>
+            {KIT_FORMATS.map((f) => {
+              const texts = kitFormatTexts(f, i18n);
+              return (
               <label key={f.id} className="choice">
                 <input
                   type="radio"
@@ -303,17 +326,34 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
                 />
                 <span className="choice-body h-full items-start! gap-2 py-3!">
                   <FormatThumb id={f.id} />
-                  <span className="font-semibold leading-tight">{f.label}</span>
-                  <span className="text-xs leading-snug opacity-80">{f.description}</span>
+                  <span className="font-semibold leading-tight">{texts.label}</span>
+                  <span className="text-xs leading-snug opacity-80">{texts.description}</span>
                 </span>
               </label>
-            ))}
+              );
+            })}
           </fieldset>
+          {languages.length > 1 ? (
+            <SelectField
+              label={t('kit.languageLabel')}
+              hint={t('kit.languageHint')}
+              name="kit-language"
+              className="mt-4"
+              value={kitLang}
+              onChange={(e) => setKitLang(e.target.value)}
+            >
+              {languages.map((l) => (
+                <option key={l.code} value={l.code} lang={l.code}>
+                  {l.name}
+                </option>
+              ))}
+            </SelectField>
+          ) : null}
         </Card>
 
         <section aria-labelledby="kit-preview-title" className="flex flex-col gap-3">
           <h2 id="kit-preview-title" className="text-lg font-semibold">
-            3. Previzualizare
+            {t('kit.stepPreview')}
           </h2>
           <div
             className="qr-surface relative mx-auto w-full overflow-hidden rounded-xl border border-line shadow-md"
@@ -323,7 +363,10 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={preview}
-                alt={`${spec.label}: ${product?.name ?? 'toate excursiile'}, cu codul QR`}
+                alt={t('kit.previewAlt', {
+                  format: specTexts.label,
+                  product: product?.name ?? t('kit.allProducts'),
+                })}
                 className="block h-full w-full"
               />
             ) : (
@@ -332,15 +375,15 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
               </div>
             )}
           </div>
-          <p className="text-sm text-muted">{spec.howTo}</p>
+          <p className="text-sm text-muted">{specTexts.howTo}</p>
           {logoState === 'failed' ? (
             <Alert tone="warning">
-              Logo-ul operatorului nu a putut fi încărcat, așa că apare numele lui.
+              {t('kit.logoFailed')}
             </Alert>
           ) : null}
           {!branding?.logoUrl && data ? (
             <p className="text-sm text-muted">
-              Când operatorul își adaugă logo-ul, acesta apare automat pe materiale.
+              {t('kit.logoMissing')}
             </p>
           ) : null}
         </section>
@@ -354,10 +397,10 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
             icon={<IconDownload />}
             disabled={!ready || !!busy}
             loading={busy === 'pdf'}
-            loadingText="Se pregătește PDF-ul…"
+            loadingText={t('kit.pdfPreparing')}
             onClick={() => void download('pdf')}
           >
-            Descarcă PDF
+            {t('kit.downloadPdf')}
           </Button>
           <div className="grid grid-cols-2 gap-2">
             <Button
@@ -367,7 +410,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
               loading={busy === 'png'}
               onClick={() => void download('png')}
             >
-              Imagine PNG
+              {t('kit.png')}
             </Button>
             <Button
               variant="secondary"
@@ -376,7 +419,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
               loading={busy === 'print'}
               onClick={() => void print()}
             >
-              Tipărește
+              {t('kit.printButton')}
             </Button>
           </div>
           {canShareFiles ? (
@@ -388,7 +431,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
               loading={busy === 'share'}
               onClick={() => void share()}
             >
-              Trimite PDF-ul (WhatsApp, e-mail, tipografie)
+              {t('kit.sharePdf')}
             </Button>
           ) : null}
         </div>

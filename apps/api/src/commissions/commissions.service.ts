@@ -77,10 +77,21 @@ function validatedRules(body: CreatePlanBody): CommissionPlan {
     body.kind === 'fixed'
       ? { kind: 'fixed', rateBps: body.rateBps, basis: body.basis }
       : { kind: 'tiered', mode: body.mode, tiers: body.tiers, basis: body.basis };
+  if (plan.kind === 'tiered') {
+    const tiers = plan.tiers;
+    if (tiers.length === 0)
+      throw new DomainError('errors.commissionPlan.noTiers', HttpStatus.BAD_REQUEST);
+    if (tiers[0]!.fromSale !== 1)
+      throw new DomainError('errors.commissionPlan.firstTier', HttpStatus.BAD_REQUEST);
+    if (tiers.some((tier, i) => i > 0 && tier.fromSale <= tiers[i - 1]!.fromSale))
+      throw new DomainError('errors.commissionPlan.tierOrder', HttpStatus.BAD_REQUEST);
+  }
   try {
     validatePlan(plan);
   } catch (error) {
-    throw new DomainError((error as Error).message, HttpStatus.BAD_REQUEST);
+    throw new DomainError('errors.commissionPlan.invalid', HttpStatus.BAD_REQUEST, {
+      reason: (error as Error).message,
+    });
   }
   return plan;
 }
@@ -253,10 +264,7 @@ export class CommissionsService implements OnModuleInit {
     return this.db.transaction(async (tx) => {
       const plan = await this.activePlan(tx, tenantId, planId);
       if (plan.isDefault) {
-        throw new DomainError(
-          'this is the default plan: make another plan the default first',
-          HttpStatus.CONFLICT,
-        );
+        throw new DomainError('errors.commissionPlan.isDefault', HttpStatus.CONFLICT);
       }
       const moved = await tx
         .update(affiliates)
@@ -283,7 +291,7 @@ export class CommissionsService implements OnModuleInit {
         ),
       )
       .for('update');
-    if (!plan) throw new NotFound('commission plan');
+    if (!plan) throw new NotFound('commissionPlan');
     return plan;
   }
 
@@ -299,7 +307,7 @@ export class CommissionsService implements OnModuleInit {
           isNull(commissionPlans.archivedAt),
         ),
       );
-    if (!plan) throw new NotFound('commission plan');
+    if (!plan) throw new NotFound('commissionPlan');
   }
 
   /** The rules that apply to an affiliate right now: override, own plan, or the operator default. */
@@ -786,7 +794,9 @@ export class CommissionsService implements OnModuleInit {
     const tenant = await this.tenants.get(tenantId);
     const { start, end } = periodRange(periodKey, tenant.timezone);
     if (this.clock.now() < end)
-      throw new DomainError(`${periodKey} is not over yet`, HttpStatus.CONFLICT);
+      throw new DomainError('errors.period.notOver', HttpStatus.CONFLICT, undefined, {
+        period: periodKey,
+      });
 
     let adjustmentsCreated = 0;
     const affiliateIds = await this.db

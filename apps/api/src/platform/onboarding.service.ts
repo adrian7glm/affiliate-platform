@@ -118,7 +118,7 @@ export class OnboardingService {
     actorUserId: string,
   ): Promise<OperatorInviteDto> {
     const plan = body.planId ? await this.subscriptions.plan(body.planId) : null;
-    if (plan && !plan.isActive) throw new DomainError('this plan is no longer offered');
+    if (plan && !plan.isActive) throw new DomainError('errors.platform.planRetired');
     const token = randomToken();
     const now = this.clock.now();
     const [row] = await this.db.transaction(async (tx) => {
@@ -164,7 +164,7 @@ export class OnboardingService {
       .set({ revokedAt: this.clock.now() })
       .where(and(eq(operatorInvites.id, id), isNull(operatorInvites.acceptedAt)))
       .returning();
-    if (!row) throw new NotFound('pending invitation');
+    if (!row) throw new NotFound('pendingInvitation');
     await this.subscriptions.audit(this.db, null, actorUserId, 'invite.revoked', 'invite', id, {});
     return this.inviteDto(row, null);
   }
@@ -178,9 +178,7 @@ export class OnboardingService {
     const status = this.inviteStatus(row);
     if (status !== 'pending') {
       throw new DomainError(
-        status === 'accepted'
-          ? 'this invitation was already used; sign in to open your account'
-          : 'this invitation is no longer valid; ask for a new one',
+        status === 'accepted' ? 'errors.platform.inviteUsed' : 'errors.platform.inviteInvalid',
         HttpStatus.GONE,
       );
     }
@@ -250,34 +248,32 @@ export class OnboardingService {
   /** Creates the operator account with the signed-in user as its owner. */
   async createTenant(userId: string, body: CreateTenantBody): Promise<CreateTenantResultDto> {
     if (!IANAZone.isValidZone(body.timezone)) {
-      throw new DomainError(`unknown timezone "${body.timezone}"`, HttpStatus.BAD_REQUEST);
+      throw new DomainError('errors.platform.unknownTimezone', HttpStatus.BAD_REQUEST, undefined, {
+        timezone: body.timezone,
+      });
     }
     const [user] = await this.db.select().from(users).where(eq(users.id, userId));
     if (!user) throw new NotFound('user');
 
     if (!body.inviteToken) {
       if (!this.config.SELF_SIGNUP && !user.isPlatformAdmin) {
-        throw new DomainError(
-          'new operators join by invitation; ask us for one',
-          HttpStatus.FORBIDDEN,
-        );
+        throw new DomainError('errors.platform.inviteOnly', HttpStatus.FORBIDDEN);
       }
       const [owned] = await this.db
         .select({ n: sql<number>`count(*)::int` })
         .from(memberships)
         .where(and(eq(memberships.userId, userId), eq(memberships.role, 'owner')));
       if ((owned?.n ?? 0) >= MAX_OWNED_TENANTS && !user.isPlatformAdmin) {
-        throw new DomainError('you already manage several operators; contact us to add more');
+        throw new DomainError('errors.platform.tooManyOperators');
       }
     }
 
     const created = await this.db.transaction(async (tx) => {
       const invite = body.inviteToken ? await this.pendingInvite(body.inviteToken, tx) : null;
       if (invite && invite.email !== user.email) {
-        throw new DomainError(
-          `this invitation is for ${invite.email}; sign in with that address`,
-          HttpStatus.FORBIDDEN,
-        );
+        throw new DomainError('errors.platform.inviteForOther', HttpStatus.FORBIDDEN, undefined, {
+          email: invite.email,
+        });
       }
 
       let slug: string;
@@ -287,9 +283,12 @@ export class OnboardingService {
           .from(tenants)
           .where(eq(tenants.slug, body.slug));
         if (clash) {
-          throw new DomainError(`the address "${body.slug}" is taken`, HttpStatus.CONFLICT, {
-            suggestion: await this.freeSlug(tx, body.slug),
-          });
+          throw new DomainError(
+            'errors.platform.slugTaken',
+            HttpStatus.CONFLICT,
+            { suggestion: await this.freeSlug(tx, body.slug) },
+            { slug: body.slug },
+          );
         }
         slug = body.slug;
       } else {

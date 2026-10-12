@@ -10,7 +10,9 @@ import { IconPlus, IconX } from '@/components/icons';
 import { isApiError } from '@/lib/api';
 import { operatorApi } from '@/lib/endpoints';
 import { minorToInput, parseMoneyInput, percentToBps, priceCode, slugify } from '@/lib/format';
-import { errorMessageRo } from '@/lib/useApi';
+import { errorMessage } from '@/lib/useApi';
+import type { Translator } from '@/lib/i18n';
+import { useT } from '@/components/I18nProvider';
 import { useOperator } from '../OperatorContext';
 
 interface PriceDraft {
@@ -29,8 +31,11 @@ function newPrice(label = '', amount = '', seats = '1', tax = '0', id?: string):
   return { key: `price-${priceCounter}`, id, label, amount, tax, seats };
 }
 
-function defaultPrices(): PriceDraft[] {
-  return [newPrice('Adult'), newPrice('Copil (3–12 ani)')];
+function defaultPrices(t: Translator['t']): PriceDraft[] {
+  return [
+    newPrice(t('catalog.productForm.defaultAdult')),
+    newPrice(t('catalog.productForm.defaultChild')),
+  ];
 }
 
 /**
@@ -49,6 +54,8 @@ export function ProductForm({
   framed?: boolean;
 }) {
   const { tenant } = useOperator();
+  const i18n = useT();
+  const { t } = i18n;
   const editing = !!product;
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
@@ -67,7 +74,7 @@ export function ProductForm({
             p.id,
           ),
         )
-      : defaultPrices(),
+      : defaultPrices(t),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -81,11 +88,11 @@ export function ProductForm({
     event.preventDefault();
     const next: Record<string, string> = {};
     const cleanSlug = slugify(slug || name);
-    if (!name.trim()) next.name = 'Scrie numele excursiei.';
-    if (!cleanSlug) next.slug = 'Adresa poate avea doar litere mici, cifre și cratime.';
+    if (!name.trim()) next.name = t('catalog.productForm.errName');
+    if (!cleanSlug) next.slug = t('catalog.productForm.errSlug');
     const minutes = Number(duration);
     if (!Number.isInteger(minutes) || minutes < 5 || minutes > 1440)
-      next.duration = 'Între 5 și 1440 de minute.';
+      next.duration = t('catalog.productForm.errDuration');
 
     const usedCodes = new Set<string>();
     const bodyPrices: (CreateProductBody['prices'][number] & { id?: string })[] = [];
@@ -93,11 +100,11 @@ export function ProductForm({
       const amountMinor = parseMoneyInput(price.amount, tenant.currency);
       const taxRateBps = price.tax.trim() ? percentToBps(price.tax) : 0;
       const seats = Number(price.seats);
-      if (!price.label.trim()) next[price.key] = 'Scrie denumirea biletului.';
-      else if (amountMinor === null) next[price.key] = 'Scrie prețul, ex. 120 sau 99,50.';
-      else if (taxRateBps === null) next[price.key] = 'TVA: un procent între 0 și 100.';
+      if (!price.label.trim()) next[price.key] = t('catalog.productForm.errPriceLabel');
+      else if (amountMinor === null) next[price.key] = t('catalog.productForm.errPriceAmount');
+      else if (taxRateBps === null) next[price.key] = t('catalog.productForm.errPriceTax');
       else if (!Number.isInteger(seats) || seats < 0 || seats > 10)
-        next[price.key] = 'Locuri ocupate: între 0 și 10.';
+        next[price.key] = t('catalog.productForm.errPriceSeats');
       else {
         let code = priceCode(price.label);
         for (let i = 2; usedCodes.has(code); i++)
@@ -113,8 +120,8 @@ export function ProductForm({
         });
       }
     }
-    if (prices.length === 0) next.prices = 'Adaugă cel puțin un preț.';
-    if (prices.length > 20) next.prices = 'Cel mult 20 de tipuri de bilet.';
+    if (prices.length === 0) next.prices = t('catalog.productForm.errPricesMin');
+    if (prices.length > 20) next.prices = t('catalog.productForm.errPricesMax');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -149,25 +156,27 @@ export function ProductForm({
         setSlugEdited(false);
         setDescription('');
         setMeetingPoint('');
-        setPrices(defaultPrices());
+        setPrices(defaultPrices(t));
       }
       onSaved(saved);
     } catch (err) {
       if (isApiError(err) && err.status === 409) {
-        setErrors({ slug: 'Altă excursie folosește deja această adresă. Alege alta.' });
+        setErrors({ slug: t('catalog.productForm.errSlugTaken') });
       } else {
-        setError(errorMessageRo(err));
+        setError(errorMessage(err, i18n));
       }
     } finally {
       setBusy(false);
     }
   }
 
+  const slugPath = `/b/${tenant.slug}/${slug || t('catalog.productForm.slugPlaceholder')}`;
+
   const fields = (
     <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
       <Field
-        label="Nume"
-        hint="Ex. „Plimbare cu barca la apus”."
+        label={t('catalog.productForm.name')}
+        hint={t('catalog.productForm.nameHint')}
         name="name"
         autoComplete="off"
         required
@@ -180,12 +189,8 @@ export function ProductForm({
         error={errors.name}
       />
       <Field
-        label="Adresa în pagina de rezervări"
-        hint={
-          editing
-            ? `/b/${tenant.slug}/${slug || 'nume-excursie'} · Linkurile și codurile QR ale afiliaților merg în continuare.`
-            : `/b/${tenant.slug}/${slug || 'nume-excursie'}`
-        }
+        label={t('catalog.productForm.slug')}
+        hint={editing ? t('catalog.productForm.slugHintEditing', { path: slugPath }) : slugPath}
         name="slug"
         autoComplete="off"
         autoCapitalize="off"
@@ -199,16 +204,16 @@ export function ProductForm({
         error={errors.slug}
       />
       <TextareaField
-        label="Descriere"
+        label={t('catalog.productForm.description')}
         name="description"
-        optionalText="opțional"
+        optionalText={t('catalog.productForm.optional')}
         maxLength={4000}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
-          label="Durata (minute)"
+          label={t('catalog.productForm.duration')}
           name="duration"
           inputMode="numeric"
           autoComplete="off"
@@ -218,9 +223,9 @@ export function ProductForm({
           error={errors.duration}
         />
         <Field
-          label="Punct de întâlnire"
+          label={t('catalog.productForm.meetingPoint')}
           name="meetingPoint"
-          optionalText="opțional"
+          optionalText={t('catalog.productForm.optional')}
           autoComplete="off"
           maxLength={400}
           value={meetingPoint}
@@ -229,18 +234,20 @@ export function ProductForm({
       </div>
 
       <fieldset className="min-w-0">
-        <legend className="mb-1.5 font-semibold">Prețuri ({tenant.currency})</legend>
+        <legend className="mb-1.5 font-semibold">
+          {t('catalog.productForm.pricesLegend', { currency: tenant.currency })}
+        </legend>
         <p className="mb-3 text-sm text-muted">
-          Prețul final plătit de client, cu TVA inclus. „Locuri” = câte locuri ocupă un bilet (0
-          pentru copii în brațe).
-          {editing ? ' Biletele șterse nu se mai vând, dar rămân pe rezervările făcute deja.' : ''}
+          {editing
+            ? t('catalog.productForm.pricesHelpEditing')
+            : t('catalog.productForm.pricesHelp')}
         </p>
         <ol className="flex flex-col gap-3">
           {prices.map((price, index) => (
             <li key={price.key} className="rounded-2xl border border-line p-3">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_5rem_5rem_auto]">
                 <label className="col-span-2 flex flex-col gap-1 sm:col-span-1">
-                  <span className="text-sm font-semibold">Bilet</span>
+                  <span className="text-sm font-semibold">{t('catalog.productForm.ticket')}</span>
                   <input
                     className={INPUT_CLASSES}
                     autoComplete="off"
@@ -252,7 +259,7 @@ export function ProductForm({
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">Preț</span>
+                  <span className="text-sm font-semibold">{t('catalog.productForm.price')}</span>
                   <input
                     className={INPUT_CLASSES}
                     inputMode="decimal"
@@ -263,7 +270,7 @@ export function ProductForm({
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">TVA %</span>
+                  <span className="text-sm font-semibold">{t('catalog.productForm.vat')}</span>
                   <input
                     className={INPUT_CLASSES}
                     inputMode="decimal"
@@ -273,7 +280,7 @@ export function ProductForm({
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">Locuri</span>
+                  <span className="text-sm font-semibold">{t('catalog.productForm.seats')}</span>
                   <input
                     className={INPUT_CLASSES}
                     inputMode="numeric"
@@ -290,7 +297,14 @@ export function ProductForm({
                     className="inline-flex size-12 items-center justify-center rounded-xl text-muted hover:bg-surface-2 disabled:invisible"
                     onClick={() => setPrices((prev) => prev.filter((p) => p.key !== price.key))}
                     disabled={prices.length === 1}
-                    aria-label={`Șterge prețul ${index + 1}${price.label ? ` (${price.label})` : ''}`}
+                    aria-label={
+                      price.label
+                        ? t('catalog.productForm.removePriceNamed', {
+                            number: index + 1,
+                            label: price.label,
+                          })
+                        : t('catalog.productForm.removePrice', { number: index + 1 })
+                    }
                   >
                     <IconX />
                   </button>
@@ -314,20 +328,20 @@ export function ProductForm({
           onClick={() => setPrices((prev) => [...prev, newPrice()])}
           disabled={prices.length >= 20}
         >
-          Adaugă un preț
+          {t('catalog.productForm.addPrice')}
         </Button>
       </fieldset>
 
       {error ? <Alert tone="error">{error}</Alert> : null}
-      <Button type="submit" size="lg" loading={busy} loadingText="Se salvează…">
-        {editing ? 'Salvează modificările' : 'Salvează excursia'}
+      <Button type="submit" size="lg" loading={busy} loadingText={t('catalog.productForm.saving')}>
+        {editing ? t('catalog.productForm.saveChanges') : t('catalog.productForm.saveTrip')}
       </Button>
     </form>
   );
 
   if (!framed) return fields;
   return (
-    <Card title="Excursie nouă" className="xl:order-1">
+    <Card title={t('catalog.productForm.newTrip')} className="xl:order-1">
       {fields}
     </Card>
   );

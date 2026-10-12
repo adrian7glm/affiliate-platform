@@ -1,6 +1,6 @@
 import type { TierProgressDto } from '@ap/contracts';
 import { formatBps } from './format';
-import { pluralRo } from './i18n';
+import type { Translator } from './i18n';
 
 export interface Tier {
   fromSale: number;
@@ -27,43 +27,43 @@ function clamp(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-/** "Încă 2 vânzări până la 25%" / "Ai atins nivelul maxim: 25%" / "Câștigi 10% din fiecare vânzare". */
+/** "2 more sales to reach 25%" / "You reached the top level: 25%" / "You earn 10% of every sale". */
 export function tierProgressSentence(
   progress: TierProgressDto,
   planKind: 'fixed' | 'tiered',
+  t: Translator,
 ): string {
+  const rate = (bps: number) => formatBps(bps, t.lang);
   if (planKind === 'fixed' || progress.tierCount <= 1) {
-    return `Câștigi ${formatBps(progress.currentRateBps)} din fiecare vânzare.`;
+    return t.t('labels.tier.fixed', { rate: rate(progress.currentRateBps) });
   }
   if (progress.salesToNextTier === null || progress.nextRateBps === null) {
-    return `Ai atins nivelul maxim: ${formatBps(progress.currentRateBps)} din fiecare vânzare.`;
+    return t.t('labels.tier.top', { rate: rate(progress.currentRateBps) });
   }
   if (progress.salesToNextTier <= 0) {
-    return `Următoarea vânzare intră la ${formatBps(progress.nextRateBps)}.`;
+    return t.t('labels.tier.nextSale', { rate: rate(progress.nextRateBps) });
   }
-  const sales =
-    progress.salesToNextTier === 1
-      ? 'o vânzare'
-      : pluralRo(progress.salesToNextTier, 'vânzare', 'vânzări');
-  return `Încă ${sales} până la ${formatBps(progress.nextRateBps)}`;
+  return t.t('labels.tier.salesToNext', {
+    count: progress.salesToNextTier,
+    rate: rate(progress.nextRateBps),
+  });
 }
 
-/** Rows for the plan explanation table: "Vânzările 1–5" → 10%. */
-export function tierRows(tiers: Tier[]): { label: string; rateBps: number }[] {
+/** Rows for the plan explanation table: "Sales 1–5" → 10%. */
+export function tierRows(tiers: Tier[], t: Translator): { label: string; rateBps: number }[] {
   const sorted = [...tiers].sort((a, b) => a.fromSale - b.fromSale);
   return sorted.map((tier, i) => {
     const next = sorted[i + 1];
     let label: string;
-    if (!next) label = i === 0 ? 'Toate vânzările' : `De la vânzarea ${tier.fromSale}`;
-    else if (next.fromSale - 1 === tier.fromSale) label = `Vânzarea ${tier.fromSale}`;
-    else label = `Vânzările ${tier.fromSale}–${next.fromSale - 1}`;
+    if (!next)
+      label =
+        i === 0 ? t.t('labels.tier.allSales') : t.t('labels.tier.fromSale', { from: tier.fromSale });
+    else if (next.fromSale - 1 === tier.fromSale)
+      label = t.t('labels.tier.oneSale', { from: tier.fromSale });
+    else label = t.t('labels.tier.salesRange', { from: tier.fromSale, to: next.fromSale - 1 });
     return { label, rateBps: tier.rateBps };
   });
 }
 
-export const PLAN_MODE_EXPLANATION: Record<'marginal' | 'retroactive', string> = {
-  marginal:
-    'Fiecare vânzare primește procentul nivelului în care intră. Numărătoarea începe de la zero în fiecare lună.',
-  retroactive:
-    'Când treci într-un nivel nou, procentul nou se aplică tuturor vânzărilor din luna respectivă. Numărătoarea începe de la zero în fiecare lună.',
-};
+export const planModeExplanation = (t: Translator, mode: 'marginal' | 'retroactive'): string =>
+  t.tk(`labels.planMode.${mode}`);

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { useT } from './I18nProvider';
 
 export interface BottomNavItem {
   href: string;
@@ -23,15 +24,16 @@ export function isActivePath(
 /** Fixed tab bar for the phone app, sized for thumbs and respecting the home indicator. */
 export function BottomNav({
   items,
-  label = 'Navigare principală',
+  label,
 }: {
   items: BottomNavItem[];
   label?: string;
 }) {
   const pathname = usePathname() ?? '';
+  const { t } = useT();
   return (
     <nav
-      aria-label={label}
+      aria-label={label ?? t('common.mainNav')}
       className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >

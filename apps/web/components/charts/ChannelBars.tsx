@@ -1,8 +1,10 @@
+'use client';
+
 import type { OperatorAnalyticsDto } from '@ap/contracts';
+import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { share } from '@/lib/analytics';
-import { pluralRo } from '@/lib/i18n';
-import { BOOKING_CHANNEL } from '@/lib/labels';
+import { bookingChannel } from '@/lib/labels';
 
 type Channel = OperatorAnalyticsDto['channels'][number];
 
@@ -11,6 +13,8 @@ type Channel = OperatorAnalyticsDto['channels'][number];
  * carries nothing. Promo codes only appear once someone has used one.
  */
 export function ChannelBars({ channels, currency }: { channels: Channel[]; currency: string }) {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const rows = channels.filter((c) => c.channel !== 'promo_code' || c.bookings > 0);
   const total = rows.reduce((sum, c) => sum + c.revenueMinor, 0);
   const max = Math.max(1, ...rows.map((c) => c.revenueMinor));
@@ -19,8 +23,13 @@ export function ChannelBars({ channels, currency }: { channels: Channel[]; curre
       {rows.map((c) => (
         <li key={c.channel}>
           <div className="flex items-baseline justify-between gap-3">
-            <span className="font-semibold">{BOOKING_CHANNEL[c.channel]}</span>
-            <MoneyText amountMinor={c.revenueMinor} currency={currency} className="font-semibold" />
+            <span className="font-semibold">{bookingChannel(i18n, c.channel)}</span>
+            <MoneyText
+              amountMinor={c.revenueMinor}
+              currency={currency}
+              lang={lang}
+              className="font-semibold"
+            />
           </div>
           <div className="mt-1.5 h-3 rounded-full bg-surface-2" aria-hidden="true">
             {c.revenueMinor > 0 ? (
@@ -31,8 +40,7 @@ export function ChannelBars({ channels, currency }: { channels: Channel[]; curre
             ) : null}
           </div>
           <p className="mt-1 text-sm text-muted">
-            {pluralRo(c.bookings, 'rezervare', 'rezervări')} · {share(c.revenueMinor, total)}% din
-            încasări
+            {t('charts.channelLine', { count: c.bookings, share: share(c.revenueMinor, total) })}
           </p>
         </li>
       ))}

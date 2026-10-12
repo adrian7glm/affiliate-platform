@@ -7,3 +7,4 @@ export * from './commissions';
 export * from './platform';
 export * from './notifications';
 export * from './billing';
+export * from './i18n';

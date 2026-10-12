@@ -2,17 +2,17 @@
 
 import type { OperatorAnalyticsDto } from '@ap/contracts';
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { compactMoney, dayTicks, niceMax } from '@/lib/analytics';
 import { formatDayLong } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
 
 type Day = OperatorAnalyticsDto['daily'][number];
 
 const SERIES = [
-  { key: 'affiliate', label: 'Prin afiliați', color: 'bg-viz-1' },
-  { key: 'direct', label: 'Direct', color: 'bg-viz-2' },
+  { key: 'affiliate', label: 'charts.affiliate', color: 'bg-viz-1' },
+  { key: 'direct', label: 'charts.direct', color: 'bg-viz-2' },
 ] as const;
 
 /**
@@ -29,9 +29,10 @@ export function DailySalesChart({
   daily: Day[];
   throughDate: string;
   currency: string;
-  /** Readout heading while no day is picked, e.g. "Toată luna". */
+  /** Readout heading while no day is picked, e.g. "Whole month" (translated by the caller). */
   summaryTitle: string;
 }) {
+  const { t, lang } = useT();
   const lastIndex = Math.max(
     0,
     daily.findIndex((d) => d.date === throughDate),
@@ -46,7 +47,7 @@ export function DailySalesChart({
   const elapsed = daily.slice(0, lastIndex + 1);
   const readout =
     active !== null && daily[active]
-      ? { title: formatDayLong(daily[active].date), ...daily[active] }
+      ? { title: formatDayLong(daily[active].date, lang), ...daily[active] }
       : {
           title: summaryTitle,
           bookings: elapsed.reduce((sum, d) => sum + d.bookings, 0),
@@ -91,16 +92,16 @@ export function DailySalesChart({
         <div aria-live="polite" className="rounded-2xl bg-surface-2 px-3 py-2">
           <p className="text-sm font-semibold text-muted first-letter:uppercase">{day.title}</p>
           <p className="text-2xl font-extrabold tracking-tight">
-            <MoneyText amountMinor={day.revenueMinor} currency={currency} />
+            <MoneyText amountMinor={day.revenueMinor} currency={currency} lang={lang} />
             <span className="ml-2 text-base font-semibold text-muted">
-              {pluralRo(day.bookings, 'rezervare', 'rezervări')}
+              {t('charts.bookings', { count: day.bookings })}
             </span>
           </p>
           <dl className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {SERIES.map((s) => (
               <div key={s.key} className="flex items-center gap-1.5">
                 <span aria-hidden="true" className={`h-0.5 w-3 rounded-full ${s.color}`} />
-                <dt className="text-muted">{s.label}</dt>
+                <dt className="text-muted">{t(s.label)}</dt>
                 <dd className="font-semibold">
                   <MoneyText
                     amountMinor={
@@ -109,6 +110,7 @@ export function DailySalesChart({
                         : day.revenueMinor - day.affiliateRevenueMinor
                     }
                     currency={currency}
+                    lang={lang}
                   />
                 </dd>
               </div>
@@ -129,7 +131,7 @@ export function DailySalesChart({
               className="absolute right-0 -translate-y-1/2 leading-none"
               style={{ top: `${i * 50}%` }}
             >
-              {compactMoney(value, currency)}
+              {compactMoney(value, currency, lang)}
             </span>
           ))}
         </div>
@@ -137,7 +139,7 @@ export function DailySalesChart({
         <div className="min-w-0 flex-1">
           <div
             role="group"
-            aria-label="Încasări pe zile"
+            aria-label={t('charts.revenueByDay')}
             className="relative h-44"
             onPointerLeave={onPointerLeave}
           >
@@ -153,7 +155,11 @@ export function DailySalesChart({
               {daily.map((d, i) => {
                 const future = i > lastIndex;
                 const direct = d.revenueMinor - d.affiliateRevenueMinor;
-                const label = `${formatDayLong(d.date)}: ${formatMoney(d.revenueMinor, currency)}, ${pluralRo(d.bookings, 'rezervare', 'rezervări')}`;
+                const label = t('charts.dayBar', {
+                  day: formatDayLong(d.date, lang),
+                  amount: formatMoney(d.revenueMinor, currency, lang),
+                  count: d.bookings,
+                });
                 return (
                   <button
                     key={d.date}
@@ -224,37 +230,37 @@ export function DailySalesChart({
         </div>
       </div>
 
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Legendă">
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label={t('charts.legend')}>
         {SERIES.map((s) => (
           <li key={s.key} className="flex items-center gap-1.5">
             <span aria-hidden="true" className={`size-3 rounded-sm ${s.color}`} />
-            {s.label}
+            {t(s.label)}
           </li>
         ))}
       </ul>
 
       <details className="group">
         <summary className="inline-flex min-h-12 cursor-pointer items-center font-semibold text-brand">
-          Vezi zilele ca tabel
+          {t('charts.showTable')}
         </summary>
         {withSales.length === 0 ? (
-          <p className="text-muted">Nicio vânzare în luna aceasta până acum.</p>
+          <p className="text-muted">{t('charts.noSales')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-muted">
                   <th scope="col" className="py-2 pr-3 font-semibold">
-                    Ziua
+                    {t('charts.colDay')}
                   </th>
                   <th scope="col" className="py-2 pr-3 text-right font-semibold">
-                    Rezervări
+                    {t('charts.colBookings')}
                   </th>
                   <th scope="col" className="py-2 pr-3 text-right font-semibold">
-                    Prin afiliați
+                    {t('charts.affiliate')}
                   </th>
                   <th scope="col" className="py-2 text-right font-semibold">
-                    Total
+                    {t('charts.colTotal')}
                   </th>
                 </tr>
               </thead>
@@ -262,14 +268,14 @@ export function DailySalesChart({
                 {withSales.map((d) => (
                   <tr key={d.date} className="border-b border-line last:border-0">
                     <th scope="row" className="py-2 pr-3 font-semibold first-letter:uppercase">
-                      {formatDayLong(d.date)}
+                      {formatDayLong(d.date, lang)}
                     </th>
                     <td className="py-2 pr-3 text-right tabular-nums">{d.bookings}</td>
                     <td className="py-2 pr-3 text-right">
-                      <MoneyText amountMinor={d.affiliateRevenueMinor} currency={currency} />
+                      <MoneyText amountMinor={d.affiliateRevenueMinor} currency={currency} lang={lang} />
                     </td>
                     <td className="py-2 text-right font-semibold">
-                      <MoneyText amountMinor={d.revenueMinor} currency={currency} />
+                      <MoneyText amountMinor={d.revenueMinor} currency={currency} lang={lang} />
                     </td>
                   </tr>
                 ))}

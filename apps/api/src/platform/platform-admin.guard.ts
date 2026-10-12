@@ -1,19 +1,14 @@
-import {
-  type CanActivate,
-  type ExecutionContext,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { type CanActivate, HttpStatus, Injectable, type ExecutionContext } from '@nestjs/common';
 import type { AppRequest } from '../common/auth';
+import { DomainError } from '../common/errors';
 
 /** Only the platform owner's accounts. Use after AuthGuard. */
 @Injectable()
 export class PlatformAdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const user = context.switchToHttp().getRequest<AppRequest>().user;
-    if (!user) throw new UnauthorizedException('sign in again');
-    if (!user.isPlatformAdmin) throw new ForbiddenException('you do not have access to this');
+    if (!user) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
+    if (!user.isPlatformAdmin) throw new DomainError('errors.auth.forbidden', HttpStatus.FORBIDDEN);
     return true;
   }
 }

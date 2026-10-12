@@ -93,7 +93,7 @@ export class CatalogService {
   async createProduct(tenantId: string, body: CreateProductBody): Promise<ProductDto> {
     const codes = new Set(body.prices.map((p) => p.code));
     if (codes.size !== body.prices.length) {
-      throw new DomainError('each price needs a different code', HttpStatus.BAD_REQUEST);
+      throw new DomainError('errors.catalog.duplicatePriceCode', HttpStatus.BAD_REQUEST);
     }
     const id = await this.db.transaction(async (tx) => {
       const [product] = await tx
@@ -109,10 +109,9 @@ export class CatalogService {
         .onConflictDoNothing()
         .returning({ id: products.id });
       if (!product)
-        throw new DomainError(
-          `a product with the address "${body.slug}" already exists`,
-          HttpStatus.CONFLICT,
-        );
+        throw new DomainError('errors.catalog.slugTaken', HttpStatus.CONFLICT, undefined, {
+          slug: body.slug,
+        });
       await tx
         .insert(productPrices)
         .values(body.prices.map((price) => ({ ...price, tenantId, productId: product.id })));
@@ -131,10 +130,7 @@ export class CatalogService {
     if (product.sourceId) {
       const { active, ...rest } = body;
       if (Object.values(rest).some((v) => v !== undefined)) {
-        throw new DomainError(
-          'this trip comes from your booking system: change it there',
-          HttpStatus.CONFLICT,
-        );
+        throw new DomainError('errors.catalog.managedBySource', HttpStatus.CONFLICT);
       }
       if (active !== undefined) {
         await this.db.update(products).set({ active }).where(eq(products.id, productId));
@@ -157,10 +153,9 @@ export class CatalogService {
             ),
           );
         if (taken) {
-          throw new DomainError(
-            `a product with the address "${body.slug}" already exists`,
-            HttpStatus.CONFLICT,
-          );
+          throw new DomainError('errors.catalog.slugTaken', HttpStatus.CONFLICT, undefined, {
+            slug: body.slug,
+          });
         }
         changes.slug = body.slug;
       }
@@ -199,7 +194,7 @@ export class CatalogService {
       if (!price.id) continue;
       if (!byId.has(price.id)) throw new NotFound('price');
       if (keptIds.has(price.id)) {
-        throw new DomainError('each price can appear only once', HttpStatus.BAD_REQUEST);
+        throw new DomainError('errors.catalog.duplicatePrice', HttpStatus.BAD_REQUEST);
       }
       keptIds.add(price.id);
     }
@@ -268,18 +263,12 @@ export class CatalogService {
     const tenant = await this.tenants.get(tenantId);
     const product = await this.product(tenantId, productId);
     if (product.sourceId) {
-      throw new DomainError(
-        'the departures of this trip come from your booking system',
-        HttpStatus.CONFLICT,
-      );
+      throw new DomainError('errors.catalog.departuresFromSource', HttpStatus.CONFLICT);
     }
     const from = DateTime.fromISO(body.fromDate, { zone: tenant.timezone });
     const to = DateTime.fromISO(body.toDate, { zone: tenant.timezone });
     if (!from.isValid || !to.isValid || to < from) {
-      throw new DomainError(
-        'the end date must be on or after the start date',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new DomainError('errors.catalog.endBeforeStart', HttpStatus.BAD_REQUEST);
     }
     const values: (typeof slots.$inferInsert)[] = [];
     for (let day = from; day <= to; day = day.plus({ days: 1 })) {
@@ -297,10 +286,9 @@ export class CatalogService {
       }
     }
     if (values.length > MAX_GENERATED_SLOTS) {
-      throw new DomainError(
-        `at most ${MAX_GENERATED_SLOTS} departures at once`,
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new DomainError('errors.catalog.tooManyDepartures', HttpStatus.BAD_REQUEST, undefined, {
+        max: MAX_GENERATED_SLOTS,
+      });
     }
     if (values.length === 0) return { created: 0 };
     const created = await this.db
@@ -414,10 +402,7 @@ export class CatalogService {
   private async assertOwnCalendar(tenantId: string, productId: string): Promise<void> {
     const product = await this.product(tenantId, productId);
     if (product.sourceId) {
-      throw new DomainError(
-        'the departures of this trip come from your booking system',
-        HttpStatus.CONFLICT,
-      );
+      throw new DomainError('errors.catalog.departuresFromSource', HttpStatus.CONFLICT);
     }
   }
 
@@ -478,7 +463,9 @@ function localRange(
   const from = DateTime.fromISO(fromDate, { zone: timezone }).startOf('day');
   const to = DateTime.fromISO(toDate, { zone: timezone }).plus({ days: 1 }).startOf('day');
   if (!from.isValid || !to.isValid || to <= from || to.diff(from, 'days').days > 62) {
-    throw new DomainError('choose a range of at most 62 days', HttpStatus.BAD_REQUEST);
+    throw new DomainError('errors.catalog.rangeTooLong', HttpStatus.BAD_REQUEST, undefined, {
+      days: 62,
+    });
   }
   return { from, to };
 }

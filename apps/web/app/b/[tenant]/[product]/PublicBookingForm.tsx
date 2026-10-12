@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { SlotPicker } from '@/components/booking/SlotPicker';
 import { TicketQuantities } from '@/components/booking/TicketQuantities';
@@ -25,7 +26,7 @@ import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/li
 import { nextDays } from '@/lib/dates';
 import { publicApi } from '@/lib/endpoints';
 import { formatMoney } from '@/lib/format';
-import { getT, type Lang } from '@/lib/i18n';
+import type { Lang } from '@/lib/i18n';
 import {
   parseTicketUrl,
   readCookie,
@@ -81,14 +82,13 @@ export function PublicBookingForm({
   tenantSlug,
   product,
   timezone,
-  lang,
 }: {
   tenantSlug: string;
   product: ProductDto;
   timezone: string;
-  lang: Lang;
 }) {
-  const t = getT(lang);
+  const t = useT();
+  const { lang } = t;
   const days = useMemo(() => nextDays(14, timezone), [timezone]);
   const slots = useApi(`public-slots:${tenantSlug}:${product.slug}`, (signal) =>
     publicApi.slots(
@@ -154,18 +154,18 @@ export function PublicBookingForm({
     const cleanPhone = phone.trim() ? normalizePhone(phone) : '';
     const cleanEmail = email.trim() ? normalizeEmail(email) : '';
     const nextErrors: DetailErrors = {};
-    if (!name.trim()) nextErrors.name = t.t('errorName');
-    if (cleanEmail && !isValidEmail(cleanEmail)) nextErrors.email = t.t('errorEmail');
-    if (cleanPhone && !isValidPhone(cleanPhone)) nextErrors.phone = t.t('errorPhone');
-    if (!cleanEmail && !cleanPhone) nextErrors.contact = t.t('errorContact');
+    if (!name.trim()) nextErrors.name = t.t('public.errorName');
+    if (cleanEmail && !isValidEmail(cleanEmail)) nextErrors.email = t.t('public.errorEmail');
+    if (cleanPhone && !isValidPhone(cleanPhone)) nextErrors.phone = t.t('public.errorPhone');
+    if (!cleanEmail && !cleanPhone) nextErrors.contact = t.t('public.errorContact');
 
-    const missingSlot = !slot ? t.t('chooseTimeFirst') : null;
+    const missingSlot = !slot ? t.t('public.chooseTimeFirst') : null;
     const ticketProblem = !slot
       ? null
       : ticketCount(quantities) === 0
-        ? t.t('selectTickets')
+        ? t.t('public.selectTickets')
         : seatsNeeded(product.prices, quantities) > slot.available
-          ? t.tp('notEnoughSeats', slot.available)
+          ? t.tp('public.notEnoughSeats', slot.available)
           : null;
 
     setSlotError(missingSlot);
@@ -195,17 +195,17 @@ export function PublicBookingForm({
     } catch (err) {
       setBusy(false);
       if (isApiError(err) && err.status === 409) {
-        setSubmitError(t.t('slotGone'));
+        setSubmitError(t.t('public.slotGone'));
         setSlotId(null);
         slots.reload();
       } else if (isApiError(err) && err.status === 502) {
-        setSubmitError(t.t('paymentUnavailable'));
+        setSubmitError(t.t('public.paymentUnavailable'));
       } else if (isApiError(err) && err.isNetwork) {
-        setSubmitError(t.t('errorNetwork'));
+        setSubmitError(t.t('common.errorNetwork'));
       } else if (isApiError(err) && err.isNotFound) {
-        setSubmitError(t.t('productNotFound'));
+        setSubmitError(t.t('public.productNotFound'));
       } else {
-        setSubmitError(t.t('errorGeneric'));
+        setSubmitError(t.t('common.errorGeneric'));
       }
       setAttempt((n) => n + 1);
     }
@@ -218,32 +218,31 @@ export function PublicBookingForm({
     <form ref={formRef} onSubmit={submit} noValidate className="flex flex-col gap-8">
       <section aria-labelledby="when-title" className="flex flex-col gap-3">
         <h2 id="when-title" className="text-xl font-bold">
-          1. {t.t('stepWhen')}
+          {t.t('public.numbered', { number: 1, title: t.t('public.stepWhen') })}
         </h2>
-        {slots.loading && !slots.data ? <LoadingBlock label={t.t('loading')} /> : null}
+        {slots.loading && !slots.data ? <LoadingBlock label={t.t('common.loading')} /> : null}
         {slots.error ? (
           <Alert
             tone="error"
             action={
               <Button variant="secondary" onClick={slots.reload}>
-                {t.t('retry')}
+                {t.t('common.retry')}
               </Button>
             }
           >
             {isApiError(slots.error) && slots.error.isNetwork
-              ? t.t('errorNetwork')
-              : t.t('errorGeneric')}
+              ? t.t('common.errorNetwork')
+              : t.t('common.errorGeneric')}
           </Alert>
         ) : null}
         {noDepartures ? (
-          <p className="rounded-2xl bg-surface-2 p-4 text-muted">{t.t('noDepartures')}</p>
+          <p className="rounded-2xl bg-surface-2 p-4 text-muted">{t.t('public.noDepartures')}</p>
         ) : null}
         {slots.data && !noDepartures ? (
           <SlotPicker
             days={days}
             slots={upcoming}
             timezone={timezone}
-            t={t}
             date={date}
             onDateChange={(day) => {
               setDate(day);
@@ -264,7 +263,7 @@ export function PublicBookingForm({
       {slot ? (
         <section aria-labelledby="tickets-title" className="flex flex-col gap-3">
           <h2 id="tickets-title" className="text-xl font-bold">
-            2. {t.t('stepTickets')}
+            {t.t('public.numbered', { number: 2, title: t.t('public.stepTickets') })}
           </h2>
           <TicketQuantities
             prices={product.prices}
@@ -275,7 +274,6 @@ export function PublicBookingForm({
               setTicketError(null);
             }}
             available={slot.available}
-            t={t}
             error={ticketError}
           />
         </section>
@@ -283,10 +281,10 @@ export function PublicBookingForm({
 
       <section aria-labelledby="details-title" className="flex flex-col gap-4">
         <h2 id="details-title" className="text-xl font-bold">
-          {slot ? 3 : 2}. {t.t('yourDetails')}
+          {t.t('public.numbered', { number: slot ? 3 : 2, title: t.t('public.yourDetails') })}
         </h2>
         <Field
-          label={t.t('name')}
+          label={t.t('public.name')}
           name="name"
           autoComplete="name"
           required
@@ -295,10 +293,10 @@ export function PublicBookingForm({
           error={errors.name}
         />
         <p id="contact-hint" className="text-muted">
-          {t.t('contactHint')}
+          {t.t('public.contactHint')}
         </p>
         <Field
-          label={t.t('email')}
+          label={t.t('public.email')}
           name="email"
           type="email"
           inputMode="email"
@@ -310,8 +308,8 @@ export function PublicBookingForm({
           error={errors.email ?? (errors.contact && !phone.trim() ? errors.contact : undefined)}
         />
         <Field
-          label={t.t('phone')}
-          hint={t.t('phoneHint')}
+          label={t.t('public.phone')}
+          hint={t.t('public.phoneHint')}
           name="phone"
           type="tel"
           inputMode="tel"
@@ -327,7 +325,7 @@ export function PublicBookingForm({
       <StickyActions>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm text-muted">{t.t('total')}</p>
+            <p className="text-sm text-muted">{t.t('public.total')}</p>
             <MoneyText
               amountMinor={total}
               currency={product.currency}
@@ -339,15 +337,15 @@ export function PublicBookingForm({
             type="submit"
             size="lg"
             loading={busy}
-            loadingText={t.t('redirecting')}
+            loadingText={t.t('public.redirecting')}
             className="min-w-0 flex-1 sm:flex-none"
           >
             {total > 0
-              ? t.t('payNow', { amount: formatMoney(total, product.currency, lang) })
-              : t.t('continue')}
+              ? t.t('public.payNow', { amount: formatMoney(total, product.currency, lang) })
+              : t.t('public.continue')}
           </Button>
         </div>
-        <p className="mt-2 text-center text-sm text-muted">{t.t('securePayment')}</p>
+        <p className="mt-2 text-center text-sm text-muted">{t.t('public.securePayment')}</p>
       </StickyActions>
     </form>
   );

@@ -8,27 +8,30 @@ import { Card } from '@/components/Card';
 import { Field } from '@/components/Field';
 import { IconCheck, IconExternal, IconImage, IconTicket } from '@/components/icons';
 import { PageHeader } from '@/components/PageHeader';
-import { BrandScope } from '@/components/public/PublicShell';
+import { BrandScope } from '@/components/public/PublicFrame';
 import { LoadingBlock } from '@/components/Spinner';
 import { StickyActions } from '@/components/StickyActions';
 import { brandPalette, contrastRatio, safeLogoUrl } from '@/lib/brandColors';
 import { operatorApi } from '@/lib/endpoints';
 import { formatMoney } from '@/lib/format';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { formatDuration } from '@/lib/i18n';
+import { errorMessage, useApi } from '@/lib/useApi';
+import { useT } from '@/components/I18nProvider';
 import { useOperator } from '../OperatorContext';
 import { LogoError, logoDataUrl } from './logo';
 
 /** Colors that work well for tourism brands; any other color can be picked too. */
+/** `name` is the key of the color's name in catalog.settings.colors. */
 const PRESETS = [
-  { hex: '#0369a1', name: 'Albastru mare' },
-  { hex: '#0f766e', name: 'Turcoaz' },
-  { hex: '#15803d', name: 'Verde delta' },
-  { hex: '#b45309', name: 'Chihlimbar' },
-  { hex: '#c2410c', name: 'Apus' },
-  { hex: '#be123c', name: 'Corai' },
-  { hex: '#7c3aed', name: 'Violet' },
-  { hex: '#1e293b', name: 'Bleumarin' },
-];
+  { hex: '#0369a1', name: 'sea' },
+  { hex: '#0f766e', name: 'turquoise' },
+  { hex: '#15803d', name: 'delta' },
+  { hex: '#b45309', name: 'amber' },
+  { hex: '#c2410c', name: 'sunset' },
+  { hex: '#be123c', name: 'coral' },
+  { hex: '#7c3aed', name: 'violet' },
+  { hex: '#1e293b', name: 'navy' },
+] as const;
 const PLATFORM_COLOR = '#0369a1';
 
 interface Draft {
@@ -64,12 +67,14 @@ function changes(saved: Draft, draft: Draft): UpdateSettingsBody {
 
 export function SettingsScreen() {
   const settings = useApi('operator-settings', (signal) => operatorApi.settings({ signal }));
+  const i18n = useT();
+  const { t } = i18n;
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Setări și aspect"
-        description="Cum arată pagina de rezervări și biletele clienților tăi, și cum se poate plăti."
+        title={t('catalog.settings.title')}
+        description={t('catalog.settings.description')}
       />
       {settings.loading && !settings.data ? <LoadingBlock /> : null}
       {settings.error ? (
@@ -77,11 +82,11 @@ export function SettingsScreen() {
           tone="error"
           action={
             <Button variant="secondary" onClick={settings.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(settings.error)}
+          {errorMessage(settings.error, i18n)}
         </Alert>
       ) : null}
       {settings.data ? (
@@ -103,6 +108,8 @@ function SettingsForm({
   onSaved: (settings: OperatorSettingsDto) => void;
 }) {
   const { dashboard } = useOperator();
+  const i18n = useT();
+  const { t } = i18n;
   const [saved, setSaved] = useState(() => draftOf(settings));
   const [draft, setDraft] = useState(saved);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -128,10 +135,10 @@ function SettingsForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next: Record<string, string> = {};
-    if (!draft.name.trim()) next.name = 'Scrie numele afacerii, așa cum îl văd clienții.';
+    if (!draft.name.trim()) next.name = t('catalog.settings.errName');
     const days = Number(draft.attributionWindowDays);
     if (!Number.isInteger(days) || days < 1 || days > 365) {
-      next.attributionWindowDays = 'Între 1 și 365 de zile.';
+      next.attributionWindowDays = t('catalog.settings.errDays');
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -144,10 +151,10 @@ function SettingsForm({
       setSaved(fresh);
       setDraft(fresh);
       onSaved(result);
-      setSuccess('Setările au fost salvate. Clienții văd noul aspect imediat.');
+      setSuccess(t('catalog.settings.saved'));
       if (result.name !== settings.name) dashboard.reload();
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
@@ -155,17 +162,15 @@ function SettingsForm({
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
-      {readOnly ? (
-        <Alert tone="info">Doar proprietarul contului poate schimba setările.</Alert>
-      ) : null}
+      {readOnly ? <Alert tone="info">{t('catalog.settings.ownerOnly')}</Alert> : null}
       <fieldset disabled={readOnly} className="contents">
         {/* Phones: the preview sits right under the color picker. Wide screens: beside the form. */}
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <Card title="Numele și logoul">
+          <Card title={t('catalog.settings.nameAndLogo')}>
             <div className="flex flex-col gap-5">
               <Field
-                label="Numele afacerii"
-                hint="Apare pe pagina de rezervări, pe bilete și în mesajele către clienți."
+                label={t('catalog.settings.businessName')}
+                hint={t('catalog.settings.businessNameHint')}
                 name="name"
                 autoComplete="organization"
                 maxLength={120}
@@ -182,8 +187,8 @@ function SettingsForm({
           </Card>
 
           <Card
-            title="Culoarea ta"
-            description="Pentru butoane și linkuri pe pagina de rezervări și pe bilete. Textul își ajustează automat nuanța ca să rămână ușor de citit."
+            title={t('catalog.settings.colorTitle')}
+            description={t('catalog.settings.colorDescription')}
           >
             <ColorPicker
               value={draft.primaryColor}
@@ -197,7 +202,7 @@ function SettingsForm({
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="preview-title" className="text-xl font-semibold">
-                Așa văd clienții
+                {t('catalog.settings.previewTitle')}
               </h2>
               <a
                 href={`/b/${encodeURIComponent(settings.slug)}`}
@@ -206,13 +211,13 @@ function SettingsForm({
                 className="inline-flex min-h-12 items-center gap-2 rounded-xl px-2 font-semibold text-brand hover:bg-brand-soft"
               >
                 <IconExternal size={20} />
-                Deschide pagina
+                {t('catalog.settings.openPage')}
               </a>
             </div>
             <Preview draft={draft} currency={settings.currency} />
           </section>
 
-          <Card title="Rezervări și plată">
+          <Card title={t('catalog.settings.bookingAndPayment')}>
             <div className="flex flex-col gap-5">
               <label className="flex items-start gap-3 rounded-2xl border border-line p-3">
                 <input
@@ -222,17 +227,13 @@ function SettingsForm({
                   onChange={(e) => update({ allowPayOnSite: e.target.checked })}
                 />
                 <span className="flex flex-col gap-0.5">
-                  <span className="font-semibold">Plata la îmbarcare</span>
-                  <span className="text-sm text-muted">
-                    Afiliații pot face rezervări pe care clientul le plătește la tine, când urcă la
-                    bord. Suma de încasat apare când scanezi biletul. Fără această opțiune, toate
-                    rezervările se plătesc online.
-                  </span>
+                  <span className="font-semibold">{t('catalog.settings.payOnSite')}</span>
+                  <span className="text-sm text-muted">{t('catalog.settings.payOnSiteHelp')}</span>
                 </span>
               </label>
               <Field
-                label="Cât timp contează un link (zile)"
-                hint="Dacă un client deschide linkul unui afiliat și rezervă în acest interval, rezervarea e a afiliatului. Uzual: 30 de zile."
+                label={t('catalog.settings.attribution')}
+                hint={t('catalog.settings.attributionHint')}
                 name="attributionWindowDays"
                 inputMode="numeric"
                 autoComplete="off"
@@ -244,11 +245,11 @@ function SettingsForm({
               />
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <dt className="text-muted">Monedă</dt>
+                  <dt className="text-muted">{t('catalog.settings.currency')}</dt>
                   <dd className="font-semibold">{settings.currency}</dd>
                 </div>
                 <div>
-                  <dt className="text-muted">Fus orar</dt>
+                  <dt className="text-muted">{t('catalog.settings.timezone')}</dt>
                   <dd className="font-semibold">{settings.timezone}</dd>
                 </div>
               </dl>
@@ -267,18 +268,18 @@ function SettingsForm({
                 type="submit"
                 size="lg"
                 loading={busy}
-                loadingText="Se salvează…"
+                loadingText={t('catalog.settings.saving')}
                 disabled={!dirty}
                 className="flex-1 sm:flex-none"
               >
-                Salvează
+                {t('catalog.settings.save')}
               </Button>
               {dirty ? (
                 <Button variant="ghost" onClick={() => setDraft(saved)} disabled={busy}>
-                  Renunță
+                  {t('catalog.settings.discard')}
                 </Button>
               ) : (
-                <p className="text-sm text-muted">Nicio modificare nesalvată.</p>
+                <p className="text-sm text-muted">{t('catalog.settings.noChanges')}</p>
               )}
             </div>
           </div>
@@ -297,6 +298,7 @@ function LogoPicker({
   name: string;
   onChange: (value: string | null) => void;
 }) {
+  const { t } = useT();
   const inputId = useId();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -309,9 +311,9 @@ function LogoPicker({
     setBusy(true);
     setError(null);
     try {
-      onChange(await logoDataUrl(file));
+      onChange(await logoDataUrl(file, t));
     } catch (err) {
-      setError(err instanceof LogoError ? err.message : 'Nu am putut încărca imaginea.');
+      setError(err instanceof LogoError ? err.message : t('catalog.settings.logoErrUpload'));
     } finally {
       setBusy(false);
     }
@@ -320,20 +322,22 @@ function LogoPicker({
   return (
     <div className="flex flex-col gap-2">
       <p className="font-semibold" id={`${inputId}-label`}>
-        Logo
+        {t('catalog.settings.logo')}
       </p>
-      <p className="text-sm text-muted">
-        Cel mai bine arată un logo lat, pe fundal transparent (PNG sau SVG). Îl micșorăm automat.
-      </p>
+      <p className="text-sm text-muted">{t('catalog.settings.logoHelp')}</p>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex h-20 w-48 items-center justify-center rounded-2xl border border-dashed border-line-strong bg-surface-2 p-2">
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={`Logo ${name}`} className="max-h-full max-w-full object-contain" />
+            <img
+              src={logo}
+              alt={t('catalog.settings.logoAlt', { name })}
+              className="max-h-full max-w-full object-contain"
+            />
           ) : (
             <span className="flex items-center gap-2 text-sm text-muted">
               <IconImage size={20} />
-              Fără logo
+              {t('catalog.settings.noLogo')}
             </span>
           )}
         </div>
@@ -342,7 +346,11 @@ function LogoPicker({
             htmlFor={inputId}
             className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-line-strong bg-surface px-4 font-semibold hover:bg-surface-2 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
           >
-            {busy ? 'Se pregătește…' : logo ? 'Schimbă logoul' : 'Alege logoul'}
+            {busy
+              ? t('catalog.settings.logoPreparing')
+              : logo
+                ? t('catalog.settings.changeLogo')
+                : t('catalog.settings.chooseLogo')}
             <input
               id={inputId}
               type="file"
@@ -355,7 +363,7 @@ function LogoPicker({
           </label>
           {logo ? (
             <Button variant="ghost" onClick={() => onChange(null)}>
-              Scoate logoul
+              {t('catalog.settings.removeLogo')}
             </Button>
           ) : null}
         </div>
@@ -376,6 +384,7 @@ function ColorPicker({
   value: string | null;
   onChange: (value: string | null) => void;
 }) {
+  const { t, tk } = useT();
   const customId = useId();
   const isPreset = value === null || PRESETS.some((p) => p.hex === value);
   const current = value ?? PLATFORM_COLOR;
@@ -386,21 +395,21 @@ function ColorPicker({
   return (
     <div className="flex flex-col gap-4">
       <fieldset className="min-w-0">
-        <legend className="visually-hidden">Alege o culoare</legend>
+        <legend className="visually-hidden">{t('catalog.settings.chooseColor')}</legend>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
           <SwatchOption
             name="brand-color"
-            label="Culoarea platformei"
+            label={t('catalog.settings.platformColor')}
             hex={PLATFORM_COLOR}
             checked={value === null}
             onSelect={() => onChange(null)}
-            caption="Implicit"
+            caption={t('catalog.settings.defaultColor')}
           />
           {PRESETS.filter((p) => p.hex !== PLATFORM_COLOR).map((preset) => (
             <SwatchOption
               key={preset.hex}
               name="brand-color"
-              label={preset.name}
+              label={tk(`catalog.settings.colors.${preset.name}`)}
               hex={preset.hex}
               checked={value === preset.hex}
               onSelect={() => onChange(preset.hex)}
@@ -410,7 +419,7 @@ function ColorPicker({
       </fieldset>
       <div className="flex flex-wrap items-center gap-3">
         <label htmlFor={customId} className="font-semibold">
-          Altă culoare
+          {t('catalog.settings.otherColor')}
         </label>
         <input
           id={customId}
@@ -430,7 +439,7 @@ function ColorPicker({
             className="inline-block size-4 rounded-full"
             style={{ background: light['--brand-strong'] }}
           />
-          Culoare deschisă: butoanele o păstrează, iar linkurile folosesc o nuanță mai închisă.
+          {t('catalog.settings.lightColorNote')}
         </p>
       ) : null}
     </div>
@@ -476,8 +485,9 @@ function SwatchOption({
 
 /** A small, live mock of the booking page and the ticket with the current draft. */
 function Preview({ draft, currency }: { draft: Draft; currency: string }) {
+  const { t, lang } = useT();
   const logo = safeLogoUrl(draft.logoUrl);
-  const name = draft.name.trim() || 'Numele afacerii';
+  const name = draft.name.trim() || t('catalog.settings.previewName');
   return (
     <BrandScope
       color={draft.primaryColor}
@@ -496,21 +506,25 @@ function Preview({ draft, currency }: { draft: Draft; currency: string }) {
             <span className="truncate font-bold">{name}</span>
           )}
           <span className="rounded-lg bg-brand-soft px-2 py-1 text-xs font-semibold uppercase text-brand-soft-fg">
-            ro
+            {lang}
           </span>
         </div>
         <div className="flex flex-col gap-4 p-4">
           <div className="rounded-2xl border border-line bg-surface p-4">
-            <p className="text-lg font-semibold">Plimbare cu barca la apus</p>
-            <p className="text-sm text-muted">1 h 30 min · Debarcaderul central</p>
+            <p className="text-lg font-semibold">{t('catalog.settings.sampleTrip')}</p>
+            <p className="text-sm text-muted">
+              {t('catalog.settings.sampleMeta', { duration: formatDuration(90, lang) })}
+            </p>
             <p className="mt-2">
-              de la <strong>{formatMoney(12000, currency)}</strong>
+              {t('catalog.settings.sampleFromBefore')}{' '}
+              <strong>{formatMoney(12000, currency, lang)}</strong>
+              {t('catalog.settings.sampleFromAfter')}
             </p>
             <p className="mt-1 text-sm font-semibold text-brand-strong underline">
-              Vezi detalii și orar
+              {t('catalog.settings.sampleDetails')}
             </p>
             <span className="mt-3 flex min-h-12 items-center justify-center rounded-2xl bg-brand font-semibold text-on-brand">
-              Rezervă acum
+              {t('catalog.settings.sampleBook')}
             </span>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4">
@@ -518,18 +532,16 @@ function Preview({ draft, currency }: { draft: Draft; currency: string }) {
               <IconTicket size={28} />
             </span>
             <div className="min-w-0">
-              <p className="text-sm text-muted">Bilet · {name}</p>
-              <p className="font-semibold">Sâmbătă, 18:00 · 2 adulți</p>
+              <p className="text-sm text-muted">{t('catalog.settings.sampleTicket', { name })}</p>
+              <p className="font-semibold">{t('catalog.settings.sampleSlot')}</p>
               <span className="mt-1 inline-flex rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-soft-fg">
-                Valabil
+                {t('catalog.settings.sampleValid')}
               </span>
             </div>
           </div>
         </div>
       </div>
-      <p className="visually-hidden">
-        Previzualizare: pagina de rezervări și biletul, cu numele, logoul și culoarea alese.
-      </p>
+      <p className="visually-hidden">{t('catalog.settings.previewSr')}</p>
     </BrandScope>
   );
 }

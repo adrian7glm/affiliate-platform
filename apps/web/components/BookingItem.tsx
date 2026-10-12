@@ -1,8 +1,10 @@
+'use client';
+
 import type { BookingDto } from '@ap/contracts';
 import type { ReactNode } from 'react';
 import { formatDateTime } from '@/lib/dates';
-import { pluralRo } from '@/lib/i18n';
-import { BOOKING_STATUS } from '@/lib/labels';
+import { bookingStatus } from '@/lib/labels';
+import { useT } from './I18nProvider';
 import { MoneyText } from './MoneyText';
 import { StatusChip } from './StatusChip';
 
@@ -21,7 +23,9 @@ export function BookingItem({
   /** Operator lists: show the booking's reference in the operator's own system. */
   showExternalRef?: boolean;
 }) {
-  const status = BOOKING_STATUS[booking.status];
+  const i18n = useT();
+  const { t, lang } = i18n;
+  const status = bookingStatus(i18n, booking.status);
   const ref = showExternalRef ? booking.externalRef : null;
   return (
     <article className="flex flex-col gap-2 py-3">
@@ -29,13 +33,14 @@ export function BookingItem({
         <div className="min-w-0">
           <h3 className="font-semibold">{booking.productName}</h3>
           <p className="text-sm text-muted">
-            <time dateTime={booking.startsAt}>{formatDateTime(booking.startsAt, timezone)}</time> ·{' '}
-            {pluralRo(booking.seats, 'loc', 'locuri')}
+            <time dateTime={booking.startsAt}>{formatDateTime(booking.startsAt, timezone, lang)}</time> ·{' '}
+            {t('common.seats', { count: booking.seats })}
           </p>
         </div>
         <MoneyText
           amountMinor={booking.totalMinor}
           currency={booking.currency}
+          lang={lang}
           className="font-semibold"
         />
       </div>
@@ -43,7 +48,7 @@ export function BookingItem({
         <span className="min-w-0 text-sm">
           {booking.customerName} <span className="text-muted">· {booking.reference}</span>
           {ref ? (
-            <span className="ml-1 text-xs text-muted">· Ref. sistem propriu: {ref}</span>
+            <span className="ml-1 text-xs text-muted">· {t('common.externalRef', { ref })}</span>
           ) : null}
         </span>
         <StatusChip tone={status.tone}>{status.label}</StatusChip>

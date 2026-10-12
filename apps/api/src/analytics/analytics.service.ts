@@ -46,7 +46,7 @@ export class AnalyticsService {
     const tz = tenant.timezone;
     const now = this.clock.now();
     if (periodKey > periodKeyFor(now, tz)) {
-      throw new DomainError('period is in the future', HttpStatus.BAD_REQUEST);
+      throw new DomainError('errors.period.future', HttpStatus.BAD_REQUEST);
     }
     const { start, end } = periodRange(periodKey, tz);
     const first = DateTime.fromJSDate(start, { zone: tz });

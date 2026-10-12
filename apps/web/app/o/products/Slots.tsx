@@ -11,18 +11,20 @@ import { LoadingBlock } from '@/components/Spinner';
 import { groupSlotsByDay } from '@/lib/booking';
 import { addDays, formatDayLabel, formatDayLong, formatTime, todayKey } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
+import { useT } from '@/components/I18nProvider';
 import { useOperator } from '../OperatorContext';
 
+/** ISO weekday (1 = Monday) and the key of its name in catalog.slots.weekdayShort/Long. */
 const WEEKDAYS = [
-  { value: 1, short: 'Lu', long: 'Luni' },
-  { value: 2, short: 'Ma', long: 'Marți' },
-  { value: 3, short: 'Mi', long: 'Miercuri' },
-  { value: 4, short: 'Jo', long: 'Joi' },
-  { value: 5, short: 'Vi', long: 'Vineri' },
-  { value: 6, short: 'Sâ', long: 'Sâmbătă' },
-  { value: 7, short: 'Du', long: 'Duminică' },
-];
+  { value: 1, key: 'mon' },
+  { value: 2, key: 'tue' },
+  { value: 3, key: 'wed' },
+  { value: 4, key: 'thu' },
+  { value: 5, key: 'fri' },
+  { value: 6, key: 'sat' },
+  { value: 7, key: 'sun' },
+] as const;
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -35,6 +37,8 @@ export function SlotsDialog({
   onCreated: (created: number) => void;
 }) {
   const { tenant } = useOperator();
+  const i18n = useT();
+  const { t, tk } = i18n;
   const today = todayKey(tenant.timezone);
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(addDays(today, 30));
@@ -48,7 +52,7 @@ export function SlotsDialog({
 
   function addTime() {
     if (!TIME_RE.test(newTime)) {
-      setErrors((e) => ({ ...e, times: 'Alege o oră validă, ex. 17:30.' }));
+      setErrors((e) => ({ ...e, times: t('catalog.slots.errTime') }));
       return;
     }
     setTimes((prev) => (prev.includes(newTime) ? prev : [...prev, newTime].sort()));
@@ -58,13 +62,12 @@ export function SlotsDialog({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next: Record<string, string> = {};
-    if (!fromDate || !toDate || toDate < fromDate)
-      next.dates = 'Data de sfârșit trebuie să fie după data de început.';
-    if (times.length === 0) next.times = 'Adaugă cel puțin o oră de plecare.';
-    if (weekdays.length === 0) next.weekdays = 'Alege cel puțin o zi a săptămânii.';
+    if (!fromDate || !toDate || toDate < fromDate) next.dates = t('catalog.slots.errDates');
+    if (times.length === 0) next.times = t('catalog.slots.errTimes');
+    if (weekdays.length === 0) next.weekdays = t('catalog.slots.errWeekdays');
     const seats = Number(capacity);
     if (!Number.isInteger(seats) || seats < 1 || seats > 10000)
-      next.capacity = 'Între 1 și 10000 de locuri.';
+      next.capacity = t('catalog.slots.errCapacity');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -80,7 +83,7 @@ export function SlotsDialog({
       });
       onCreated(result.created);
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
       setBusy(false);
     }
   }
@@ -89,7 +92,7 @@ export function SlotsDialog({
     <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
         <Field
-          label="De la"
+          label={t('catalog.slots.fromDate')}
           type="date"
           name="fromDate"
           required
@@ -98,7 +101,7 @@ export function SlotsDialog({
           onChange={(e) => setFromDate(e.target.value)}
         />
         <Field
-          label="Până la"
+          label={t('catalog.slots.toDate')}
           type="date"
           name="toDate"
           required
@@ -112,7 +115,7 @@ export function SlotsDialog({
       ) : null}
 
       <fieldset className="min-w-0">
-        <legend className="mb-1.5 font-semibold">Orele de plecare</legend>
+        <legend className="mb-1.5 font-semibold">{t('catalog.slots.timesLegend')}</legend>
         <ul className="mb-2 flex flex-wrap gap-2" aria-live="polite">
           {times.map((time) => (
             <li
@@ -123,8 +126,8 @@ export function SlotsDialog({
               <button
                 type="button"
                 className="inline-flex size-10 items-center justify-center rounded-full hover:bg-surface"
-                onClick={() => setTimes((prev) => prev.filter((t) => t !== time))}
-                aria-label={`Șterge ora ${time}`}
+                onClick={() => setTimes((prev) => prev.filter((x) => x !== time))}
+                aria-label={t('catalog.slots.removeTime', { time })}
               >
                 <IconX size={18} />
               </button>
@@ -133,7 +136,7 @@ export function SlotsDialog({
         </ul>
         <div className="flex gap-2">
           <label className="flex-1">
-            <span className="visually-hidden">Oră nouă</span>
+            <span className="visually-hidden">{t('catalog.slots.newTime')}</span>
             <input
               type="time"
               className={INPUT_CLASSES}
@@ -143,7 +146,7 @@ export function SlotsDialog({
             />
           </label>
           <Button variant="secondary" icon={<IconPlus />} onClick={addTime}>
-            Adaugă ora
+            {t('catalog.slots.addTime')}
           </Button>
         </div>
         {errors.times ? (
@@ -152,7 +155,7 @@ export function SlotsDialog({
       </fieldset>
 
       <fieldset className="min-w-0">
-        <legend className="mb-1.5 font-semibold">Zilele săptămânii</legend>
+        <legend className="mb-1.5 font-semibold">{t('catalog.slots.weekdaysLegend')}</legend>
         <div className="grid grid-cols-7 gap-1">
           {WEEKDAYS.map((day) => (
             <label key={day.value} className="choice">
@@ -171,9 +174,9 @@ export function SlotsDialog({
                 className="choice-body items-center px-1 text-center font-semibold"
                 aria-hidden="true"
               >
-                {day.short}
+                {tk(`catalog.slots.weekdayShort.${day.key}`)}
               </span>
-              <span className="visually-hidden">{day.long}</span>
+              <span className="visually-hidden">{tk(`catalog.slots.weekdayLong.${day.key}`)}</span>
             </label>
           ))}
         </div>
@@ -183,7 +186,7 @@ export function SlotsDialog({
       </fieldset>
 
       <Field
-        label="Locuri la fiecare plecare"
+        label={t('catalog.slots.capacity')}
         name="capacity"
         inputMode="numeric"
         autoComplete="off"
@@ -194,8 +197,14 @@ export function SlotsDialog({
       />
 
       {error ? <Alert tone="error">{error}</Alert> : null}
-      <Button type="submit" size="lg" block loading={busy} loadingText="Se creează…">
-        Creează plecările
+      <Button
+        type="submit"
+        size="lg"
+        block
+        loading={busy}
+        loadingText={t('catalog.slots.creating')}
+      >
+        {t('catalog.slots.create')}
       </Button>
     </form>
   );
@@ -203,16 +212,14 @@ export function SlotsDialog({
 
 const WINDOW_DAYS = 14;
 
-function seatsText(n: number): string {
-  return n === 1 ? '1 loc' : `${n} locuri`;
-}
-
 /**
  * Departures of a trip, two weeks at a time, grouped by day. For the operator's own calendar
  * each departure can be resized, closed or deleted, and a whole day closed at once (bad weather).
  */
 export function UpcomingSlots({ product }: { product: ProductDto }) {
   const { tenant } = useOperator();
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const today = todayKey(tenant.timezone);
   const [offset, setOffset] = useState(0);
   const from = addDays(today, offset);
@@ -243,12 +250,14 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
         closed,
       });
       merge(result.slots);
-      const label = formatDayLong(day);
+      const label = formatDayLong(day, lang);
       setNotice(
-        closed ? `Plecările din ${label} sunt închise.` : `Plecările din ${label} sunt redeschise.`,
+        closed
+          ? t('catalog.slots.dayClosed', { day: label })
+          : t('catalog.slots.dayReopened', { day: label }),
       );
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusyDay(null);
       setClosingDay(null);
@@ -261,19 +270,22 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
         type="button"
         onClick={() => setOffset((o) => Math.max(0, o - WINDOW_DAYS))}
         disabled={offset === 0}
-        aria-label="Cele 14 zile dinainte"
+        aria-label={tp('catalog.slots.prevDays', WINDOW_DAYS)}
         className="inline-flex size-12 items-center justify-center rounded-xl text-brand hover:bg-brand-soft disabled:opacity-40"
       >
         <IconChevronLeft />
       </button>
       <p className="text-center font-semibold" aria-live="polite">
-        {formatDayLabel(from).day} – {formatDayLabel(to).day}
+        {t('catalog.slots.range', {
+          from: formatDayLabel(from, lang).day,
+          to: formatDayLabel(to, lang).day,
+        })}
       </p>
       <button
         type="button"
         onClick={() => setOffset((o) => o + WINDOW_DAYS)}
         disabled={offset >= 365}
-        aria-label="Următoarele 14 zile"
+        aria-label={tp('catalog.slots.nextDays', WINDOW_DAYS)}
         className="inline-flex size-12 items-center justify-center rounded-xl text-brand hover:bg-brand-soft disabled:opacity-40"
       >
         <IconChevronRight />
@@ -282,18 +294,20 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
   );
 
   let body;
-  if (slots.loading && !slots.data) body = <LoadingBlock label="Se încarcă plecările…" />;
-  else if (slots.error) body = <Alert tone="error">{errorMessageRo(slots.error)}</Alert>;
+  if (slots.loading && !slots.data) body = <LoadingBlock label={t('catalog.slots.loading')} />;
+  else if (slots.error) body = <Alert tone="error">{errorMessage(slots.error, i18n)}</Alert>;
   else if (!slots.data || slots.data.length === 0) {
     body = (
-      <p className="rounded-2xl bg-surface-2 p-3 text-muted">Nicio plecare în aceste 14 zile.</p>
+      <p className="rounded-2xl bg-surface-2 p-3 text-muted">
+        {tp('catalog.slots.none', WINDOW_DAYS)}
+      </p>
     );
   } else {
     const byDay = groupSlotsByDay(slots.data, tenant.timezone);
     body = (
       <ul className="flex flex-col gap-2">
         {[...byDay.entries()].map(([day, list]) => {
-          const label = formatDayLabel(day);
+          const label = formatDayLabel(day, lang);
           const allClosed = list.every((s) => s.closed);
           return (
             <li key={day} className="rounded-2xl bg-surface-2 p-3">
@@ -306,7 +320,7 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
                     variant="ghost"
                     className="-my-1"
                     loading={busyDay === day}
-                    loadingText="Se salvează…"
+                    loadingText={t('catalog.slots.saving')}
                     onClick={() =>
                       allClosed
                         ? void setDayClosed(day, list, false)
@@ -315,7 +329,7 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
                           : void setDayClosed(day, list, true)
                     }
                   >
-                    {allClosed ? 'Redeschide ziua' : 'Închide ziua'}
+                    {allClosed ? t('catalog.slots.reopenDay') : t('catalog.slots.closeDay')}
                   </Button>
                 ) : null}
               </div>
@@ -326,10 +340,15 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
                       <span
                         className={`text-base font-semibold tabular-nums ${slot.closed ? 'line-through' : ''}`}
                       >
-                        {formatTime(slot.startsAt, tenant.timezone)}
+                        {formatTime(slot.startsAt, tenant.timezone, lang)}
                       </span>
                       <span className="text-xs text-muted">
-                        {slot.closed ? 'închisă' : `${slot.available}/${slot.capacity} libere`}
+                        {slot.closed
+                          ? t('catalog.slots.closedShort')
+                          : t('catalog.slots.free', {
+                              available: slot.available,
+                              capacity: slot.capacity,
+                            })}
                       </span>
                     </>
                   );
@@ -344,11 +363,16 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
                               ? 'border-dashed border-line-strong bg-transparent'
                               : 'border-line bg-surface'
                           }`}
-                          aria-label={`${formatTime(slot.startsAt, tenant.timezone)}, ${
+                          aria-label={
                             slot.closed
-                              ? 'închisă'
-                              : `${slot.available} din ${slot.capacity} locuri libere`
-                          }. Modifică plecarea`}
+                              ? t('catalog.slots.slotAriaClosed', {
+                                  time: formatTime(slot.startsAt, tenant.timezone, lang),
+                                })
+                              : tp('catalog.slots.slotAriaOpen', slot.capacity, {
+                                  time: formatTime(slot.startsAt, tenant.timezone, lang),
+                                  available: slot.available,
+                                })
+                          }
                         >
                           {content}
                         </button>
@@ -380,7 +404,10 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
         onClose={() => setEditing(null)}
         title={
           editing
-            ? `Plecarea de ${formatDayLong(todayKeyOf(editing.startsAt, tenant.timezone))}, ${formatTime(editing.startsAt, tenant.timezone)}`
+            ? t('catalog.slots.editTitle', {
+                day: formatDayLong(todayKeyOf(editing.startsAt, tenant.timezone), lang),
+                time: formatTime(editing.startsAt, tenant.timezone, lang),
+              })
             : ''
         }
       >
@@ -404,25 +431,29 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
       <Dialog
         open={!!closingDay}
         onClose={() => setClosingDay(null)}
-        title="Închizi ziua?"
+        title={t('catalog.slots.closeDayTitle')}
         description={
           closingDay
-            ? `Sunt ${seatsText(closingDay.list.reduce((n, s) => n + (s.closed ? 0 : s.reserved), 0))} rezervate în ${formatDayLong(closingDay.day)}. Biletele rămân valabile; anunță clienții dacă excursia nu mai are loc.`
+            ? tp(
+                'catalog.slots.closeDayDescription',
+                closingDay.list.reduce((n, s) => n + (s.closed ? 0 : s.reserved), 0),
+                { day: formatDayLong(closingDay.day, lang) },
+              )
             : undefined
         }
       >
         {closingDay ? (
           <div className="grid gap-2 sm:grid-cols-2">
             <Button variant="secondary" onClick={() => setClosingDay(null)}>
-              Renunță
+              {t('catalog.slots.cancel')}
             </Button>
             <Button
               variant="danger"
               loading={busyDay === closingDay.day}
-              loadingText="Se închide…"
+              loadingText={t('catalog.slots.closing')}
               onClick={() => void setDayClosed(closingDay.day, closingDay.list, true)}
             >
-              Închide vânzările
+              {t('catalog.slots.closeSales')}
             </Button>
           </div>
         ) : null}
@@ -445,6 +476,8 @@ function SlotEditor({
   slot: OperatorSlotDto;
   onDone: (message: string, updated?: OperatorSlotDto, removedId?: string) => void;
 }) {
+  const i18n = useT();
+  const { t, tp } = i18n;
   const [capacity, setCapacity] = useState(String(slot.capacity));
   const [capacityError, setCapacityError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -456,7 +489,7 @@ function SlotEditor({
     try {
       await action();
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
       setBusy(null);
     }
   }
@@ -465,11 +498,11 @@ function SlotEditor({
     event.preventDefault();
     const seats = Number(capacity);
     if (!Number.isInteger(seats) || seats < 1 || seats > 10000) {
-      setCapacityError('Între 1 și 10000 de locuri.');
+      setCapacityError(t('catalog.slots.errCapacity'));
       return;
     }
     if (seats < slot.reserved) {
-      setCapacityError(`Sunt deja ${seatsText(slot.reserved)} rezervate; nu poți scădea sub atât.`);
+      setCapacityError(tp('catalog.slots.errBelowReserved', slot.reserved));
       return;
     }
     setCapacityError(null);
@@ -478,7 +511,7 @@ function SlotEditor({
         slotIds: [slot.id],
         capacity: seats,
       });
-      onDone(`Plecarea are acum ${seatsText(result.slots[0]!.capacity)}.`, result.slots[0]);
+      onDone(tp('catalog.slots.capacitySaved', result.slots[0]!.capacity), result.slots[0]);
     });
   }
 
@@ -486,22 +519,24 @@ function SlotEditor({
     <div className="flex flex-col gap-5">
       <dl className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-2xl bg-surface-2 p-3">
-          <dt className="text-sm text-muted">Rezervate</dt>
+          <dt className="text-sm text-muted">{t('catalog.slots.reserved')}</dt>
           <dd className="text-xl font-bold tabular-nums">{slot.reserved}</dd>
         </div>
         <div className="rounded-2xl bg-surface-2 p-3">
-          <dt className="text-sm text-muted">Libere</dt>
+          <dt className="text-sm text-muted">{t('catalog.slots.available')}</dt>
           <dd className="text-xl font-bold tabular-nums">{slot.closed ? 0 : slot.available}</dd>
         </div>
         <div className="rounded-2xl bg-surface-2 p-3">
-          <dt className="text-sm text-muted">Stare</dt>
-          <dd className="mt-1 font-bold">{slot.closed ? 'Închisă' : 'Deschisă'}</dd>
+          <dt className="text-sm text-muted">{t('catalog.slots.status')}</dt>
+          <dd className="mt-1 font-bold">
+            {slot.closed ? t('catalog.slots.statusClosed') : t('catalog.slots.statusOpen')}
+          </dd>
         </div>
       </dl>
 
       <form onSubmit={saveCapacity} noValidate className="flex items-end gap-2">
         <Field
-          label="Locuri în total"
+          label={t('catalog.slots.totalSeats')}
           name="capacity"
           inputMode="numeric"
           autoComplete="off"
@@ -516,7 +551,7 @@ function SlotEditor({
           loadingText="…"
           className={capacityError ? 'mb-7' : ''}
         >
-          Salvează
+          {t('catalog.slots.save')}
         </Button>
       </form>
 
@@ -526,7 +561,7 @@ function SlotEditor({
         <Button
           variant="secondary"
           loading={busy === 'closed'}
-          loadingText="Se salvează…"
+          loadingText={t('catalog.slots.saving')}
           onClick={() =>
             void run('closed', async () => {
               const result = await operatorApi.updateSlots(product.id, {
@@ -534,39 +569,35 @@ function SlotEditor({
                 closed: !slot.closed,
               });
               onDone(
-                slot.closed
-                  ? 'Plecarea e din nou deschisă.'
-                  : 'Plecarea e închisă pentru rezervări noi.',
+                slot.closed ? t('catalog.slots.reopened') : t('catalog.slots.closedForNew'),
                 result.slots[0],
               );
             })
           }
         >
-          {slot.closed ? 'Redeschide plecarea' : 'Închide plecarea'}
+          {slot.closed ? t('catalog.slots.reopenSlot') : t('catalog.slots.closeSlot')}
         </Button>
         {slot.reserved > 0 && !slot.closed ? (
-          <p className="text-sm text-muted">
-            Închiderea oprește doar rezervările noi; biletele vândute rămân valabile.
-          </p>
+          <p className="text-sm text-muted">{t('catalog.slots.closeHint')}</p>
         ) : null}
         <Button
           variant="ghost"
           className="text-danger-fg hover:bg-danger-soft"
           loading={busy === 'delete'}
-          loadingText="Se șterge…"
+          loadingText={t('catalog.slots.deleting')}
           onClick={() =>
             void run('delete', async () => {
               const result = await operatorApi.deleteSlots(product.id, [slot.id]);
-              if (result.deleted === 1) onDone('Plecarea a fost ștearsă.', undefined, slot.id);
+              if (result.deleted === 1) onDone(t('catalog.slots.deleted'), undefined, slot.id);
               else
-                onDone('Plecarea are rezervări, așa că a fost închisă în loc să fie ștearsă.', {
+                onDone(t('catalog.slots.closedInstead'), {
                   ...slot,
                   closed: true,
                 });
             })
           }
         >
-          Șterge plecarea
+          {t('catalog.slots.deleteSlot')}
         </Button>
       </div>
     </div>

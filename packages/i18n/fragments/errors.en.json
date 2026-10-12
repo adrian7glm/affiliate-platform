@@ -1,0 +1,117 @@
+{
+  "validation": "Check these fields: {fields}",
+  "badRequest": "the request could not be read",
+  "internal": "something went wrong",
+  "notFound": {
+    "affiliate": "affiliate not found",
+    "availabilitySource": "availability source not found",
+    "booking": "booking not found",
+    "commissionPlan": "commission plan not found",
+    "departure": "departure not found",
+    "invitation": "invitation not found",
+    "language": "language not found",
+    "link": "link not found",
+    "operator": "operator not found",
+    "page": "page not found",
+    "payout": "payout not found",
+    "pendingInvitation": "pending invitation not found",
+    "plan": "plan not found",
+    "price": "price not found",
+    "product": "product not found",
+    "ticket": "ticket not found",
+    "user": "user not found"
+  },
+  "auth": {
+    "signInAgain": "sign in again",
+    "forbidden": "you do not have access to this",
+    "chooseOperator": "choose an operator first",
+    "chooseOperatorHeader": "choose an operator first (X-Tenant-Id)",
+    "operatorSuspended": "this operator account is suspended",
+    "affiliateSuspended": "your affiliate account is suspended",
+    "notAffiliate": "you are not an affiliate of this operator",
+    "tooManyCodes": "too many codes requested, try again later",
+    "codeExpired": "the code has expired, ask for a new one",
+    "wrongCode": "wrong code"
+  },
+  "webhooks": {
+    "invalidSignature": "invalid Stripe signature"
+  },
+  "booking": {
+    "invalidPaymentLink": "invalid payment link",
+    "affiliateInactive": "your affiliate account is not active",
+    "noPayOnSite": "this operator does not accept payment at boarding",
+    "tripUnavailable": "this trip is not available any more",
+    "unknownPrice": "unknown ticket type for this trip",
+    "noSeats": "choose at least one seat",
+    "paymentsUnavailable": "payments are unavailable right now, try again in a minute"
+  },
+  "departures": {
+    "closed": "this departure can no longer be booked",
+    "seatsLeft_one": "only {count} seat left on this departure",
+    "seatsLeft_other": "only {count} seats left on this departure"
+  },
+  "catalog": {
+    "duplicatePriceCode": "each price needs a different code",
+    "duplicatePrice": "each price can appear only once",
+    "slugTaken": "a product with the address \"{slug}\" already exists",
+    "managedBySource": "this trip comes from your booking system: change it there",
+    "departuresFromSource": "the departures of this trip come from your booking system",
+    "endBeforeStart": "the end date must be on or after the start date",
+    "tooManyDepartures": "at most {max} departures at once",
+    "rangeTooLong": "choose a range of at most {days} days"
+  },
+  "period": {
+    "monthFormat": "period must look like YYYY-MM",
+    "dateFormat": "{name} must look like YYYY-MM-DD",
+    "future": "period is in the future",
+    "notOver": "{period} is not over yet"
+  },
+  "commissionPlan": {
+    "isDefault": "this is the default plan: make another plan the default first",
+    "noTiers": "a tiered plan needs at least one tier",
+    "firstTier": "the first tier must start at sale 1",
+    "tierOrder": "tiers must be sorted by fromSale, strictly increasing",
+    "invalid": "these commission rules are not valid"
+  },
+  "affiliates": {
+    "notAccepted": "the affiliate has not accepted the invitation yet",
+    "inviteExpired": "this invitation has expired, ask the operator for a new one",
+    "alreadyAffiliate": "you are already an affiliate of this operator"
+  },
+  "platform": {
+    "noDefaultPlan": "no plan is available for new operators yet",
+    "planCodeTaken": "a plan with the code \"{code}\" already exists",
+    "defaultPlanRetire": "the plan for new operators cannot be retired; choose another first",
+    "planRetired": "this plan is no longer offered",
+    "stripeManaged": "Stripe manages this subscription: payments and cancellation happen in Stripe",
+    "noStripePrice": "this plan has no Stripe price; add one before moving a Stripe customer",
+    "onlyTrialExtend": "only a trial can be extended",
+    "noCardPayment": "this plan cannot be paid by card yet; contact us",
+    "noCardSubscription": "there is no card subscription to manage",
+    "inviteUsed": "this invitation was already used; sign in to open your account",
+    "inviteInvalid": "this invitation is no longer valid; ask for a new one",
+    "unknownTimezone": "unknown timezone \"{timezone}\"",
+    "inviteOnly": "new operators join by invitation; ask us for one",
+    "tooManyOperators": "you already manage several operators; contact us to add more",
+    "inviteForOther": "this invitation is for {email}; sign in with that address",
+    "slugTaken": "the address \"{slug}\" is taken",
+    "affiliateLimit_one": "the {plan} plan includes up to {count} affiliate; upgrade the plan to add more",
+    "affiliateLimit_other": "the {plan} plan includes up to {count} affiliates; upgrade the plan to add more"
+  },
+  "notifications": {
+    "invalidRecipient": "we could not send a message to {to}, check that it is correct",
+    "unavailable": "we could not send the message right now, please try again in a minute"
+  },
+  "sources": {
+    "httpsRequired": "the address must start with https://",
+    "connectUnreachable": "could not read the trips from {url}: operator system unreachable",
+    "connectStatus": "could not read the trips from {url}: operator system answered {status}",
+    "connectInvalid": "could not read the trips from {url}: the answer is not in the expected format",
+    "notAnswering": "{name} did not answer, try again in a minute"
+  },
+  "i18n": {
+    "languageExists": "the language {code} already exists",
+    "referenceRequired": "English is the reference language and cannot be hidden",
+    "bundledLanguage": "this language ships with the platform and cannot be deleted; hide it instead"
+  }
+}

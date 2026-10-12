@@ -1,11 +1,11 @@
 import {
-  Controller,
-  ForbiddenException,
-  Get,
-  HttpCode,
-  Inject,
   Param,
   ParseUUIDPipe,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
   Post,
   Query,
   UseGuards,
@@ -40,7 +40,7 @@ import {
 import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../common/clock';
 import { checkTicketLinkKey } from '../common/crypto';
-import { NotFound } from '../common/errors';
+import { DomainError, NotFound } from '../common/errors';
 import { parseDateParam } from '../common/period';
 import { TenantsService } from '../common/tenants';
 import { ZodBody } from '../common/validation';
@@ -132,7 +132,7 @@ export class PublicBookingController {
   ): Promise<void> {
     if (this.config.PAYMENTS_PROVIDER !== 'fake') throw new NotFound('page');
     if (typeof key !== 'string' || !checkTicketLinkKey(this.config.APP_SECRET, bookingId, key)) {
-      throw new ForbiddenException('invalid payment link');
+      throw new DomainError('errors.booking.invalidPaymentLink', HttpStatus.FORBIDDEN);
     }
     await this.bookingService.confirmPayment(bookingId, `fake_pi_${bookingId}`);
     if (this.config.WORKER_ENABLED) void this.outbox.drain();

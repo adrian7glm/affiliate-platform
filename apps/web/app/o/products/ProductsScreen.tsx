@@ -15,12 +15,15 @@ import { StatusChip } from '@/components/StatusChip';
 import { operatorApi } from '@/lib/endpoints';
 import { formatBps } from '@/lib/format';
 import { formatDuration } from '@/lib/i18n';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
+import { useT } from '@/components/I18nProvider';
 import { useOperator } from '../OperatorContext';
 import { ProductForm } from './ProductForm';
 import { SlotsDialog, UpcomingSlots } from './Slots';
 
 export function ProductsScreen() {
+  const i18n = useT();
+  const { t, tp } = i18n;
   const products = useApi('operator-products', (signal) => operatorApi.products({ signal }));
   const [slotsFor, setSlotsFor] = useState<ProductDto | null>(null);
   const [editing, setEditing] = useState<ProductDto | null>(null);
@@ -34,8 +37,8 @@ export function ProductsScreen() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Excursii și plecări"
-        description="Ce vinzi, la ce prețuri și când pleacă."
+        title={t('catalog.products.title')}
+        description={t('catalog.products.description')}
       />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
@@ -43,7 +46,7 @@ export function ProductsScreen() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section aria-labelledby="products-title" className="flex flex-col gap-3 xl:order-2">
           <h2 id="products-title" className="text-xl font-semibold">
-            Excursiile tale
+            {t('catalog.products.yourTrips')}
           </h2>
           {products.loading && !products.data ? <LoadingBlock /> : null}
           {products.error ? (
@@ -51,15 +54,15 @@ export function ProductsScreen() {
               tone="error"
               action={
                 <Button variant="secondary" onClick={products.reload}>
-                  Încearcă din nou
+                  {t('common.retry')}
                 </Button>
               }
             >
-              {errorMessageRo(products.error)}
+              {errorMessage(products.error, i18n)}
             </Alert>
           ) : null}
           {products.data?.length === 0 ? (
-            <p className="text-muted">Nu ai încă excursii. Adaugă prima excursie.</p>
+            <p className="text-muted">{t('catalog.products.empty')}</p>
           ) : null}
           <ul className="flex flex-col gap-3">
             {(products.data ?? []).map((product) => (
@@ -85,7 +88,7 @@ export function ProductsScreen() {
         <ProductForm
           onSaved={(product) => {
             products.setData((prev) => [...(prev ?? []), product]);
-            setNotice(`Excursia „${product.name}” a fost adăugată. Acum adaugă plecările.`);
+            setNotice(t('catalog.products.added', { name: product.name }));
             setSlotsFor(product);
           }}
         />
@@ -94,7 +97,7 @@ export function ProductsScreen() {
       <Dialog
         open={!!slotsFor}
         onClose={() => setSlotsFor(null)}
-        title={slotsFor ? `Plecări: ${slotsFor.name}` : ''}
+        title={slotsFor ? t('catalog.products.slotsDialogTitle', { name: slotsFor.name }) : ''}
       >
         {slotsFor ? (
           <SlotsDialog
@@ -103,10 +106,8 @@ export function ProductsScreen() {
             onCreated={(created) => {
               setNotice(
                 created === 0
-                  ? 'Plecările acestea existau deja.'
-                  : created === 1
-                    ? 'A fost creată o plecare.'
-                    : `Au fost create ${created} plecări.`,
+                  ? t('catalog.products.slotsExisted')
+                  : tp('catalog.products.slotsCreated', created),
               );
               setOpenSlots(slotsFor.id);
               setSlotsFor(null);
@@ -118,7 +119,7 @@ export function ProductsScreen() {
       <Dialog
         open={!!editing}
         onClose={() => setEditing(null)}
-        title={editing ? `Editează: ${editing.name}` : ''}
+        title={editing ? t('catalog.products.editTitle', { name: editing.name }) : ''}
       >
         {editing ? (
           <ProductForm
@@ -127,7 +128,7 @@ export function ProductsScreen() {
             framed={false}
             onSaved={(product) => {
               replace(product);
-              setNotice(`Modificările la „${product.name}” au fost salvate.`);
+              setNotice(t('catalog.products.saved', { name: product.name }));
               setEditing(null);
             }}
           />
@@ -153,6 +154,8 @@ function ProductCard({
   onChanged: (product: ProductDto, message: string) => void;
 }) {
   const { tenant } = useOperator();
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const external = product.managedExternally;
@@ -165,11 +168,11 @@ function ProductCard({
       onChanged(
         updated,
         updated.active
-          ? `„${updated.name}” se vinde din nou.`
-          : `„${updated.name}” e pe pauză: nu mai apare clienților și afiliaților. Biletele vândute rămân valabile.`,
+          ? t('catalog.products.resumed', { name: updated.name })
+          : t('catalog.products.paused', { name: updated.name }),
       );
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
@@ -182,24 +185,30 @@ function ProductCard({
           <div className="min-w-0">
             <h3 className="text-lg font-semibold">{product.name}</h3>
             <p className="text-sm text-muted">
-              {formatDuration(product.durationMinutes)} · /{product.slug}
+              {formatDuration(product.durationMinutes, lang)} · /{product.slug}
               {product.meetingPoint ? ` · ${product.meetingPoint}` : ''}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {product.active ? null : <StatusChip tone="warning">Pe pauză</StatusChip>}
-            {external ? <StatusChip tone="brand">Din sistemul tău</StatusChip> : null}
+            {product.active ? null : (
+              <StatusChip tone="warning">{t('catalog.products.pausedChip')}</StatusChip>
+            )}
+            {external ? (
+              <StatusChip tone="brand">{t('catalog.products.externalChip')}</StatusChip>
+            ) : null}
           </div>
         </div>
         <table className="w-full border-collapse text-left text-sm">
-          <caption className="visually-hidden">Prețuri pentru {product.name}</caption>
+          <caption className="visually-hidden">
+            {t('catalog.products.pricesCaption', { name: product.name })}
+          </caption>
           <thead>
             <tr className="border-b border-line text-muted">
               <th scope="col" className="py-1.5 font-semibold">
-                Bilet
+                {t('catalog.products.colTicket')}
               </th>
               <th scope="col" className="py-1.5 text-right font-semibold">
-                Preț
+                {t('catalog.products.colPrice')}
               </th>
             </tr>
           </thead>
@@ -211,15 +220,25 @@ function ProductCard({
                   {price.seats !== 1 ? (
                     <span className="text-muted">
                       {' '}
-                      · {price.seats === 0 ? 'fără loc' : `${price.seats} locuri`}
+                      ·{' '}
+                      {price.seats === 0
+                        ? t('catalog.products.noSeat')
+                        : tp('catalog.products.seats', price.seats)}
                     </span>
                   ) : null}
                   {price.taxRateBps > 0 ? (
-                    <span className="text-muted"> · TVA {formatBps(price.taxRateBps)}</span>
+                    <span className="text-muted">
+                      {' '}
+                      · {t('catalog.products.vat', { rate: formatBps(price.taxRateBps, lang) })}
+                    </span>
                   ) : null}
                 </th>
                 <td className="py-1.5 text-right">
-                  <MoneyText amountMinor={price.amountMinor} currency={product.currency} />
+                  <MoneyText
+                    amountMinor={price.amountMinor}
+                    currency={product.currency}
+                    lang={lang}
+                  />
                 </td>
               </tr>
             ))}
@@ -227,18 +246,18 @@ function ProductCard({
         </table>
         {external ? (
           <p className="text-sm text-muted">
-            Prețurile și plecările vin din{' '}
+            {t('catalog.products.externalBeforeLink')}{' '}
             <Link href="/o/sources" className="font-semibold text-brand underline">
-              sistemul tău de rezervări
+              {t('catalog.products.externalLink')}
             </Link>
-            .
+            {t('catalog.products.externalAfterLink')}
           </p>
         ) : null}
         {error ? <Alert tone="error">{error}</Alert> : null}
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {external ? null : (
             <Button icon={<IconCalendarPlus />} onClick={onAddSlots} className="col-span-2">
-              Adaugă plecări
+              {t('catalog.products.addSlots')}
             </Button>
           )}
           <Button
@@ -248,20 +267,20 @@ function ProductCard({
             onClick={onToggleSlots}
             className="col-span-2"
           >
-            {slotsOpen ? 'Ascunde plecările' : 'Vezi și modifică plecările'}
+            {slotsOpen ? t('catalog.products.hideSlots') : t('catalog.products.showSlots')}
           </Button>
           {external ? null : (
             <Button variant="secondary" onClick={onEdit}>
-              Editează
+              {t('catalog.products.edit')}
             </Button>
           )}
           <Button
             variant="secondary"
             onClick={() => void toggleActive()}
             loading={busy}
-            loadingText="Se salvează…"
+            loadingText={t('catalog.products.saving')}
           >
-            {product.active ? 'Pune pe pauză' : 'Reia vânzarea'}
+            {product.active ? t('catalog.products.pause') : t('catalog.products.resume')}
           </Button>
           {product.active ? (
             <a
@@ -271,7 +290,7 @@ function ProductCard({
               className="col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 font-semibold text-brand hover:bg-brand-soft"
             >
               <IconExternal />
-              Vezi pagina pentru clienți
+              {t('catalog.products.viewPublic')}
             </a>
           ) : null}
         </div>

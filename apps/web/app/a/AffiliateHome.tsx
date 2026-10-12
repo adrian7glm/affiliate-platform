@@ -9,6 +9,7 @@ import { BookingItem } from '@/components/BookingItem';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { EarningsChart } from '@/components/EarningsChart';
+import { useT } from '@/components/I18nProvider';
 import {
   IconCalendarPlus,
   IconChevronRight,
@@ -17,12 +18,13 @@ import {
   IconPrinter,
   IconQr,
 } from '@/components/icons';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { MoneyText } from '@/components/MoneyText';
 import { LoadingBlock } from '@/components/Spinner';
 import { tierProgressFraction, tierProgressSentence, tierRows } from '@/lib/commission';
-import { formatPeriod, greetingRo, todayKey } from '@/lib/dates';
+import { formatPeriod, greetingKey, todayKey } from '@/lib/dates';
 import { formatBps, formatMoney } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
+import type { Translator } from '@/lib/i18n';
 import {
   averageSaleMinor,
   bestPastMonth,
@@ -30,11 +32,13 @@ import {
   nextTierExtraMinor,
 } from '@/lib/insights';
 import { useAffiliateHome } from '@/lib/useAffiliateHome';
-import { errorMessageRo } from '@/lib/useApi';
+import { errorMessage } from '@/lib/useApi';
 
 export function AffiliateHome() {
   const { me, membership, memberships, switchTenant, logout } = useSession();
   const home = useAffiliateHome();
+  const i18n = useT();
+  const { t } = i18n;
   const data = home.data;
   const firstName = (data?.affiliate.displayName ?? me.user.name ?? '')
     .trim()
@@ -47,23 +51,30 @@ export function AffiliateHome() {
         <div className="min-w-0">
           <p className="text-muted">{data?.tenant.name ?? membership.tenantName}</p>
           <h1 className="text-2xl font-bold">
-            {greetingRo(new Date(), tz)}
-            {firstName ? `, ${firstName}` : ''}!
+            {firstName
+              ? t('affiliate.home.greetingName', {
+                  greeting: t(greetingKey(new Date(), tz)),
+                  name: firstName,
+                })
+              : t('affiliate.home.greeting', { greeting: t(greetingKey(new Date(), tz)) })}
           </h1>
         </div>
-        <Button
-          variant="ghost"
-          icon={<IconLogout />}
-          onClick={() => void logout()}
-          className="shrink-0 px-3"
-        >
-          Ieși
-        </Button>
+        <div className="flex shrink-0 items-center">
+          <LanguageSwitcher compact />
+          <Button
+            variant="ghost"
+            icon={<IconLogout />}
+            onClick={() => void logout()}
+            className="shrink-0 px-3"
+          >
+            {t('affiliate.home.logout')}
+          </Button>
+        </div>
       </header>
 
       {memberships.length > 1 ? (
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold">Operator</span>
+          <span className="text-sm font-semibold">{t('affiliate.home.operator')}</span>
           <select
             className="field-input block min-h-12 w-full rounded-xl border-2 border-line-strong bg-surface px-3.5 text-fg"
             value={membership.tenantId}
@@ -79,14 +90,14 @@ export function AffiliateHome() {
       ) : null}
 
       {/* The two things a receptionist opens the app for, one tap away. */}
-      <nav aria-label="Acțiuni rapide" className="grid grid-cols-2 gap-3">
+      <nav aria-label={t('affiliate.home.quickActions')} className="grid grid-cols-2 gap-3">
         <Link
           href="/a/book"
           className="flex min-h-28 flex-col justify-between rounded-3xl bg-brand p-4 text-on-brand shadow-sm hover:bg-brand-strong"
         >
           <IconCalendarPlus size={32} />
           <span className="text-left text-lg font-bold leading-tight">
-            Rezervă pentru un turist
+            {t('affiliate.home.bookForTourist')}
           </span>
         </Link>
         <Link
@@ -94,24 +105,24 @@ export function AffiliateHome() {
           className="flex min-h-28 flex-col justify-between rounded-3xl border-2 border-line-strong bg-surface p-4 hover:bg-surface-2"
         >
           <IconQr size={32} />
-          <span className="text-left text-lg font-bold leading-tight">Arată codul QR</span>
+          <span className="text-left text-lg font-bold leading-tight">{t('affiliate.home.showQr')}</span>
         </Link>
       </nav>
 
       {home.stale ? (
-        <Alert tone="warning">Fără conexiune. Vezi ultimele date salvate pe telefon.</Alert>
+        <Alert tone="warning">{t('affiliate.offlineStale')}</Alert>
       ) : null}
       {home.error && !data ? (
         <Alert
           tone="error"
-          title="Nu am putut încărca datele"
+          title={t('affiliate.loadFailed')}
           action={
             <Button variant="secondary" onClick={home.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(home.error)}
+          {errorMessage(home.error, i18n)}
         </Alert>
       ) : null}
       {!data && home.loading ? <LoadingBlock /> : null}
@@ -125,7 +136,7 @@ export function AffiliateHome() {
         >
           <span className="flex items-center gap-2">
             <IconPrinter />
-            Kit QR de tipărit: afișe, cort de masă, cartonașe
+            {t('affiliate.home.kitLink')}
           </span>
           <IconChevronRight />
         </Link>
@@ -135,7 +146,7 @@ export function AffiliateHome() {
         >
           <span className="flex items-center gap-2">
             <IconLink />
-            Linkurile mele și ce aduce fiecare
+            {t('affiliate.home.linksLink')}
           </span>
           <IconChevronRight />
         </Link>
@@ -145,6 +156,8 @@ export function AffiliateHome() {
 }
 
 function Dashboard({ data }: { data: AffiliateHomeDto }) {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const currency = data.tenant.currency;
   const tz = data.tenant.timezone;
   // Payloads saved by an older version of the app have no history.
@@ -161,65 +174,68 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
   return (
     <>
       {data.affiliate.status === 'suspended' ? (
-        <Alert tone="warning" title="Cont suspendat">
-          Operatorul a suspendat temporar contul tău. Linkurile și rezervările noi nu mai aduc
-          comision.
+        <Alert tone="warning" title={t('affiliate.home.suspendedTitle')}>
+          {t('affiliate.home.suspendedBody')}
         </Alert>
       ) : null}
 
       <Card>
         <div className="flex items-baseline justify-between gap-3">
-          <p className="font-semibold text-muted">Câștigul tău în {formatPeriod(data.periodKey)}</p>
+          <p className="font-semibold text-muted">
+            {t('affiliate.home.earningsIn', { period: formatPeriod(data.periodKey, lang) })}
+          </p>
           {daysLeft > 0 ? (
             <p className="shrink-0 text-sm text-muted">
-              {daysLeft === 1 ? 'ultima zi' : `încă ${daysLeft} zile`}
+              {t('affiliate.home.daysLeft', { count: daysLeft })}
             </p>
           ) : null}
         </div>
         <p className="mt-1 text-5xl font-extrabold tracking-tight">
-          <MoneyText amountMinor={data.earnings.monthTotalMinor} currency={currency} />
+          <MoneyText amountMinor={data.earnings.monthTotalMinor} currency={currency} lang={lang} />
         </p>
         <p className="mt-1 text-muted">
           {sales === 0
-            ? 'Nicio vânzare plătită încă luna aceasta.'
-            : `${pluralRo(sales, 'vânzare plătită', 'vânzări plătite')}${
-                current && current.salesMinor > 0
-                  ? `, în valoare de ${formatMoney(current.salesMinor, currency)}`
-                  : ''
-              }`}
+            ? t('affiliate.home.noSales')
+            : current && current.salesMinor > 0
+              ? t('affiliate.home.paidSalesWorth', {
+                  count: sales,
+                  amount: formatMoney(current.salesMinor, currency, lang),
+                })
+              : t('affiliate.home.paidSales', { count: sales })}
         </p>
 
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl bg-surface-2 p-3">
-            <dt className="text-muted">În așteptare</dt>
+            <dt className="text-muted">{t('affiliate.home.pending')}</dt>
             <dd className="text-base font-semibold">
-              <MoneyText amountMinor={data.earnings.pendingMinor} currency={currency} />
+              <MoneyText amountMinor={data.earnings.pendingMinor} currency={currency} lang={lang} />
             </dd>
-            <dd className="text-xs text-muted">excursia nu a avut loc</dd>
+            <dd className="text-xs text-muted">{t('affiliate.home.pendingHint')}</dd>
           </div>
           <div className="rounded-2xl bg-surface-2 p-3">
-            <dt className="text-muted">Aprobat</dt>
+            <dt className="text-muted">{t('affiliate.home.approved')}</dt>
             <dd className="text-base font-semibold">
-              <MoneyText amountMinor={data.earnings.approvedMinor} currency={currency} />
+              <MoneyText amountMinor={data.earnings.approvedMinor} currency={currency} lang={lang} />
             </dd>
-            <dd className="text-xs text-muted">turistul a mers</dd>
+            <dd className="text-xs text-muted">{t('affiliate.home.approvedHint')}</dd>
           </div>
         </dl>
         {data.earnings.payableMinor > 0 ? (
           <p className="mt-3 rounded-2xl bg-success-soft p-3 text-sm text-success-fg">
-            De încasat de la operator:{' '}
+            {t('affiliate.home.payable')}{' '}
             <MoneyText
               amountMinor={data.earnings.payableMinor}
               currency={currency}
+              lang={lang}
               className="font-bold"
             />
           </p>
         ) : null}
       </Card>
 
-      <Card title={tiered ? 'Nivelul tău de comision' : 'Comisionul tău'}>
+      <Card title={tiered ? t('affiliate.home.tierTitle') : t('affiliate.home.commissionTitle')}>
         <p className="text-lg font-semibold" id="tier-progress-label">
-          {tierProgressSentence(data.progress, data.plan.kind)}
+          {tierProgressSentence(data.progress, data.plan.kind, i18n)}
         </p>
         {tiered ? (
           <>
@@ -231,15 +247,18 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
             />
             {extra !== null ? (
               <p className="mt-2 text-sm">
-                La {formatBps(data.progress.nextRateBps!)}, o rezervare obișnuită îți aduce cu{' '}
-                <strong>{formatMoney(extra, currency)}</strong> mai mult.
+                {t('affiliate.home.extraBefore', {
+                  rate: formatBps(data.progress.nextRateBps!, lang),
+                })}
+                <strong>{formatMoney(extra, currency, lang)}</strong>
+                {t('affiliate.home.extraAfter')}
               </p>
             ) : null}
             <ol
               className="mt-4 grid gap-2"
               style={{ gridTemplateColumns: `repeat(${data.plan.tiers.length}, minmax(0, 1fr))` }}
             >
-              {tierRows(data.plan.tiers).map((row, i) => {
+              {tierRows(data.plan.tiers, i18n).map((row, i) => {
                 const state =
                   i === data.progress.tierIndex
                     ? 'current'
@@ -259,17 +278,17 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
                     }`}
                   >
                     <span className="text-xl font-extrabold tabular-nums">
-                      {formatBps(row.rateBps)}
+                      {formatBps(row.rateBps, lang)}
                     </span>
                     <span className="text-xs leading-tight">
-                      {tierShortLabel(data.plan.tiers, i)}
+                      {tierShortLabel(data.plan.tiers, i, i18n)}
                     </span>
                   </li>
                 );
               })}
             </ol>
             <p className="mt-3 text-sm text-muted">
-              Nivelul pornește de la zero pe 1 ale fiecărei luni.
+              {t('affiliate.home.tierResets')}
             </p>
           </>
         ) : null}
@@ -277,23 +296,28 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
 
       {history.length > 1 ? (
         <Card
-          title="Ultimele luni"
+          title={t('affiliate.home.recentMonths')}
           action={
             <Link
               href="/a/earnings"
               className="inline-flex min-h-12 items-center font-semibold text-brand"
             >
-              Detalii
+              {t('affiliate.home.details')}
             </Link>
           }
         >
           <EarningsChart history={history} currency={currency} />
           {previous ? (
             <p className="mt-3 text-sm text-muted">
-              Luna trecută: {formatMoney(previous.commissionMinor, currency)} din{' '}
-              {pluralRo(previous.paidSales, 'vânzare', 'vânzări')}.
+              {t('affiliate.home.lastMonth', {
+                count: previous.paidSales,
+                amount: formatMoney(previous.commissionMinor, currency, lang),
+              })}
               {best && best.periodKey !== previous.periodKey
-                ? ` Cea mai bună lună: ${formatPeriod(best.periodKey)}, ${formatMoney(best.commissionMinor, currency)}.`
+                ? ` ${t('affiliate.home.bestMonth', {
+                    period: formatPeriod(best.periodKey, lang),
+                    amount: formatMoney(best.commissionMinor, currency, lang),
+                  })}`
                 : ''}
             </p>
           ) : null}
@@ -301,19 +325,19 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
       ) : null}
 
       <Card
-        title="Rezervări recente"
+        title={t('affiliate.home.recentBookings')}
         action={
           <Link
             href="/a/book"
             className="inline-flex min-h-12 items-center font-semibold text-brand"
           >
-            Rezervă
+            {t('affiliate.home.book')}
           </Link>
         }
       >
         {data.recentBookings.length === 0 ? (
           <p className="text-muted">
-            Încă nu ai rezervări. Arată codul QR turiștilor sau rezervă direct pentru ei.
+            {t('affiliate.home.noBookings')}
           </p>
         ) : (
           <ul className="divide-y divide-line">
@@ -326,7 +350,7 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
         )}
         {!showAll && data.recentBookings.length > 5 ? (
           <Button variant="ghost" block onClick={() => setShowAll(true)} className="mt-1">
-            Arată toate cele {data.recentBookings.length}
+            {t('affiliate.home.showAll', { count: data.recentBookings.length })}
           </Button>
         ) : null}
       </Card>
@@ -335,11 +359,16 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
 }
 
 /** "1–3", "4–10", "11+" for the tier ladder. */
-function tierShortLabel(tiers: { fromSale: number }[], index: number): string {
+function tierShortLabel(
+  tiers: { fromSale: number }[],
+  index: number,
+  { t }: Translator,
+): string {
   const sorted = [...tiers].sort((a, b) => a.fromSale - b.fromSale);
   const tier = sorted[index]!;
   const next = sorted[index + 1];
-  if (!next) return `${tier.fromSale}+ vânzări`;
-  if (next.fromSale - 1 === tier.fromSale) return `vânzarea ${tier.fromSale}`;
-  return `${tier.fromSale}–${next.fromSale - 1} vânzări`;
+  if (!next) return t('affiliate.home.tierShortFrom', { from: tier.fromSale });
+  if (next.fromSale - 1 === tier.fromSale)
+    return t('affiliate.home.tierShortOne', { from: tier.fromSale });
+  return t('affiliate.home.tierShortRange', { from: tier.fromSale, to: next.fromSale - 1 });
 }

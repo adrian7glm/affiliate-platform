@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import { LoginFlow } from './LoginFlow';
+import { getServerT, serverLang } from '@/lib/i18n-server';
 
-export const metadata: Metadata = { title: 'Intră în cont' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerT(await serverLang());
+  return { title: t('auth.meta.login') };
+}
 
 export default async function LoginPage({
   searchParams,

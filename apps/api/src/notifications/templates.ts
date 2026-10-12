@@ -1,12 +1,12 @@
+import { type Translator, intlLocale } from '@ap/i18n';
 import { DateTime } from 'luxon';
 
 /**
- * Message templates, in Romanian and English. Every template renders an email (subject, plain text
- * and HTML) and an SMS. SMS text is kept to the GSM alphabet (no diacritics) so a message costs one
+ * Message templates. Every template renders an email (subject, plain text and HTML) and an SMS, in
+ * the language of the translator it gets; the texts live in the `email` section of the language
+ * files (packages/i18n/src/locales). SMS text is kept to the GSM alphabet (no diacritics) so a message costs one
  * segment per 160 characters instead of one per 70.
  */
-
-export type MessageLang = 'ro' | 'en';
 
 interface TripParams {
   tenantName: string;
@@ -56,23 +56,20 @@ export interface RenderedMessage {
   sms: string;
   /** QR payload to embed in the email as an inline image (cid:ticket-qr). */
   qr: string | null;
+  /** File name of the QR image attachment. */
+  qrFileName: string;
 }
 
 export const QR_CONTENT_ID = 'ticket-qr';
 
-/** Romanian for Romanian speakers, English for everyone else. */
-export function messageLang(locale: string | null | undefined): MessageLang {
-  return locale?.toLowerCase().startsWith('ro') ? 'ro' : 'en';
-}
-
 export function render<T extends TemplateName>(
   template: T,
-  locale: string,
+  t: Translator,
   params: TemplateParams[T],
 ): RenderedMessage {
-  const lang = messageLang(locale);
-  const renderer = renderers[template] as (p: TemplateParams[T], l: MessageLang) => Parts;
-  const parts = renderer(params, lang);
+  const renderer = renderers[template] as (p: TemplateParams[T], t: Translator) => Parts;
+  const parts = renderer(params, t);
+  const footer = t.t('email.footer');
   return {
     subject: parts.subject,
     text: [
@@ -80,13 +77,12 @@ export function render<T extends TemplateName>(
       ...parts.lines,
       ...(parts.details?.length ? ['', ...parts.details.map(([k, v]) => `${k}: ${v}`)] : []),
       '',
-      parts.footer ?? footer(lang),
-    ]
-      .filter((l) => l !== undefined)
-      .join('\n'),
-    html: layout(lang, parts),
+      footer,
+    ].join('\n'),
+    html: layout(t, parts, footer),
     sms: toGsm(parts.sms),
     qr: parts.qr ?? null,
+    qrFileName: `${t.t('email.ticket.qrFileName')}.png`,
   };
 }
 
@@ -101,255 +97,166 @@ interface Parts {
   action?: { label: string; url: string };
   details?: [string, string][];
   qr?: string | null;
-  footer?: string;
   sms: string;
 }
 
-const renderers: { [K in TemplateName]: (p: TemplateParams[K], lang: MessageLang) => Parts } = {
-  login_code: ({ code, webHost }, lang) =>
-    lang === 'ro'
-      ? {
-          subject: `Codul tău de conectare: ${code}`,
-          lines: [
-            `Codul tău de conectare este ${code}.`,
-            'Expiră în 10 minute. Nu îl da nimănui.',
-            '',
-            'Dacă nu ai cerut tu acest cod, ignoră mesajul.',
-          ],
-          // Last line in the WebOTP format, so Android phones can fill the code in automatically.
-          sms: `Codul tau de conectare: ${code}. Expira in 10 minute. Nu il da nimanui.\n\n@${webHost} #${code}`,
-        }
-      : {
-          subject: `Your sign-in code: ${code}`,
-          lines: [
-            `Your sign-in code is ${code}.`,
-            'It expires in 10 minutes. Do not share it with anyone.',
-            '',
-            'If you did not ask for this code, ignore this message.',
-          ],
-          sms: `Your sign-in code: ${code}. It expires in 10 minutes. Do not share it.\n\n@${webHost} #${code}`,
-        },
+const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) => Parts } = {
+  login_code: ({ code, webHost }, { t }) => ({
+    subject: t('email.loginCode.subject', { code }),
+    lines: [
+      t('email.loginCode.code', { code }),
+      t('email.loginCode.expires'),
+      '',
+      t('email.loginCode.ignore'),
+    ],
+    // Last line in the WebOTP format, so Android phones can fill the code in automatically.
+    sms: `${t('email.loginCode.sms', { code })}\n\n@${webHost} #${code}`,
+  }),
 
-  affiliate_invite: ({ tenantName, url }, lang) =>
-    lang === 'ro'
-      ? {
-          subject: `${tenantName} te invită în rețeaua de afiliați`,
-          brand: tenantName,
-          greeting: 'Bună,',
-          lines: [
-            `${tenantName} te invită să le recomanzi excursiile și să câștigi comision pentru fiecare rezervare.`,
-            `Activează-ți contul: ${url}`,
-            '',
-            'Invitația expiră în 14 zile.',
-          ],
-          action: { label: 'Activează contul', url },
-          sms: `${tenantName} te invita in reteaua lor de afiliati: recomanzi excursii si castigi comision. Activeaza contul: ${url}`,
-        }
-      : {
-          subject: `${tenantName} invites you to their affiliate network`,
-          brand: tenantName,
-          greeting: 'Hello,',
-          lines: [
-            `${tenantName} invites you to recommend their trips and earn a commission on every booking.`,
-            `Activate your account: ${url}`,
-            '',
-            'The invitation expires in 14 days.',
-          ],
-          action: { label: 'Activate your account', url },
-          sms: `${tenantName} invites you to their affiliate network: recommend trips and earn commission. Activate: ${url}`,
-        },
+  affiliate_invite: ({ tenantName: tenant, url }, { t }) => ({
+    subject: t('email.affiliateInvite.subject', { tenant }),
+    brand: tenant,
+    greeting: t('email.greeting'),
+    lines: [
+      t('email.affiliateInvite.intro', { tenant }),
+      t('email.affiliateInvite.activate', { url }),
+      '',
+      t('email.affiliateInvite.expires'),
+    ],
+    action: { label: t('email.affiliateInvite.action'), url },
+    sms: t('email.affiliateInvite.sms', { tenant, url }),
+  }),
 
-  operator_invite: ({ businessName, url }, lang) =>
-    lang === 'ro'
-      ? {
-          subject: `Invitație: ${businessName} pe platforma de afiliere`,
-          greeting: 'Bună,',
-          lines: [
-            `Ai fost invitat să deschizi contul de operator pentru ${businessName}.`,
-            `Deschide contul: ${url}`,
-            '',
-            'Linkul e valabil 30 de zile.',
-          ],
-          action: { label: 'Deschide contul', url },
-          sms: `Ai fost invitat sa deschizi contul de operator pentru ${businessName}: ${url}`,
-        }
-      : {
-          subject: `Invitation: ${businessName} on the affiliate platform`,
-          greeting: 'Hello,',
-          lines: [
-            `You have been invited to open the operator account for ${businessName}.`,
-            `Open your account: ${url}`,
-            '',
-            'The link is valid for 30 days.',
-          ],
-          action: { label: 'Open your account', url },
-          sms: `You have been invited to open the operator account for ${businessName}: ${url}`,
-        },
+  operator_invite: ({ businessName: business, url }, { t }) => ({
+    subject: t('email.operatorInvite.subject', { business }),
+    greeting: t('email.greeting'),
+    lines: [
+      t('email.operatorInvite.intro', { business }),
+      t('email.operatorInvite.open', { url }),
+      '',
+      t('email.operatorInvite.expires'),
+    ],
+    action: { label: t('email.operatorInvite.action'), url },
+    sms: t('email.operatorInvite.sms', { business, url }),
+  }),
 
-  new_operator: ({ name, contact, url }, lang) =>
-    lang === 'ro'
-      ? {
-          subject: `Operator nou: ${name}`,
-          lines: [`${name} și-a deschis contul (${contact}).`, `Vezi-l: ${url}`],
-          action: { label: 'Vezi operatorul', url },
-          sms: `Operator nou: ${name} (${contact}): ${url}`,
-        }
-      : {
-          subject: `New operator: ${name}`,
-          lines: [`${name} has opened an account (${contact}).`, `See it: ${url}`],
-          action: { label: 'See the operator', url },
-          sms: `New operator: ${name} (${contact}): ${url}`,
-        },
+  new_operator: ({ name, contact, url }, { t }) => ({
+    subject: t('email.newOperator.subject', { name }),
+    lines: [t('email.newOperator.intro', { name, contact }), t('email.newOperator.see', { url })],
+    action: { label: t('email.newOperator.action'), url },
+    sms: t('email.newOperator.sms', { name, contact, url }),
+  }),
 
-  payment_link: (p, lang) => {
-    const when = formatWhen(p.startsAt, p.timezone, lang);
+  payment_link: (p, tr) => {
+    const { t, lang } = tr;
+    const when = formatWhen(p.startsAt, p.timezone, tr);
     const total = formatMoney(p.totalMinor, p.currency, lang);
-    return lang === 'ro'
-      ? {
-          subject: `${p.tenantName}: finalizează plata pentru ${p.productName}`,
-          brand: p.tenantName,
-          greeting: 'Bună,',
-          lines: [
-            `Locurile tale la ${p.productName} (${when}) sunt rezervate temporar.`,
-            `Plătește ${total} ca să primești biletul: ${p.url}`,
-          ],
-          action: { label: `Plătește ${total}`, url: p.url },
-          details: [
-            ['Rezervare', p.reference],
-            ['Excursie', p.productName],
-            ['Data', when],
-            ['Total', total],
-          ],
-          sms: `${p.tenantName}: finalizeaza plata (${total}) pentru ${p.productName}, ${formatShort(p.startsAt, p.timezone, lang)}: ${p.url}`,
-        }
-      : {
-          subject: `${p.tenantName}: complete your payment for ${p.productName}`,
-          brand: p.tenantName,
-          greeting: 'Hello,',
-          lines: [
-            `Your seats on ${p.productName} (${when}) are held for you.`,
-            `Pay ${total} to get your ticket: ${p.url}`,
-          ],
-          action: { label: `Pay ${total}`, url: p.url },
-          details: [
-            ['Booking', p.reference],
-            ['Trip', p.productName],
-            ['Date', when],
-            ['Total', total],
-          ],
-          sms: `${p.tenantName}: complete your payment (${total}) for ${p.productName}, ${formatShort(p.startsAt, p.timezone, lang)}: ${p.url}`,
-        };
-  },
-
-  ticket: (p, lang) => {
-    const when = formatWhen(p.startsAt, p.timezone, lang);
-    const short = formatShort(p.startsAt, p.timezone, lang);
-    const due =
-      p.amountDueOnSiteMinor > 0 ? formatMoney(p.amountDueOnSiteMinor, p.currency, lang) : null;
-    if (lang === 'ro') {
-      const details: [string, string][] = [
-        ['Rezervare', p.reference],
-        ['Excursie', p.productName],
-        ['Data', when],
-        ['Locuri', String(p.seats)],
-      ];
-      if (p.meetingPoint) details.push(['Punct de întâlnire', p.meetingPoint]);
-      if (due) details.push(['De plată la îmbarcare', due]);
-      return {
-        subject: `Biletul tău: ${p.productName}, ${short}`,
-        brand: p.tenantName,
-        greeting: `Bună, ${p.customerName},`,
-        lines: [
-          `Rezervarea ta la ${p.tenantName} este confirmată.`,
-          'La îmbarcare arată codul QR din bilet.',
-          `Biletul tău: ${p.url}`,
-        ],
-        action: { label: 'Deschide biletul', url: p.url },
-        details,
-        qr: p.qrToken,
-        sms: `${p.tenantName}: biletul tau ${p.reference} pentru ${p.productName}, ${short}, ${p.seats} ${p.seats === 1 ? 'loc' : 'locuri'}${due ? `, de plata la imbarcare ${due}` : ''}. Arata codul QR la imbarcare: ${p.url}`,
-      };
-    }
-    const details: [string, string][] = [
-      ['Booking', p.reference],
-      ['Trip', p.productName],
-      ['Date', when],
-      ['Seats', String(p.seats)],
-    ];
-    if (p.meetingPoint) details.push(['Meeting point', p.meetingPoint]);
-    if (due) details.push(['To pay at boarding', due]);
+    const trip = { tenant: p.tenantName, product: p.productName };
     return {
-      subject: `Your ticket: ${p.productName}, ${short}`,
+      subject: t('email.paymentLink.subject', trip),
       brand: p.tenantName,
-      greeting: `Hello ${p.customerName},`,
+      greeting: t('email.greeting'),
       lines: [
-        `Your booking with ${p.tenantName} is confirmed.`,
-        'Show the QR code on your ticket at boarding.',
-        `Your ticket: ${p.url}`,
+        t('email.paymentLink.held', { ...trip, when }),
+        t('email.paymentLink.pay', { total, url: p.url }),
       ],
-      action: { label: 'Open your ticket', url: p.url },
-      details,
-      qr: p.qrToken,
-      sms: `${p.tenantName}: ticket ${p.reference} for ${p.productName}, ${short}, ${p.seats} ${p.seats === 1 ? 'seat' : 'seats'}${due ? `, to pay at boarding ${due}` : ''}. Show the QR code at boarding: ${p.url}`,
+      action: { label: t('email.paymentLink.action', { total }), url: p.url },
+      details: [
+        [t('email.details.booking'), p.reference],
+        [t('email.details.trip'), p.productName],
+        [t('email.details.date'), when],
+        [t('email.details.total'), total],
+      ],
+      sms: t('email.paymentLink.sms', {
+        ...trip,
+        total,
+        when: formatShort(p.startsAt, p.timezone, tr),
+        url: p.url,
+      }),
     };
   },
 
-  booking_cancelled: (p, lang) => {
-    const when = formatWhen(p.startsAt, p.timezone, lang);
-    const short = formatShort(p.startsAt, p.timezone, lang);
-    return lang === 'ro'
-      ? {
-          subject: `Rezervarea ${p.reference} a fost anulată`,
-          brand: p.tenantName,
-          greeting: 'Bună,',
-          lines: [
-            `Rezervarea ta ${p.reference} la ${p.productName} (${when}) a fost anulată de ${p.tenantName}. Biletul nu mai este valabil.`,
-            ...(p.refunded
-              ? ['Banii îți sunt returnați pe card. Pot apărea în cont în 5-10 zile lucrătoare.']
-              : []),
-          ],
-          sms: `${p.tenantName}: rezervarea ${p.reference} (${p.productName}, ${short}) a fost anulata.${p.refunded ? ' Banii iti sunt returnati pe card in 5-10 zile lucratoare.' : ''}`,
-        }
-      : {
-          subject: `Booking ${p.reference} has been cancelled`,
-          brand: p.tenantName,
-          greeting: 'Hello,',
-          lines: [
-            `Your booking ${p.reference} for ${p.productName} (${when}) has been cancelled by ${p.tenantName}. The ticket is no longer valid.`,
-            ...(p.refunded
-              ? [
-                  'Your money is being refunded to your card. It can take 5-10 business days to appear.',
-                ]
-              : []),
-          ],
-          sms: `${p.tenantName}: booking ${p.reference} (${p.productName}, ${short}) has been cancelled.${p.refunded ? ' Your money is refunded to your card in 5-10 business days.' : ''}`,
-        };
+  ticket: (p, tr) => {
+    const { t, lang } = tr;
+    const when = formatWhen(p.startsAt, p.timezone, tr);
+    const short = formatShort(p.startsAt, p.timezone, tr);
+    const due =
+      p.amountDueOnSiteMinor > 0 ? formatMoney(p.amountDueOnSiteMinor, p.currency, lang) : null;
+    const details: [string, string][] = [
+      [t('email.details.booking'), p.reference],
+      [t('email.details.trip'), p.productName],
+      [t('email.details.date'), when],
+      [t('email.details.seats'), String(p.seats)],
+    ];
+    if (p.meetingPoint) details.push([t('email.details.meetingPoint'), p.meetingPoint]);
+    if (due) details.push([t('email.details.dueOnSite'), due]);
+    const sms = {
+      tenant: p.tenantName,
+      reference: p.reference,
+      product: p.productName,
+      when: short,
+      seats: t('email.seats', { count: p.seats }),
+      url: p.url,
+    };
+    return {
+      subject: t('email.ticket.subject', { product: p.productName, when: short }),
+      brand: p.tenantName,
+      greeting: t('email.greetingName', { name: p.customerName }),
+      lines: [
+        t('email.ticket.confirmed', { tenant: p.tenantName }),
+        t('email.ticket.showQr'),
+        t('email.ticket.link', { url: p.url }),
+      ],
+      action: { label: t('email.ticket.action'), url: p.url },
+      details,
+      qr: p.qrToken,
+      sms: due ? t('email.ticket.smsDue', { ...sms, due }) : t('email.ticket.sms', sms),
+    };
+  },
+
+  booking_cancelled: (p, tr) => {
+    const { t } = tr;
+    const vars = {
+      tenant: p.tenantName,
+      reference: p.reference,
+      product: p.productName,
+    };
+    return {
+      subject: t('email.bookingCancelled.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greeting'),
+      lines: [
+        t('email.bookingCancelled.cancelled', {
+          ...vars,
+          when: formatWhen(p.startsAt, p.timezone, tr),
+        }),
+        ...(p.refunded ? [t('email.bookingCancelled.refunded')] : []),
+      ],
+      sms: t(p.refunded ? 'email.bookingCancelled.smsRefunded' : 'email.bookingCancelled.sms', {
+        ...vars,
+        when: formatShort(p.startsAt, p.timezone, tr),
+      }),
+    };
   },
 };
 
-function footer(lang: MessageLang): string {
-  return lang === 'ro'
-    ? 'Mesaj trimis automat. Nu răspunde la acest mesaj.'
-    : 'This message was sent automatically. Please do not reply.';
+/** The departure in full, in the operator's time zone: "Tuesday 6 October 2026, 10:00". */
+export function formatWhen(iso: string, timezone: string, t: Translator): string {
+  return DateTime.fromISO(iso, { zone: timezone })
+    .setLocale(intlLocale(t.lang))
+    .toFormat(t.t('email.format.when'));
 }
 
-const LUXON_LOCALE: Record<MessageLang, string> = { ro: 'ro', en: 'en-GB' };
-
-export function formatWhen(iso: string, timezone: string, lang: MessageLang): string {
+/** The departure in short, for subjects and SMS: "6 Oct 10:00". */
+export function formatShort(iso: string, timezone: string, t: Translator): string {
   return DateTime.fromISO(iso, { zone: timezone })
-    .setLocale(LUXON_LOCALE[lang])
-    .toFormat(lang === 'ro' ? "cccc, d LLLL yyyy, 'ora' HH:mm" : 'cccc d LLLL yyyy, HH:mm');
-}
-
-export function formatShort(iso: string, timezone: string, lang: MessageLang): string {
-  return DateTime.fromISO(iso, { zone: timezone })
-    .setLocale(LUXON_LOCALE[lang])
-    .toFormat('d LLL HH:mm')
+    .setLocale(intlLocale(t.lang))
+    .toFormat(t.t('email.format.short'))
     .replace('.', '');
 }
 
-export function formatMoney(minor: number, currency: string, lang: MessageLang): string {
-  return new Intl.NumberFormat(lang === 'ro' ? 'ro-RO' : 'en-GB', {
+export function formatMoney(minor: number, currency: string, lang: string): string {
+  return new Intl.NumberFormat(intlLocale(lang), {
     style: 'currency',
     currency,
   }).format(minor / 100);
@@ -414,7 +321,7 @@ function lineHtml(line: string): string {
 }
 
 /** A single-column email that reads well on phones and in clients that strip <style>. */
-function layout(lang: MessageLang, parts: Parts): string {
+function layout(t: Translator, parts: Parts, footer: string): string {
   const actionUrl = parts.action?.url;
   const paragraphs = [parts.greeting, ...parts.lines]
     .filter((l): l is string => l !== undefined && l !== '')
@@ -422,7 +329,7 @@ function layout(lang: MessageLang, parts: Parts): string {
     .map((l) => `<p style="margin:0 0 12px">${lineHtml(l)}</p>`)
     .join('');
   const qr = parts.qr
-    ? `<div style="text-align:center;margin:20px 0"><img src="cid:${QR_CONTENT_ID}" width="220" height="220" alt="QR" style="display:inline-block;width:220px;height:220px"></div>`
+    ? `<div style="text-align:center;margin:20px 0"><img src="cid:${QR_CONTENT_ID}" width="220" height="220" alt="${escapeHtml(t.t('email.qrAlt'))}" style="display:inline-block;width:220px;height:220px"></div>`
     : '';
   const details = parts.details?.length
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:8px 0 16px">${parts.details
@@ -438,5 +345,5 @@ function layout(lang: MessageLang, parts: Parts): string {
   const brand = parts.brand
     ? `<p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#0e7490;text-align:center">${escapeHtml(parts.brand)}</p>`
     : '';
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(parts.subject)}</title></head><body style="margin:0;padding:0;background:#f1f5f9"><div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#0f172a">${brand}<div style="background:#ffffff;border-radius:12px;padding:24px">${paragraphs}${qr}${details}${action}</div><p style="margin:16px 0 0;font-size:12px;color:#64748b;text-align:center">${escapeHtml(parts.footer ?? footer(lang))}</p></div></body></html>`;
+  return `<!doctype html><html lang="${escapeHtml(t.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(parts.subject)}</title></head><body style="margin:0;padding:0;background:#f1f5f9"><div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#0f172a">${brand}<div style="background:#ffffff;border-radius:12px;padding:24px">${paragraphs}${qr}${details}${action}</div><p style="margin:16px 0 0;font-size:12px;color:#64748b;text-align:center">${escapeHtml(footer)}</p></div></body></html>`;
 }

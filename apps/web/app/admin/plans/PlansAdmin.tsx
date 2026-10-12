@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
 import { Field, SelectField, TextareaField } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconPlus } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
@@ -19,22 +20,23 @@ import {
   parseMoneyInput,
   percentToBps,
 } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
 import { adminApi } from '@/lib/platform-endpoints';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 export function PlansAdmin() {
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const plans = useApi('admin-plans', (signal) => adminApi.plans({ signal }));
   const [editing, setEditing] = useState<PlatformPlanDto | 'new' | null>(null);
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Planuri și tarife"
-        description="Ce plătesc operatorii: un abonament lunar și un procent din fiecare rezervare. Poți negocia tarife speciale pe fiecare operator."
+        title={t('admin.plans.title')}
+        description={t('admin.plans.description')}
         actions={
           <Button icon={<IconPlus />} onClick={() => setEditing('new')}>
-            Plan nou
+            {t('admin.plans.new')}
           </Button>
         }
       />
@@ -43,11 +45,11 @@ export function PlansAdmin() {
           tone="error"
           action={
             <Button variant="secondary" onClick={plans.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(plans.error)}
+          {errorMessage(plans.error, i18n)}
         </Alert>
       ) : null}
       {plans.loading && !plans.data ? <LoadingBlock /> : null}
@@ -59,11 +61,13 @@ export function PlansAdmin() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h2 className="text-xl font-bold">{plan.name}</h2>
-                    <p className="text-sm text-muted">cod: {plan.code}</p>
+                    <p className="text-sm text-muted">{t('admin.plans.code', { code: plan.code })}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {plan.isDefault ? <StatusChip tone="brand">Plan implicit</StatusChip> : null}
-                    {!plan.isActive ? <StatusChip>Retras</StatusChip> : null}
+                    {plan.isDefault ? (
+                      <StatusChip tone="brand">{t('admin.plans.defaultChip')}</StatusChip>
+                    ) : null}
+                    {!plan.isActive ? <StatusChip>{t('admin.plans.retired')}</StatusChip> : null}
                   </div>
                 </div>
                 {plan.description ? <p className="text-muted">{plan.description}</p> : null}
@@ -71,36 +75,37 @@ export function PlansAdmin() {
                   <MoneyText
                     amountMinor={plan.monthlyPriceMinor}
                     currency={plan.currency}
+                    lang={lang}
                     className="text-2xl font-bold"
                   />
-                  <span className="text-muted"> / lună</span>
+                  <span className="text-muted"> {t('admin.plans.perMonth')}</span>
                   <span className="mx-2 text-muted">+</span>
-                  <span className="text-2xl font-bold">{formatBps(plan.platformFeeBps)}</span>
-                  <span className="text-muted"> / rezervare</span>
+                  <span className="text-2xl font-bold">{formatBps(plan.platformFeeBps, lang)}</span>
+                  <span className="text-muted"> {t('admin.plans.perBooking')}</span>
                 </p>
                 <ul className="text-sm text-muted">
                   <li>
                     {plan.maxAffiliates === null
-                      ? 'Afiliați nelimitați'
-                      : `Până la ${plan.maxAffiliates} afiliați`}
+                      ? t('admin.plans.unlimitedAffiliates')
+                      : tp('admin.plans.upToAffiliates', plan.maxAffiliates)}
                   </li>
                   <li>
                     {plan.trialDays
-                      ? `${plan.trialDays} zile gratuite la început`
-                      : 'Fără perioadă de probă'}
+                      ? tp('admin.plans.freeDays', plan.trialDays)
+                      : t('admin.plans.noTrial')}
                   </li>
                   <li>
                     {plan.stripePriceId
-                      ? `Stripe: ${plan.stripePriceId}`
-                      : 'Fără preț Stripe (facturare manuală)'}
+                      ? t('admin.plans.stripe', { id: plan.stripePriceId })
+                      : t('admin.plans.noStripe')}
                   </li>
                 </ul>
                 <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-3">
                   <span className="text-sm font-semibold">
-                    {pluralRo(plan.tenantCount, 'operator', 'operatori')}
+                    {tp('admin.count.operators', plan.tenantCount)}
                   </span>
                   <Button variant="secondary" onClick={() => setEditing(plan)}>
-                    Modifică
+                    {t('admin.plans.edit')}
                   </Button>
                 </div>
               </div>
@@ -132,6 +137,8 @@ function PlanDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const i18n = useT();
+  const { t, tp } = i18n;
   const [code, setCode] = useState(plan?.code ?? '');
   const [name, setName] = useState(plan?.name ?? '');
   const [description, setDescription] = useState(plan?.description ?? '');
@@ -159,14 +166,13 @@ function PlanDialog({
     const trial = Number(trialDays);
     const max = maxAffiliates.trim() ? Number(maxAffiliates) : null;
     if (!plan && !/^[a-z0-9-]{2,32}$/.test(code.trim()))
-      next.code = 'Litere mici, cifre și cratime.';
-    if (!name.trim()) next.name = 'Scrie numele planului.';
-    if (priceMinor === null) next.price = 'Prețul nu este un număr valid.';
-    if (feeBps === null || feeBps > 5_000) next.fee = 'Un procent între 0 și 50.';
+      next.code = t('admin.plans.codeError');
+    if (!name.trim()) next.name = t('admin.plans.nameError');
+    if (priceMinor === null) next.price = t('admin.validation.price');
+    if (feeBps === null || feeBps > 5_000) next.fee = t('admin.validation.percent50');
     if (!Number.isInteger(trial) || trial < 0 || trial > 365)
-      next.trial = 'Între 0 și 365 de zile.';
-    if (max !== null && (!Number.isInteger(max) || max < 1))
-      next.max = 'Un număr întreg, sau gol pentru nelimitat.';
+      next.trial = t('admin.validation.trialDays');
+    if (max !== null && (!Number.isInteger(max) || max < 1)) next.max = t('admin.plans.maxError');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -190,26 +196,26 @@ function PlanDialog({
       else await adminApi.createPlan({ ...body, code: code.trim() });
       onSaved();
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Dialog open onClose={onClose} title={plan ? `Modifică ${plan.name}` : 'Plan nou'}>
+    <Dialog open onClose={onClose} title={plan ? t('admin.plans.editTitle', { name: plan.name }) : t('admin.plans.new')}
+    >
       <form onSubmit={submit} className="flex flex-col gap-4">
         {error ? <Alert tone="error">{error}</Alert> : null}
         {plan && plan.tenantCount > 0 ? (
           <Alert tone="info">
-            Schimbările se aplică celor {pluralRo(plan.tenantCount, 'operator', 'operatori')} de pe
-            plan, pentru rezervările viitoare, cu excepția celor cu tarif negociat.
+            {tp('admin.plans.appliesTo', plan.tenantCount)}
           </Alert>
         ) : null}
         {!plan ? (
           <Field
-            label="Cod"
-            hint="Folosit intern, nu se mai poate schimba. De exemplu: business"
+            label={t('admin.plans.codeLabel')}
+            hint={t('admin.plans.codeHint')}
             value={code}
             onChange={(e) => setCode(e.target.value.toLowerCase())}
             error={errors.code}
@@ -217,28 +223,28 @@ function PlanDialog({
           />
         ) : null}
         <Field
-          label="Nume"
+          label={t('admin.plans.name')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={errors.name}
         />
         <TextareaField
-          label="Descriere"
-          optionalText="opțional"
+          label={t('admin.plans.descriptionLabel')}
+          optionalText={t('admin.plans.optional')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
         />
         <div className="grid grid-cols-[1fr_7rem] gap-3">
           <Field
-            label="Abonament lunar"
+            label={t('admin.plans.monthly')}
             inputMode="decimal"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             error={errors.price}
           />
           <SelectField
-            label="Moneda"
+            label={t('admin.plans.currency')}
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
           >
@@ -248,7 +254,7 @@ function PlanDialog({
           </SelectField>
         </div>
         <Field
-          label="Comision pe rezervare (%)"
+          label={t('admin.plans.fee')}
           inputMode="decimal"
           value={fee}
           onChange={(e) => setFee(e.target.value)}
@@ -256,15 +262,15 @@ function PlanDialog({
         />
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label="Zile de probă"
+            label={t('admin.plans.trialDays')}
             inputMode="numeric"
             value={trialDays}
             onChange={(e) => setTrialDays(e.target.value)}
             error={errors.trial}
           />
           <Field
-            label="Maxim afiliați"
-            hint="Gol = nelimitat"
+            label={t('admin.plans.maxAffiliates')}
+            hint={t('admin.plans.maxHint')}
             inputMode="numeric"
             value={maxAffiliates}
             onChange={(e) => setMaxAffiliates(e.target.value)}
@@ -272,9 +278,9 @@ function PlanDialog({
           />
         </div>
         <Field
-          label="Preț Stripe"
-          optionalText="opțional"
-          hint="ID-ul prețului recurent din Stripe (price_…), pentru plata cu cardul."
+          label={t('admin.plans.stripePrice')}
+          optionalText={t('admin.plans.optional')}
+          hint={t('admin.plans.stripeHint')}
           value={stripePriceId}
           onChange={(e) => setStripePriceId(e.target.value)}
           autoCapitalize="none"
@@ -286,7 +292,7 @@ function PlanDialog({
             checked={isDefault}
             onChange={(e) => setIsDefault(e.target.checked)}
           />
-          <span>Plan implicit pentru operatorii care se înscriu singuri</span>
+          <span>{t('admin.plans.isDefault')}</span>
         </label>
         <label className="flex min-h-12 items-center gap-3">
           <input
@@ -295,10 +301,10 @@ function PlanDialog({
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
           />
-          <span>Oferit operatorilor noi</span>
+          <span>{t('admin.plans.isActive')}</span>
         </label>
         <Button type="submit" size="lg" loading={busy}>
-          {plan ? 'Salvează' : 'Creează planul'}
+          {plan ? t('admin.plans.save') : t('admin.plans.create')}
         </Button>
       </form>
     </Dialog>

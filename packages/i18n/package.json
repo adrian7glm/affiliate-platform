@@ -1,0 +1,17 @@
+{
+  "name": "@ap/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Translations: one JSON file per language, shared by the web app, emails, SMS and API errors",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "catalog": "node scripts/catalog.mjs",
+    "build": "node scripts/catalog.mjs && tsc -p tsconfig.build.json",
+    "typecheck": "node scripts/catalog.mjs --check && tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

@@ -1,3 +1,6 @@
+import { intlLocale } from '@ap/i18n';
+import { DEFAULT_LANG, type Lang } from './i18n';
+
 /**
  * Money and percentage formatting. Money is always integer minor units + ISO currency code.
  */
@@ -25,27 +28,14 @@ export function minorToMajor(amountMinor: number, currency: string): number {
   return amountMinor / 10 ** currencyDigits(currency);
 }
 
-/** BCP 47 locale used for formatting in each UI language. */
-export function intlLocale(lang: string): string {
-  switch (lang) {
-    case 'ro':
-      return 'ro-RO';
-    case 'de':
-      return 'de-DE';
-    case 'fr':
-      return 'fr-FR';
-    case 'it':
-      return 'it-IT';
-    default:
-      return 'en-GB';
-  }
-}
+/** BCP 47 locale used for formatting in each UI language ("ro" → "ro-RO"). */
+export { intlLocale };
 
 /**
  * Formats integer minor units, e.g. `formatMoney(12050, 'RON', 'ro')` → "120,50 RON".
  * Whole amounts drop the decimals ("120 RON") where the browser supports it.
  */
-export function formatMoney(amountMinor: number, currency: string, lang = 'ro'): string {
+export function formatMoney(amountMinor: number, currency: string, lang: Lang = DEFAULT_LANG): string {
   const code = (currency || 'RON').toUpperCase();
   const value = minorToMajor(amountMinor, code);
   try {
@@ -97,7 +87,7 @@ export function parseMoneyInput(text: string, currency: string): number | null {
 }
 
 /** Basis points → human percentage, e.g. 1250 → "12,5%" (ro) or "12.5%" (en). */
-export function formatBps(bps: number, lang = 'ro'): string {
+export function formatBps(bps: number, lang: Lang = DEFAULT_LANG): string {
   return new Intl.NumberFormat(intlLocale(lang), {
     style: 'percent',
     maximumFractionDigits: 2,

@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
 import { Field, SelectField } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconPrinter, IconQr } from '@/components/icons';
 import { PageHeader } from '@/components/PageHeader';
 import { QrCode } from '@/components/QrCode';
@@ -14,14 +15,16 @@ import { ShareActions } from '@/components/ShareActions';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip } from '@/components/StatusChip';
 import { affiliateApi } from '@/lib/endpoints';
-import { pluralRo } from '@/lib/i18n';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import type { Translator } from '@/lib/i18n';
+import { errorMessage, useApi } from '@/lib/useApi';
 
-export function linkTitle(link: LinkDto): string {
-  return link.label || link.productName || 'Link general';
+export function linkTitle(link: LinkDto, { t }: Translator): string {
+  return link.label || link.productName || t('affiliate.links.general');
 }
 
 export function LinksScreen() {
+  const i18n = useT();
+  const { t } = i18n;
   const links = useApi('affiliate-links', (signal) => affiliateApi.links({ signal }));
   const products = useApi('affiliate-products', (signal) => affiliateApi.products({ signal }));
   const [productId, setProductId] = useState('');
@@ -42,11 +45,11 @@ export function LinksScreen() {
         label: label.trim() || undefined,
       });
       links.setData((prev) => [link, ...(prev ?? [])]);
-      setCreated(linkTitle(link));
+      setCreated(linkTitle(link, i18n));
       setLabel('');
       setProductId('');
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
@@ -55,22 +58,22 @@ export function LinksScreen() {
   return (
     <div className="page-x mx-auto flex max-w-xl flex-col gap-4">
       <PageHeader
-        title="Linkurile mele"
-        description="Fiecare link și cod QR îți aduce comision. Fă câte unul pentru fiecare loc unde îl afișezi, ca să vezi ce funcționează."
+        title={t('affiliate.links.title')}
+        description={t('affiliate.links.description')}
         backHref="/a"
-        backLabel="Acasă"
+        backLabel={t('affiliate.nav.home')}
       />
 
-      <Card title="Link nou">
+      <Card title={t('affiliate.links.newTitle')}>
         <form onSubmit={create} method="post" className="flex flex-col gap-4">
           <SelectField
-            label="Excursia"
-            hint="Turistul ajunge direct pe pagina excursiei alese."
+            label={t('affiliate.links.productLabel')}
+            hint={t('affiliate.links.productHint')}
             name="productId"
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
           >
-            <option value="">Toate excursiile</option>
+            <option value="">{t('affiliate.links.allProducts')}</option>
             {(products.data ?? []).map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -78,19 +81,21 @@ export function LinksScreen() {
             ))}
           </SelectField>
           <Field
-            label="Nume"
-            hint="Ca să-l recunoști, de ex. „Afiș recepție” sau „Lift etaj 2”."
+            label={t('affiliate.links.nameLabel')}
+            hint={t('affiliate.links.nameHint')}
             name="label"
-            optionalText="opțional"
+            optionalText={t('affiliate.optional')}
             maxLength={80}
             autoComplete="off"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
           />
           {error ? <Alert tone="error">{error}</Alert> : null}
-          {created ? <Alert tone="success">Linkul „{created}” a fost creat.</Alert> : null}
-          <Button type="submit" size="lg" block loading={busy} loadingText="Se creează…">
-            Creează linkul
+          {created ? (
+            <Alert tone="success">{t('affiliate.links.created', { name: created })}</Alert>
+          ) : null}
+          <Button type="submit" size="lg" block loading={busy} loadingText={t('affiliate.links.creating')}>
+            {t('affiliate.links.create')}
           </Button>
         </form>
       </Card>
@@ -101,18 +106,18 @@ export function LinksScreen() {
           tone="error"
           action={
             <Button variant="secondary" onClick={links.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(links.error)}
+          {errorMessage(links.error, i18n)}
         </Alert>
       ) : null}
 
       {links.data ? (
         <section aria-labelledby="links-title" className="flex flex-col gap-3">
           <h2 id="links-title" className="text-lg font-semibold">
-            Toate linkurile ({links.data.length})
+            {t('affiliate.links.allTitle', { count: links.data.length })}
           </h2>
           <ul className="flex flex-col gap-3">
             {links.data.map((link) => (
@@ -121,37 +126,37 @@ export function LinksScreen() {
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="font-semibold">{linkTitle(link)}</h3>
+                        <h3 className="font-semibold">{linkTitle(link, i18n)}</h3>
                         <p className="text-sm text-muted">
-                          {link.productName ?? 'Toate excursiile'}
+                          {link.productName ?? t('affiliate.links.allProducts')}
                         </p>
                       </div>
-                      {link.active ? null : <StatusChip tone="neutral">Inactiv</StatusChip>}
+                      {link.active ? null : <StatusChip tone="neutral">{t('affiliate.links.inactive')}</StatusChip>}
                     </div>
                     <p className="break-all rounded-xl bg-surface-2 px-3 py-2 font-mono text-sm">
                       {link.url}
                     </p>
                     <dl className="flex gap-6">
                       <div>
-                        <dt className="text-sm text-muted">Accesări</dt>
+                        <dt className="text-sm text-muted">{t('affiliate.links.clicks')}</dt>
                         <dd className="text-xl font-bold tabular-nums">{link.clicks}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm text-muted">Vânzări</dt>
+                        <dt className="text-sm text-muted">{t('affiliate.links.sales')}</dt>
                         <dd className="text-xl font-bold tabular-nums">{link.sales}</dd>
                       </div>
                     </dl>
-                    <ShareActions url={link.url} title={linkTitle(link)} size="md" />
+                    <ShareActions url={link.url} title={linkTitle(link, i18n)} size="md" />
                     <div className="grid grid-cols-2 gap-2">
                       <Button variant="secondary" icon={<IconQr />} onClick={() => setQrLink(link)}>
-                        Cod QR
+                        {t('affiliate.links.qr')}
                       </Button>
                       <ButtonLink
                         href={`/a/kit?link=${link.id}`}
                         variant="secondary"
                         icon={<IconPrinter />}
                       >
-                        De tipărit
+                        {t('affiliate.links.print')}
                       </ButtonLink>
                     </div>
                   </div>
@@ -160,12 +165,9 @@ export function LinksScreen() {
             ))}
           </ul>
           <p className="text-sm text-muted">
-            {pluralRo(
-              links.data.reduce((sum, l) => sum + l.sales, 0),
-              'vânzare',
-              'vânzări',
-            )}{' '}
-            din toate linkurile.
+            {t('affiliate.links.totalSales', {
+              count: links.data.reduce((sum, l) => sum + l.sales, 0),
+            })}
           </p>
         </section>
       ) : null}
@@ -173,16 +175,16 @@ export function LinksScreen() {
       <Dialog
         open={!!qrLink}
         onClose={() => setQrLink(null)}
-        title={qrLink ? linkTitle(qrLink) : ''}
+        title={qrLink ? linkTitle(qrLink, i18n) : ''}
       >
         {qrLink ? (
           <div className="flex flex-col items-center gap-3 text-center">
             <QrCode
               value={qrLink.qrUrl}
-              label={`Cod QR pentru ${linkTitle(qrLink)}`}
+              label={t('affiliate.links.qrLabel', { name: linkTitle(qrLink, i18n) })}
               className="w-full max-w-80"
             />
-            <p className="text-muted">Scanează și rezervă</p>
+            <p className="text-muted">{t('affiliate.qr.scanToBook')}</p>
           </div>
         ) : null}
       </Dialog>

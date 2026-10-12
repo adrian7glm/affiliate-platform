@@ -102,9 +102,9 @@ export class BookingService {
       .from(affiliates)
       .where(eq(affiliates.id, affiliateId));
     if (affiliate?.status !== 'active')
-      throw new DomainError('your affiliate account is not active', HttpStatus.FORBIDDEN);
+      throw new DomainError('errors.booking.affiliateInactive', HttpStatus.FORBIDDEN);
     if (body.payment === 'on_site' && !tenant.allowPayOnSite) {
-      throw new DomainError('this operator does not accept payment at boarding');
+      throw new DomainError('errors.booking.noPayOnSite');
     }
     const result = await this.create({
       tenant,
@@ -148,14 +148,14 @@ export class BookingService {
     const slot = await this.availability.slot(this.db, tenant.id, input.slotId);
     const product = await this.catalog.product(tenant.id, slot.productId);
     if (!product.active)
-      throw new DomainError('this trip is not available any more', HttpStatus.CONFLICT);
+      throw new DomainError('errors.booking.tripUnavailable', HttpStatus.CONFLICT);
 
     const quantities = new Map<string, number>();
     for (const item of input.items)
       quantities.set(item.priceId, (quantities.get(item.priceId) ?? 0) + item.quantity);
     const prices = await this.catalog.prices(tenant.id, product.id, [...quantities.keys()]);
     if (prices.length !== quantities.size)
-      throw new DomainError('unknown ticket type for this trip', HttpStatus.BAD_REQUEST);
+      throw new DomainError('errors.booking.unknownPrice', HttpStatus.BAD_REQUEST);
 
     const lines = prices.map((price) => ({ price, quantity: quantities.get(price.id)! }));
     const seats = lines.reduce((sum, l) => sum + l.quantity * l.price.seats, 0);
@@ -164,7 +164,7 @@ export class BookingService {
       (sum, l) => sum + includedTax(l.quantity * l.price.amountMinor, l.price.taxRateBps),
       0,
     );
-    if (seats < 1) throw new DomainError('choose at least one seat', HttpStatus.BAD_REQUEST);
+    if (seats < 1) throw new DomainError('errors.booking.noSeats', HttpStatus.BAD_REQUEST);
 
     const onSite = input.paymentMode === 'on_site';
     const holdExpiresAt = new Date(now.getTime() + this.config.HOLD_MINUTES * 60_000);
@@ -274,10 +274,7 @@ export class BookingService {
           await tx.update(bookings).set({ status: 'expired' }).where(eq(bookings.id, booking.id));
         });
         if (externalHoldId) await this.sources.release(product.id, externalHoldId);
-        throw new DomainError(
-          'payments are unavailable right now, try again in a minute',
-          HttpStatus.BAD_GATEWAY,
-        );
+        throw new DomainError('errors.booking.paymentsUnavailable', HttpStatus.BAD_GATEWAY);
       }
     }
 

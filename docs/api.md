@@ -119,3 +119,21 @@ Platform admin (users with `isPlatformAdmin`, set at sign-in for `PLATFORM_ADMIN
 A suspended operator gets 403 on every operator and affiliate route, and 404 on its public pages.
 Stripe Billing (`BILLING_PROVIDER=stripe`) posts subscription events to
 `POST /webhooks/stripe/billing`, signed with `STRIPE_BILLING_WEBHOOK_SECRET`.
+
+## Languages and translations
+
+Every request may send `Accept-Language` (the web app sends the page language); error
+`message`s come back in that language and also carry their translation key in `code`
+(`errors.notFound.product`). Texts live in `packages/i18n/src/locales/<lang>.json`; the platform
+admin's changes are layered on top.
+
+| Method | Path                                  | Body / query           | Response                             |
+| ------ | ------------------------------------- | ---------------------- | ------------------------------------ |
+| GET    | `/i18n/languages`                     |                        | `PublicLanguagesDto` (visible ones)  |
+| GET    | `/i18n/messages/:lang`                |                        | `PublicMessagesDto` (admin's texts)  |
+| GET    | `/admin/i18n/languages` (admin)       |                        | `AdminLanguageDto[]`                 |
+| POST   | `/admin/i18n/languages` (admin)       | `CreateLanguageBody`   | `AdminLanguageDto` (hidden at first) |
+| PATCH  | `/admin/i18n/languages/:code` (admin) | `UpdateLanguageBody`   | `AdminLanguageDto`                   |
+| DELETE | `/admin/i18n/languages/:code` (admin) |                        | 204 (languages added from the admin) |
+| GET    | `/admin/i18n/languages/:code/texts`   |                        | `AdminTranslationsDto`               |
+| PUT    | `/admin/i18n/languages/:code/texts`   | `SaveTranslationsBody` | `SaveTranslationsResultDto`          |

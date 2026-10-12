@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { PublicMessage, PublicShell } from '@/components/public/PublicShell';
-import { getT, type Lang } from '@/lib/i18n';
+import type { Lang } from '@/lib/i18n';
+import { getServerT } from '@/lib/i18n-server';
 import { requestLang } from '@/lib/public-server';
 import { TicketView } from './TicketView';
 
@@ -24,14 +25,14 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const [{ bookingId }, query] = await Promise.all([params, searchParams]);
   const lang = await requestLang(query.lang);
   const key = first(query.k);
-  const { t } = getT(lang);
+  const { t } = await getServerT(lang);
   return {
-    title: { absolute: t('ticketTitle') },
+    title: { absolute: t('ticket.title') },
     robots: { index: false, follow: false },
     referrer: 'no-referrer',
     // Installing the ticket opens this ticket, not the affiliate app.
     manifest: key ? manifestHref(bookingId, key, lang) : undefined,
-    appleWebApp: { capable: true, title: t('ticketTitle'), statusBarStyle: 'default' },
+    appleWebApp: { capable: true, title: t('ticket.title'), statusBarStyle: 'default' },
   };
 }
 
@@ -41,15 +42,20 @@ export default async function TicketPage({ params, searchParams }: Props) {
   const lang = await requestLang(query.lang);
   const key = first(query.k);
   const path = `/t/${encodeURIComponent(bookingId)}`;
-  const { t } = getT(lang);
+  const { t } = await getServerT(lang);
 
   if (!key) {
     return (
       <PublicShell lang={lang} path={path}>
-        <PublicMessage title={t('ticketNotFound')} />
+        <PublicMessage title={t('ticket.notFound')} />
       </PublicShell>
     );
   }
 
-  return <TicketView bookingId={bookingId} ticketKey={key} lang={lang} />;
+  // The operator is only known once the ticket loads, so the view draws its own frame.
+  return (
+    <PublicShell lang={lang} path={path} bare>
+      <TicketView bookingId={bookingId} ticketKey={key} />
+    </PublicShell>
+  );
 }

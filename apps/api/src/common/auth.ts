@@ -1,12 +1,11 @@
 import {
   type CanActivate,
   createParamDecorator,
-  type ExecutionContext,
-  ForbiddenException,
+  HttpStatus,
   Inject,
   Injectable,
   SetMetadata,
-  UnauthorizedException,
+  type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Role } from '@ap/contracts';
@@ -16,6 +15,7 @@ import type { Request } from 'express';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB } from '../database/database.module';
 import { verifySession } from './crypto';
+import { DomainError } from './errors';
 
 export interface AuthUser {
   id: string;
@@ -47,12 +47,12 @@ export class AuthGuard implements CanActivate {
     const header = request.headers.authorization ?? '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : '';
     const claims = token ? verifySession(this.config.APP_SECRET, token) : null;
-    if (!claims) throw new UnauthorizedException('sign in again');
+    if (!claims) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
     const [user] = await this.db
       .select({ id: users.id, isPlatformAdmin: users.isPlatformAdmin })
       .from(users)
       .where(eq(users.id, claims.sub));
-    if (!user) throw new UnauthorizedException('sign in again');
+    if (!user) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
     request.user = user;
     return true;
   }
@@ -74,10 +74,10 @@ export class TenantGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AppRequest>();
     const user = request.user;
-    if (!user) throw new UnauthorizedException('sign in again');
+    if (!user) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
     const tenantId = String(request.headers['x-tenant-id'] ?? '');
     if (!UUID.test(tenantId))
-      throw new ForbiddenException('choose an operator first (X-Tenant-Id)');
+      throw new DomainError('errors.auth.chooseOperatorHeader', HttpStatus.FORBIDDEN);
 
     const rows = await this.db
       .select({ role: memberships.role, tenantStatus: tenants.status })
@@ -86,7 +86,7 @@ export class TenantGuard implements CanActivate {
       .where(and(eq(memberships.userId, user.id), eq(memberships.tenantId, tenantId)));
     const roles = rows.map((r) => r.role);
     if (rows[0]?.tenantStatus === 'suspended') {
-      throw new ForbiddenException('this operator account is suspended');
+      throw new DomainError('errors.auth.operatorSuspended', HttpStatus.FORBIDDEN);
     }
 
     const required = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, [
@@ -94,7 +94,7 @@ export class TenantGuard implements CanActivate {
       context.getClass(),
     ]);
     if (required && !required.some((role) => roles.includes(role))) {
-      throw new ForbiddenException('you do not have access to this');
+      throw new DomainError('errors.auth.forbidden', HttpStatus.FORBIDDEN);
     }
 
     let affiliateId: string | null = null;
@@ -108,7 +108,7 @@ export class TenantGuard implements CanActivate {
         required?.length === 1 &&
         required[0] === 'affiliate'
       ) {
-        throw new ForbiddenException('your affiliate account is suspended');
+        throw new DomainError('errors.auth.affiliateSuspended', HttpStatus.FORBIDDEN);
       }
       affiliateId = affiliate?.id ?? null;
     }
@@ -120,7 +120,7 @@ export class TenantGuard implements CanActivate {
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): AuthUser => {
     const user = context.switchToHttp().getRequest<AppRequest>().user;
-    if (!user) throw new UnauthorizedException();
+    if (!user) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
     return user;
   },
 );
@@ -128,7 +128,7 @@ export const CurrentUser = createParamDecorator(
 export const CurrentTenant = createParamDecorator(
   (_data: unknown, context: ExecutionContext): TenantContext => {
     const tenant = context.switchToHttp().getRequest<AppRequest>().tenant;
-    if (!tenant) throw new ForbiddenException('choose an operator first');
+    if (!tenant) throw new DomainError('errors.auth.chooseOperator', HttpStatus.FORBIDDEN);
     return tenant;
   },
 );
@@ -138,7 +138,7 @@ export const CurrentAffiliate = createParamDecorator(
   (_data: unknown, context: ExecutionContext): string => {
     const tenant = context.switchToHttp().getRequest<AppRequest>().tenant;
     if (!tenant?.affiliateId)
-      throw new ForbiddenException('you are not an affiliate of this operator');
+      throw new DomainError('errors.auth.notAffiliate', HttpStatus.FORBIDDEN);
     return tenant.affiliateId;
   },
 );

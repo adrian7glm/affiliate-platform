@@ -10,25 +10,26 @@ import { IconChevronRight, IconPlus } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
 import { PeriodPicker } from '@/components/PeriodPicker';
+import { useT } from '@/components/I18nProvider';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip } from '@/components/StatusChip';
 import { currentPeriod, formatDate, formatPeriod } from '@/lib/dates';
 import { formatBps } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/i18n';
 import { adminApi } from '@/lib/platform-endpoints';
-import { SUBSCRIPTION_STATUS, TENANT_STATUS } from '@/lib/platform-labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { subscriptionStatus, tenantStatus } from '@/lib/platform-labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 const PLATFORM_TZ = 'Europe/Bucharest';
 
 type Filter = 'all' | 'paying' | 'trial' | 'past_due' | 'suspended';
 
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'Toți' },
-  { value: 'paying', label: 'Plătesc' },
-  { value: 'trial', label: 'În probă' },
-  { value: 'past_due', label: 'Restanțe' },
-  { value: 'suspended', label: 'Suspendați' },
+const FILTERS: { value: Filter; label: MessageKey }[] = [
+  { value: 'all', label: 'admin.overview.filters.all' },
+  { value: 'paying', label: 'admin.overview.filters.paying' },
+  { value: 'trial', label: 'admin.overview.filters.trial' },
+  { value: 'past_due', label: 'admin.overview.filters.pastDue' },
+  { value: 'suspended', label: 'admin.overview.filters.suspended' },
 ];
 
 function matches(row: AdminTenantRowDto, filter: Filter): boolean {
@@ -48,6 +49,8 @@ function matches(row: AdminTenantRowDto, filter: Filter): boolean {
 }
 
 export function AdminOverview() {
+  const i18n = useT();
+  const { t, lang } = i18n;
   const thisMonth = currentPeriod(PLATFORM_TZ);
   const [period, setPeriod] = useState(thisMonth);
   const [filter, setFilter] = useState<Filter>('all');
@@ -71,11 +74,11 @@ export function AdminOverview() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Operatori"
-        description="Toți operatorii de pe platformă, cu abonamentul și ce au vândut în luna aleasă."
+        title={t('admin.overview.title')}
+        description={t('admin.overview.description')}
         actions={
           <ButtonLink href="/admin/invites" icon={<IconPlus />}>
-            Invită un operator
+            {t('admin.overview.invite')}
           </ButtonLink>
         }
       />
@@ -89,11 +92,11 @@ export function AdminOverview() {
           tone="error"
           action={
             <Button variant="secondary" onClick={overview.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(overview.error)}
+          {errorMessage(overview.error, i18n)}
         </Alert>
       ) : null}
       {overview.loading && !overview.data ? <LoadingBlock /> : null}
@@ -101,13 +104,13 @@ export function AdminOverview() {
 
       {overview.data ? (
         <Card
-          title={`Operatori · ${formatPeriod(period)}`}
-          description="Rezervările, valoarea și comisionul platformei sunt pentru luna aleasă."
+          title={t('admin.overview.listTitle', { period: formatPeriod(period, lang) })}
+          description={t('admin.overview.listDescription')}
         >
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div
               role="group"
-              aria-label="Filtrează după stare"
+              aria-label={t('admin.overview.filterLabel')}
               className="flex gap-2 overflow-x-auto pb-1"
             >
               {FILTERS.map((f) => {
@@ -124,18 +127,18 @@ export function AdminOverview() {
                         : 'border-line-strong bg-surface text-fg hover:bg-surface-2'
                     }`}
                   >
-                    {f.label} <span className="tabular-nums opacity-80">{count}</span>
+                    {t(f.label)} <span className="tabular-nums opacity-80">{count}</span>
                   </button>
                 );
               })}
             </div>
             <label className="md:w-72">
-              <span className="visually-hidden">Caută operator</span>
+              <span className="visually-hidden">{t('admin.overview.searchLabel')}</span>
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Caută după nume sau email"
+                placeholder={t('admin.overview.searchPlaceholder')}
                 className="field-input block min-h-12 w-full rounded-xl border-2 border-line-strong bg-surface px-3 text-fg"
               />
             </label>
@@ -143,8 +146,8 @@ export function AdminOverview() {
           {rows.length === 0 ? (
             <p className="py-6 text-center text-muted">
               {overview.data.tenants.length === 0
-                ? 'Niciun operator încă. Trimite prima invitație.'
-                : 'Niciun operator nu se potrivește.'}
+                ? t('admin.overview.emptyNone')
+                : t('admin.overview.emptyNoMatch')}
             </p>
           ) : (
             <TenantList rows={rows} />
@@ -166,27 +169,29 @@ function Kpi({ label, value, hint }: { label: string; value: ReactNode; hint?: s
 }
 
 function MoneyList({ items }: { items: { amountMinor: number; currency: string }[] }) {
+  const { lang } = useT();
   if (items.length === 0) return <>0</>;
   return (
     <span className="flex flex-col">
       {items.map((m) => (
-        <MoneyText key={m.currency} amountMinor={m.amountMinor} currency={m.currency} />
+        <MoneyText key={m.currency} amountMinor={m.amountMinor} currency={m.currency} lang={lang} />
       ))}
     </span>
   );
 }
 
 function Kpis({ data }: { data: AdminOverviewDto }) {
+  const { t, tp } = useT();
   const { operators } = data;
   return (
-    <section aria-label="Cifre cheie" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section aria-label={t('admin.overview.kpisLabel')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Kpi
-        label="Venit lunar din abonamente"
+        label={t('admin.overview.mrr')}
         value={<MoneyList items={data.mrr} />}
-        hint={pluralRo(operators.active, 'operator plătește', 'operatori plătesc')}
+        hint={tp('admin.overview.paying', operators.active)}
       />
       <Kpi
-        label="Comision platformă"
+        label={t('admin.overview.platformFee')}
         value={
           <MoneyList
             items={data.volume.map((v) => ({
@@ -195,29 +200,28 @@ function Kpis({ data }: { data: AdminOverviewDto }) {
             }))}
           />
         }
-        hint={`din ${pluralRo(
+        hint={tp(
+          'admin.overview.fromBookings',
           data.volume.reduce((n, v) => n + v.bookings, 0),
-          'rezervare',
-          'rezervări',
-        )}`}
+        )}
       />
       <Kpi
-        label="Valoare rezervări"
+        label={t('admin.overview.gross')}
         value={
           <MoneyList
             items={data.volume.map((v) => ({ amountMinor: v.grossMinor, currency: v.currency }))}
           />
         }
-        hint="vândută de operatori"
+        hint={t('admin.overview.grossHint')}
       />
       <Kpi
-        label="Operatori"
+        label={t('admin.overview.operators')}
         value={operators.total}
         hint={[
-          `${operators.trialing} în probă`,
-          operators.pastDue ? `${operators.pastDue} restanțe` : null,
-          operators.suspended ? `${operators.suspended} suspendați` : null,
-          data.newOperators ? `${data.newOperators} noi` : null,
+          t('admin.overview.trialing', { count: operators.trialing }),
+          operators.pastDue ? tp('admin.overview.pastDue', operators.pastDue) : null,
+          operators.suspended ? tp('admin.overview.suspended', operators.suspended) : null,
+          data.newOperators ? tp('admin.overview.newOperators', data.newOperators) : null,
         ]
           .filter(Boolean)
           .join(' · ')}
@@ -227,17 +231,18 @@ function Kpis({ data }: { data: AdminOverviewDto }) {
 }
 
 function SubscriptionChip({ row }: { row: AdminTenantRowDto }) {
+  const i18n = useT();
   if (row.status === 'suspended') {
-    return (
-      <StatusChip tone={TENANT_STATUS.suspended.tone}>{TENANT_STATUS.suspended.label}</StatusChip>
-    );
+    const s = tenantStatus(i18n, 'suspended');
+    return <StatusChip tone={s.tone}>{s.label}</StatusChip>;
   }
-  if (!row.subscription) return <StatusChip>Fără abonament</StatusChip>;
-  const s = SUBSCRIPTION_STATUS[row.subscription.status];
+  if (!row.subscription) return <StatusChip>{i18n.t('admin.overview.noSubscription')}</StatusChip>;
+  const s = subscriptionStatus(i18n, row.subscription.status);
   return <StatusChip tone={s.tone}>{s.label}</StatusChip>;
 }
 
 function TenantList({ rows }: { rows: AdminTenantRowDto[] }) {
+  const { t, tp, lang } = useT();
   return (
     <>
       {/* Phones: one card per operator */}
@@ -251,15 +256,18 @@ function TenantList({ rows }: { rows: AdminTenantRowDto[] }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{row.name}</p>
                 <p className="truncate text-sm text-muted">
-                  {row.subscription?.planName ?? 'Fără plan'} ·{' '}
-                  {pluralRo(row.affiliates, 'afiliat', 'afiliați')} ·{' '}
-                  {pluralRo(row.bookings, 'rezervare', 'rezervări')}
+                  {t('admin.overview.rowSummary', {
+                    plan: row.subscription?.planName ?? t('admin.overview.noPlan'),
+                    affiliates: tp('admin.count.affiliates', row.affiliates),
+                    bookings: tp('admin.count.bookings', row.bookings),
+                  })}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <SubscriptionChip row={row} />
                   <MoneyText
                     amountMinor={row.platformFeesMinor}
                     currency={row.currency}
+                    lang={lang}
                     className="text-sm font-semibold"
                   />
                 </div>
@@ -276,22 +284,22 @@ function TenantList({ rows }: { rows: AdminTenantRowDto[] }) {
           <thead className="text-sm text-muted">
             <tr className="border-b border-line">
               <th scope="col" className="py-2 pr-3 font-semibold">
-                Operator
+                {t('admin.overview.colOperator')}
               </th>
               <th scope="col" className="px-3 py-2 font-semibold">
-                Abonament
+                {t('admin.overview.colSubscription')}
               </th>
               <th scope="col" className="px-3 py-2 text-right font-semibold">
-                Afiliați
+                {t('admin.overview.colAffiliates')}
               </th>
               <th scope="col" className="px-3 py-2 text-right font-semibold">
-                Rezervări
+                {t('admin.overview.colBookings')}
               </th>
               <th scope="col" className="px-3 py-2 text-right font-semibold">
-                Valoare
+                {t('admin.overview.colGross')}
               </th>
               <th scope="col" className="py-2 pl-3 text-right font-semibold">
-                Comision platformă
+                {t('admin.overview.colPlatformFee')}
               </th>
             </tr>
           </thead>
@@ -306,10 +314,12 @@ function TenantList({ rows }: { rows: AdminTenantRowDto[] }) {
                     {row.name}
                   </Link>
                   <p className="text-sm text-muted">
-                    {row.ownerEmail ?? row.slug}
                     {row.lastBookingAt
-                      ? ` · ultima rezervare ${formatDate(row.lastBookingAt, PLATFORM_TZ)}`
-                      : ' · nicio rezervare'}
+                      ? t('admin.overview.lastBooking', {
+                          who: row.ownerEmail ?? row.slug,
+                          date: formatDate(row.lastBookingAt, PLATFORM_TZ, lang),
+                        })
+                      : t('admin.overview.noBookings', { who: row.ownerEmail ?? row.slug })}
                   </p>
                 </td>
                 <td className="px-3 py-3">
@@ -317,8 +327,10 @@ function TenantList({ rows }: { rows: AdminTenantRowDto[] }) {
                     <SubscriptionChip row={row} />
                     {row.subscription ? (
                       <span className="text-sm text-muted">
-                        {row.subscription.planName} · {formatBps(row.subscription.platformFeeBps)} /
-                        rezervare
+                        {t('admin.overview.planFee', {
+                          plan: row.subscription.planName,
+                          fee: formatBps(row.subscription.platformFeeBps, lang),
+                        })}
                       </span>
                     ) : null}
                   </div>
@@ -326,10 +338,14 @@ function TenantList({ rows }: { rows: AdminTenantRowDto[] }) {
                 <td className="px-3 py-3 text-right tabular-nums">{row.affiliates}</td>
                 <td className="px-3 py-3 text-right tabular-nums">{row.bookings}</td>
                 <td className="px-3 py-3 text-right">
-                  <MoneyText amountMinor={row.grossMinor} currency={row.currency} />
+                  <MoneyText amountMinor={row.grossMinor} currency={row.currency} lang={lang} />
                 </td>
                 <td className="py-3 pl-3 text-right font-semibold">
-                  <MoneyText amountMinor={row.platformFeesMinor} currency={row.currency} />
+                  <MoneyText
+                    amountMinor={row.platformFeesMinor}
+                    currency={row.currency}
+                    lang={lang}
+                  />
                 </td>
               </tr>
             ))}

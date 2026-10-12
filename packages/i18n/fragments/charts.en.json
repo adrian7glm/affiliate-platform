@@ -1,0 +1,23 @@
+{
+  "earningsLabel": "Commission over the last months",
+  "earningsBar_one": "{month}: {amount}, 1 sale",
+  "earningsBar_other": "{month}: {amount}, {count} sales",
+  "colMonth": "Month",
+  "colSales": "Sales",
+  "colCommission": "Commission",
+  "affiliate": "Through affiliates",
+  "direct": "Direct",
+  "bookings_one": "1 booking",
+  "bookings_other": "{count} bookings",
+  "dayBar_one": "{day}: {amount}, 1 booking",
+  "dayBar_other": "{day}: {amount}, {count} bookings",
+  "revenueByDay": "Revenue by day",
+  "legend": "Legend",
+  "showTable": "See the days as a table",
+  "noSales": "No sales this month so far.",
+  "colDay": "Day",
+  "colBookings": "Bookings",
+  "colTotal": "Total",
+  "channelLine_one": "1 booking · {share}% of revenue",
+  "channelLine_other": "{count} bookings · {share}% of revenue"
+}

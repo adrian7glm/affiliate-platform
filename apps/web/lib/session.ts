@@ -7,6 +7,7 @@ import {
   writeJson,
   writeString,
 } from './storage';
+import type { Translator } from './i18n';
 
 export type Area = 'affiliate' | 'operator';
 
@@ -86,6 +87,10 @@ export function safeNextPath(next: string | null | undefined): string | null {
   return next;
 }
 
+/** "Administrator" / "Staff" / "Affiliate" in the page language. */
+export const roleLabel = (t: Translator, role: Role): string => t.tk(`auth.role.${role}`);
+
+/** @deprecated Romanian only; use `roleLabel(t, role)`. Kept until every caller has moved. */
 export const ROLE_LABELS_RO: Record<Role, string> = {
   owner: 'Administrator',
   staff: 'Personal',

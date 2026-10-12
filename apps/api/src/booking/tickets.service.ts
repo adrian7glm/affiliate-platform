@@ -8,8 +8,8 @@ import { NotFound } from '../common/errors';
 import type { Tenant } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
+import { I18nService } from '../i18n/i18n.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { messageLang } from '../notifications/templates';
 import { Outbox } from '../outbox/outbox';
 
 @Injectable()
@@ -22,6 +22,7 @@ export class TicketsService {
     private readonly clock: Clock,
     private readonly outbox: Outbox,
     private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {
     this.signer = new TicketSigner(config.APP_SECRET);
   }
@@ -107,7 +108,7 @@ export class TicketsService {
   /** The ticket page link sent to the customer, in their language. */
   customerUrl(bookingId: string, locale: string): string {
     const key = ticketLinkKey(this.config.APP_SECRET, bookingId);
-    return `${this.config.WEB_URL}/t/${bookingId}?k=${key}&lang=${messageLang(locale)}`;
+    return `${this.config.WEB_URL}/t/${bookingId}?k=${key}&lang=${this.i18n.pick(locale, 'en')}`;
   }
 
   private qrToken(

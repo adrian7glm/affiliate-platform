@@ -96,16 +96,13 @@ export class SourcesService {
   /** Checks the operator's API answers with this token, saves it and imports the trips. */
   async connect(tenantId: string, body: ConnectSourceBody): Promise<SourceDto> {
     if (this.config.NODE_ENV === 'production' && !body.baseUrl.startsWith('https://')) {
-      throw new DomainError('the address must start with https://', HttpStatus.BAD_REQUEST);
+      throw new DomainError('errors.sources.httpsRequired', HttpStatus.BAD_REQUEST);
     }
     const provider = this.restProvider(body.baseUrl, body.token);
     try {
       await provider.listProducts();
     } catch (error) {
-      throw new DomainError(
-        `could not read the trips from ${body.baseUrl}: ${message(error)}`,
-        HttpStatus.BAD_REQUEST,
-      );
+      throw connectError(body.baseUrl, error);
     }
     const [source] = await this.db
       .insert(availabilitySources)
@@ -353,9 +350,10 @@ export class SourcesService {
           })
           .where(eq(slots.id, slot.id));
         throw new DomainError(
-          `only ${error.available} seats left on this departure`,
+          'errors.departures.seatsLeft',
           HttpStatus.CONFLICT,
           { available: error.available },
+          { count: error.available },
         );
       }
       throw this.unavailable(source, error);
@@ -479,9 +477,8 @@ export class SourcesService {
 
   private unavailable(source: Source, error: unknown): DomainError {
     this.logger.warn(`source ${source.id} (${source.name}) failed: ${message(error)}`);
-    return new DomainError(
-      `${source.name} did not answer, try again in a minute`,
-      HttpStatus.BAD_GATEWAY,
-    );
+    return new DomainError('errors.sources.notAnswering', HttpStatus.BAD_GATEWAY, undefined, {
+      name: source.name,
+    });
   }
 }

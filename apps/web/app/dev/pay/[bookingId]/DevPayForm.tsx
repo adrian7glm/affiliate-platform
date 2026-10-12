@@ -6,10 +6,10 @@ import { useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { LoadingBlock } from '@/components/Spinner';
 import { formatDateTime } from '@/lib/dates';
 import { publicApi } from '@/lib/endpoints';
-import { getT, type Lang } from '@/lib/i18n';
 import { ticketPath } from '@/lib/links';
 import { useApi } from '@/lib/useApi';
 
@@ -20,13 +20,12 @@ import { useApi } from '@/lib/useApi';
 export function DevPayForm({
   bookingId,
   ticketKey,
-  lang,
 }: {
   bookingId: string;
   ticketKey: string;
-  lang: Lang;
 }) {
-  const t = getT(lang);
+  const t = useT();
+  const { lang } = t;
   const router = useRouter();
   const ticket = useApi<TicketDto>(`dev-pay-ticket:${bookingId}`, (signal) =>
     publicApi.ticket(bookingId, ticketKey, { signal }),
@@ -46,7 +45,7 @@ export function DevPayForm({
       await publicApi.devPaymentSucceed(bookingId, ticketKey);
       router.replace(ticketPath(bookingId, ticketKey, lang));
     } catch {
-      setError(t.t('payFailed'));
+      setError(t.t('public.payFailed'));
       setBusy(false);
     }
   }
@@ -55,18 +54,18 @@ export function DevPayForm({
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-5 pt-6">
-      <h1 className="text-2xl font-bold">{t.t('devPayTitle')}</h1>
-      <Alert tone="warning">{t.t('devPayNote')}</Alert>
+      <h1 className="text-2xl font-bold">{t.t('public.devPayTitle')}</h1>
+      <Alert tone="warning">{t.t('public.devPayNote')}</Alert>
 
-      {ticket.loading && !ticket.data ? <LoadingBlock label={t.t('loading')} /> : null}
+      {ticket.loading && !ticket.data ? <LoadingBlock label={t.t('common.loading')} /> : null}
       {ticket.data ? (
         <div className="rounded-3xl border border-line bg-surface p-4">
           <p className="text-sm text-muted">{ticket.data.tenantName}</p>
           <p className="text-lg font-semibold">{ticket.data.productName}</p>
           <p>{formatDateTime(ticket.data.startsAt, ticket.data.timezone, lang)}</p>
           <p className="text-sm text-muted">
-            {t.t('reference')}: {ticket.data.bookingReference} ·{' '}
-            {t.tp('guestCount', ticket.data.seats)}
+            {t.t('ticket.referenceLabel')} {ticket.data.bookingReference} ·{' '}
+            {t.tp('ticket.guestCount', ticket.data.seats)}
           </p>
         </div>
       ) : null}
@@ -77,7 +76,7 @@ export function DevPayForm({
           block
           onClick={() => router.replace(ticketPath(bookingId, ticketKey, lang))}
         >
-          {t.t('ticketTitle')}
+          {t.t('ticket.title')}
         </Button>
       ) : (
         <form
@@ -86,7 +85,7 @@ export function DevPayForm({
           className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-4"
         >
           <Field
-            label={t.t('cardNumber')}
+            label={t.t('public.cardNumber')}
             name="cardnumber"
             inputMode="numeric"
             autoComplete="off"
@@ -95,14 +94,14 @@ export function DevPayForm({
           />
           <div className="grid grid-cols-2 gap-3">
             <Field
-              label={t.t('expiry')}
+              label={t.t('public.expiry')}
               name="exp"
               autoComplete="off"
               value={expiry}
               onChange={(e) => setExpiry(e.target.value)}
             />
             <Field
-              label={t.t('cvc')}
+              label={t.t('public.cvc')}
               name="cvc"
               inputMode="numeric"
               autoComplete="off"
@@ -111,15 +110,15 @@ export function DevPayForm({
             />
           </div>
           <Field
-            label={t.t('cardholder')}
+            label={t.t('public.cardholder')}
             name="holder"
             autoComplete="off"
             value={holder}
             onChange={(e) => setHolder(e.target.value)}
           />
           {error ? <Alert tone="error">{error}</Alert> : null}
-          <Button type="submit" size="lg" block loading={busy} loadingText={t.t('paying')}>
-            {t.t('pay')}
+          <Button type="submit" size="lg" block loading={busy} loadingText={t.t('public.paying')}>
+            {t.t('public.pay')}
           </Button>
         </form>
       )}

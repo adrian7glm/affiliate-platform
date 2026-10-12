@@ -142,10 +142,7 @@ export class AffiliatesService {
     const current = await this.get(tenantId, affiliateId);
     await this.commissions.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.status === 'active' && current.status === 'invited') {
-      throw new DomainError(
-        'the affiliate has not accepted the invitation yet',
-        HttpStatus.CONFLICT,
-      );
+      throw new DomainError('errors.affiliates.notAccepted', HttpStatus.CONFLICT);
     }
     const [row] = await this.db
       .update(affiliates)
@@ -183,17 +180,14 @@ export class AffiliatesService {
         .for('update');
       if (!affiliate || affiliate.status !== 'invited') throw new NotFound('invitation');
       if (!affiliate.inviteExpiresAt || affiliate.inviteExpiresAt < this.clock.now()) {
-        throw new DomainError(
-          'this invitation has expired, ask the operator for a new one',
-          HttpStatus.GONE,
-        );
+        throw new DomainError('errors.affiliates.inviteExpired', HttpStatus.GONE);
       }
       const [existing] = await tx
         .select({ id: affiliates.id })
         .from(affiliates)
         .where(and(eq(affiliates.tenantId, affiliate.tenantId), eq(affiliates.userId, userId)));
       if (existing)
-        throw new DomainError('you are already an affiliate of this operator', HttpStatus.CONFLICT);
+        throw new DomainError('errors.affiliates.alreadyAffiliate', HttpStatus.CONFLICT);
       await tx
         .update(affiliates)
         .set({ userId, status: 'active', inviteToken: null, inviteExpiresAt: null })
