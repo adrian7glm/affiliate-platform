@@ -31,18 +31,25 @@ function referenceServer(backend: InMemoryProvider, token: string): Server {
   const readBody = async (req: IncomingMessage): Promise<Record<string, unknown>> => {
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(chunk as Buffer);
-    return chunks.length ? (JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>) : {};
+    return chunks.length
+      ? (JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>)
+      : {};
   };
 
   return createServer((req, res) => {
     void (async () => {
-      if (req.headers.authorization !== `Bearer ${token}`) return send(res, 401, { error: 'unauthorized' });
+      if (req.headers.authorization !== `Bearer ${token}`)
+        return send(res, 401, { error: 'unauthorized' });
       const url = new URL(req.url ?? '/', 'http://localhost');
       const parts = url.pathname.split('/').filter(Boolean);
       try {
         if (req.method === 'GET' && url.pathname === '/products') {
           const products = await backend.listProducts();
-          return send(res, 200, products.map((p) => ({ ...p, id: p.externalId })));
+          return send(
+            res,
+            200,
+            products.map((p) => ({ ...p, id: p.externalId })),
+          );
         }
         if (req.method === 'GET' && parts[0] === 'products' && parts[2] === 'availability') {
           const slots = await backend.getAvailability(
@@ -53,7 +60,12 @@ function referenceServer(backend: InMemoryProvider, token: string): Server {
           return send(
             res,
             200,
-            slots.map((s) => ({ ...s, id: s.externalId, startsAt: s.startsAt.toISOString(), endsAt: s.endsAt.toISOString() })),
+            slots.map((s) => ({
+              ...s,
+              id: s.externalId,
+              startsAt: s.startsAt.toISOString(),
+              endsAt: s.endsAt.toISOString(),
+            })),
           );
         }
         if (req.method === 'POST' && url.pathname === '/holds') {
@@ -69,7 +81,11 @@ function referenceServer(backend: InMemoryProvider, token: string): Server {
         }
         if (req.method === 'POST' && parts[0] === 'holds' && parts[2] === 'confirm') {
           const body = await readBody(req);
-          const customer = body.customer as { name: string; email: string | null; phone: string | null };
+          const customer = body.customer as {
+            name: string;
+            email: string | null;
+            phone: string | null;
+          };
           const result = await backend.confirm({
             holdId: parts[1]!,
             reference: String(body.reference),
@@ -99,7 +115,10 @@ function referenceServer(backend: InMemoryProvider, token: string): Server {
 }
 
 /** The behaviour every provider must have, whatever system is behind it. */
-function contract(name: string, setup: () => { provider: AvailabilityProvider; backend: InMemoryProvider; slotId: string }) {
+function contract(
+  name: string,
+  setup: () => { provider: AvailabilityProvider; backend: InMemoryProvider; slotId: string },
+) {
   describe(`${name}: provider contract`, () => {
     let provider: AvailabilityProvider;
     let slotId: string;
@@ -109,11 +128,19 @@ function contract(name: string, setup: () => { provider: AvailabilityProvider; b
     });
 
     const hold = (seats: number) =>
-      provider.hold({ productExternalId: 'sunset', slotExternalId: slotId, startsAt, seats, ttlSeconds: 600 });
+      provider.hold({
+        productExternalId: 'sunset',
+        slotExternalId: slotId,
+        startsAt,
+        seats,
+        ttlSeconds: 600,
+      });
 
     it('lists products with prices', async () => {
       const products = await provider.listProducts();
-      expect(products).toEqual([expect.objectContaining({ externalId: 'sunset', durationMinutes: 90 })]);
+      expect(products).toEqual([
+        expect.objectContaining({ externalId: 'sunset', durationMinutes: 90 }),
+      ]);
       expect(products[0]?.prices[0]).toMatchObject({ code: 'adult', amountMinor: 15_000 });
     });
 
@@ -140,7 +167,14 @@ function contract(name: string, setup: () => { provider: AvailabilityProvider; b
     it('confirms a hold into a booking and frees the seats on cancel', async () => {
       const { holdId } = await hold(2);
       const confirm = () =>
-        provider.confirm({ holdId, reference: 'DB-0001', customerName: 'John', customerEmail: null, customerPhone: null, seats: 2 });
+        provider.confirm({
+          holdId,
+          reference: 'DB-0001',
+          customerName: 'John',
+          customerEmail: null,
+          customerPhone: null,
+          seats: 2,
+        });
       const { externalRef } = await confirm();
       expect(externalRef).toBeTruthy();
       expect((await confirm()).externalRef).toBe(externalRef); // idempotent
@@ -150,7 +184,14 @@ function contract(name: string, setup: () => { provider: AvailabilityProvider; b
 
     it('refuses to confirm a hold that does not exist', async () => {
       await expect(
-        provider.confirm({ holdId: 'missing', reference: 'X', customerName: 'J', customerEmail: null, customerPhone: null, seats: 1 }),
+        provider.confirm({
+          holdId: 'missing',
+          reference: 'X',
+          customerName: 'J',
+          customerEmail: null,
+          customerPhone: null,
+          seats: 1,
+        }),
       ).rejects.toBeInstanceOf(HoldExpiredError);
     });
   });
@@ -196,7 +237,10 @@ describe('REST adapter over HTTP', () => {
 
   it('reports a wrong token as a provider error', async () => {
     const provider = new RestProvider({ baseUrl, token: 'wrong' });
-    await expect(provider.listProducts()).rejects.toMatchObject({ name: 'ProviderError', status: 401 });
+    await expect(provider.listProducts()).rejects.toMatchObject({
+      name: 'ProviderError',
+      status: 401,
+    });
   });
 
   it('reports an unreachable system as a provider error', async () => {

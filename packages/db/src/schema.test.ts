@@ -37,7 +37,10 @@ describe.skipIf(!url)('database schema (needs TEST_DATABASE_URL)', () => {
     await runMigrations(handle.db);
 
     const { db } = handle;
-    const [tenant] = await db.insert(tenants).values({ slug: 'delta-boats', name: 'Delta Boats' }).returning();
+    const [tenant] = await db
+      .insert(tenants)
+      .values({ slug: 'delta-boats', name: 'Delta Boats' })
+      .returning();
     const [affiliate] = await db
       .insert(affiliates)
       .values({ tenantId: tenant!.id, displayName: 'Ana, Hotel Central', status: 'active' })
@@ -97,8 +100,12 @@ describe.skipIf(!url)('database schema (needs TEST_DATABASE_URL)', () => {
   });
 
   it('lets a commission entry move forward from pending to approved to paid', async () => {
-    await handle.db.execute(sql`update commission_entries set status = 'approved' where id = ${entryId}`);
-    await handle.db.execute(sql`update commission_entries set status = 'paid' where id = ${entryId}`);
+    await handle.db.execute(
+      sql`update commission_entries set status = 'approved' where id = ${entryId}`,
+    );
+    await handle.db.execute(
+      sql`update commission_entries set status = 'paid' where id = ${entryId}`,
+    );
     const result = await handle.db.execute<{ status: string }>(
       sql`select status from commission_entries where id = ${entryId}`,
     );
@@ -106,22 +113,40 @@ describe.skipIf(!url)('database schema (needs TEST_DATABASE_URL)', () => {
   });
 
   it('refuses to change the amount of a commission entry', async () => {
-    expect(await pgError(handle.db.execute(sql`update commission_entries set amount_minor = 99999 where id = ${entryId}`))).toMatch(/append-only/);
+    expect(
+      await pgError(
+        handle.db.execute(
+          sql`update commission_entries set amount_minor = 99999 where id = ${entryId}`,
+        ),
+      ),
+    ).toMatch(/append-only/);
   });
 
   it('refuses to move a paid entry back to pending', async () => {
-    expect(await pgError(handle.db.execute(sql`update commission_entries set status = 'pending' where id = ${entryId}`))).toMatch(/cannot go from paid to pending/);
+    expect(
+      await pgError(
+        handle.db.execute(
+          sql`update commission_entries set status = 'pending' where id = ${entryId}`,
+        ),
+      ),
+    ).toMatch(/cannot go from paid to pending/);
   });
 
   it('refuses to delete a commission entry', async () => {
-    expect(await pgError(handle.db.execute(sql`delete from commission_entries where id = ${entryId}`))).toMatch(/append-only/);
+    expect(
+      await pgError(handle.db.execute(sql`delete from commission_entries where id = ${entryId}`)),
+    ).toMatch(/append-only/);
   });
 
   it('allows only one sale entry per booking', async () => {
-    expect(await pgError(handle.db.execute(sql`
+    expect(
+      await pgError(
+        handle.db.execute(sql`
         insert into commission_entries
           (tenant_id, affiliate_id, booking_id, period_key, kind, amount_minor, rate_bps, base_minor, currency, reason, plan_snapshot)
         select tenant_id, affiliate_id, booking_id, period_key, 'sale', 1, 1, 1, currency, 'duplicate', plan_snapshot
-        from commission_entries where id = ${entryId}`))).toMatch(/commission_entries_one_sale_per_booking/);
+        from commission_entries where id = ${entryId}`),
+      ),
+    ).toMatch(/commission_entries_one_sale_per_booking/);
   });
 });

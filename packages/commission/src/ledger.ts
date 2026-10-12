@@ -44,7 +44,11 @@ export function earnedOnBooking(entries: LedgerEntry[], bookingId: string): numb
 }
 
 /** Entry that cancels everything earned so far on a booking. Null when nothing is left. */
-export function reversalFor(entries: LedgerEntry[], bookingId: string, reason: string): NewLedgerEntry | null {
+export function reversalFor(
+  entries: LedgerEntry[],
+  bookingId: string,
+  reason: string,
+): NewLedgerEntry | null {
   const earned = earnedOnBooking(entries, bookingId);
   if (earned === 0) return null;
   const last = entries.filter((entry) => entry.bookingId === bookingId).at(-1);

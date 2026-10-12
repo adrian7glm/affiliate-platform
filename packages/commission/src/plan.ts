@@ -57,7 +57,9 @@ export function validatePlan(plan: CommissionPlan): CommissionPlan {
     return plan;
   }
   if (plan.kind !== 'tiered') {
-    throw new CommissionPlanError(`unknown plan kind "${String((plan as { kind: unknown }).kind)}"`);
+    throw new CommissionPlanError(
+      `unknown plan kind "${String((plan as { kind: unknown }).kind)}"`,
+    );
   }
   if (plan.mode !== 'marginal' && plan.mode !== 'retroactive') {
     throw new CommissionPlanError(`unknown tier mode "${String(plan.mode)}"`);
@@ -85,7 +87,10 @@ export function validatePlan(plan: CommissionPlan): CommissionPlan {
  * The plan that actually applies to an affiliate: a negotiated per-affiliate rate overrides the
  * operator's default plan with a fixed rate on the same basis.
  */
-export function effectivePlan(plan: CommissionPlan, overrideRateBps?: number | null): CommissionPlan {
+export function effectivePlan(
+  plan: CommissionPlan,
+  overrideRateBps?: number | null,
+): CommissionPlan {
   if (overrideRateBps === undefined || overrideRateBps === null) {
     return validatePlan(plan);
   }

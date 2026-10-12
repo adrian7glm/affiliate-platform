@@ -104,12 +104,21 @@ export class RestProvider implements AvailabilityProvider {
   }
 
   async confirm(request: ConfirmRequest): Promise<{ externalRef: string }> {
-    const response = await this.raw('POST', `/holds/${encodeURIComponent(request.holdId)}/confirm`, {
-      reference: request.reference,
-      customer: { name: request.customerName, email: request.customerEmail, phone: request.customerPhone },
-      seats: request.seats,
-    });
-    if (response.status === 404 || response.status === 410) throw new HoldExpiredError(request.holdId);
+    const response = await this.raw(
+      'POST',
+      `/holds/${encodeURIComponent(request.holdId)}/confirm`,
+      {
+        reference: request.reference,
+        customer: {
+          name: request.customerName,
+          email: request.customerEmail,
+          phone: request.customerPhone,
+        },
+        seats: request.seats,
+      },
+    );
+    if (response.status === 404 || response.status === 410)
+      throw new HoldExpiredError(request.holdId);
     const data = confirmResponse.parse(await this.json(response));
     return { externalRef: data.bookingRef };
   }
@@ -152,7 +161,8 @@ export class RestProvider implements AvailabilityProvider {
     }
     if (response.status === 204) return null;
     const body = await safeJson(response);
-    if (body === undefined) throw new ProviderError('operator system returned invalid JSON', response.status);
+    if (body === undefined)
+      throw new ProviderError('operator system returned invalid JSON', response.status);
     return body;
   }
 }

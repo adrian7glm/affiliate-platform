@@ -8,14 +8,14 @@ by exposing the small HTTP API below. The platform calls it through `RestProvide
 All requests carry `Authorization: Bearer <token>` (the token the operator enters in the platform)
 and use JSON. Dates are ISO 8601 with an offset. Money is in minor units (bani, cents), VAT included.
 
-| Method | Path | Request | Response |
-| --- | --- | --- | --- |
-| GET | `/products` | | `[{ id, name, durationMinutes, prices: [{ code, label, amountMinor, taxRateBps }] }]` |
-| GET | `/products/{id}/availability?from=&to=` | | `[{ id, startsAt, endsAt, capacity, available }]` |
-| POST | `/holds` | `{ productId, slotId, startsAt, seats, ttlSeconds }` | `201 { id, expiresAt }`, or `409 { available }` when sold out |
-| POST | `/holds/{id}/confirm` | `{ reference, customer: { name, email, phone }, seats }` | `{ bookingRef }`, or `410` if the hold expired |
-| DELETE | `/holds/{id}` | | `204` (also when already released) |
-| POST | `/bookings/{bookingRef}/cancel` | | `204` (also when already cancelled) |
+| Method | Path                                    | Request                                                  | Response                                                                              |
+| ------ | --------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| GET    | `/products`                             |                                                          | `[{ id, name, durationMinutes, prices: [{ code, label, amountMinor, taxRateBps }] }]` |
+| GET    | `/products/{id}/availability?from=&to=` |                                                          | `[{ id, startsAt, endsAt, capacity, available }]`                                     |
+| POST   | `/holds`                                | `{ productId, slotId, startsAt, seats, ttlSeconds }`     | `201 { id, expiresAt }`, or `409 { available }` when sold out                         |
+| POST   | `/holds/{id}/confirm`                   | `{ reference, customer: { name, email, phone }, seats }` | `{ bookingRef }`, or `410` if the hold expired                                        |
+| DELETE | `/holds/{id}`                           |                                                          | `204` (also when already released)                                                    |
+| POST   | `/bookings/{bookingRef}/cancel`         |                                                          | `204` (also when already cancelled)                                                   |
 
 Rules the platform relies on:
 

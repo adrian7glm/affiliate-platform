@@ -23,7 +23,10 @@ export interface SaleCommission {
   amountMinor: number;
 }
 
-export function commissionBase(plan: CommissionPlan, sale: Pick<Sale, 'grossMinor' | 'taxMinor'>): number {
+export function commissionBase(
+  plan: CommissionPlan,
+  sale: Pick<Sale, 'grossMinor' | 'taxMinor'>,
+): number {
   assertMinorUnits(sale.grossMinor, 'grossMinor');
   assertMinorUnits(sale.taxMinor, 'taxMinor');
   if (sale.grossMinor < 0 || sale.taxMinor < 0 || sale.taxMinor > sale.grossMinor) {

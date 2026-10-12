@@ -41,9 +41,18 @@ function total(list: { amountMinor: number }[]): number {
 }
 
 let nextId = 0;
-function entry(partial: Partial<LedgerEntry> & Pick<LedgerEntry, 'bookingId' | 'amountMinor'>): LedgerEntry {
+function entry(
+  partial: Partial<LedgerEntry> & Pick<LedgerEntry, 'bookingId' | 'amountMinor'>,
+): LedgerEntry {
   nextId += 1;
-  return { id: `e${nextId}`, kind: 'sale', status: 'pending', rateBps: 0, baseMinor: 10_000, ...partial };
+  return {
+    id: `e${nextId}`,
+    kind: 'sale',
+    status: 'pending',
+    rateBps: 0,
+    baseMinor: 10_000,
+    ...partial,
+  };
 }
 
 describe('money', () => {
@@ -76,11 +85,21 @@ describe('plans', () => {
   });
 
   it('rejects malformed tiers', () => {
-    const bad = (t: typeof tiers): CommissionPlan => ({ kind: 'tiered', mode: 'marginal', tiers: t, basis: 'gross' });
+    const bad = (t: typeof tiers): CommissionPlan => ({
+      kind: 'tiered',
+      mode: 'marginal',
+      tiers: t,
+      basis: 'gross',
+    });
     expect(() => validatePlan(bad([]))).toThrow(/at least one tier/);
     expect(() => validatePlan(bad([{ fromSale: 2, rateBps: 1500 }]))).toThrow(/start at sale 1/);
     expect(() =>
-      validatePlan(bad([{ fromSale: 1, rateBps: 1500 }, { fromSale: 1, rateBps: 2000 }])),
+      validatePlan(
+        bad([
+          { fromSale: 1, rateBps: 1500 },
+          { fromSale: 1, rateBps: 2000 },
+        ]),
+      ),
     ).toThrow(/strictly increasing/);
   });
 
@@ -99,15 +118,19 @@ describe('plans', () => {
 describe('fixed plans', () => {
   it('pays each affiliate their negotiated rate', () => {
     const rates = [2000, 1500, 2500];
-    const earned = rates.map(
-      (rateBps) => computePeriodCommissions({ kind: 'fixed', rateBps, basis: 'gross' }, sales(5)),
+    const earned = rates.map((rateBps) =>
+      computePeriodCommissions({ kind: 'fixed', rateBps, basis: 'gross' }, sales(5)),
     );
     expect(earned.map(total)).toEqual([10_000, 7500, 12_500]);
   });
 
   it('can exclude VAT from the base', () => {
     const plan: CommissionPlan = { kind: 'fixed', rateBps: 2000, basis: 'net_of_tax' };
-    const result = commissionAtSale(plan, { bookingId: 'b1', grossMinor: 11_900, taxMinor: 1900 }, 0);
+    const result = commissionAtSale(
+      plan,
+      { bookingId: 'b1', grossMinor: 11_900, taxMinor: 1900 },
+      0,
+    );
     expect(result).toMatchObject({ baseMinor: 10_000, amountMinor: 2000 });
   });
 });
@@ -127,13 +150,17 @@ describe('progressive plans: 12 sales of 100 lei (example from the architecture 
 
   it('marginal: the live commission equals the final one, so nothing needs reconciling', () => {
     const live = sales(12).map((sale, i) => commissionAtSale(marginal, sale, i));
-    const ledger = live.map((c) => entry({ bookingId: c.bookingId, amountMinor: c.amountMinor, rateBps: c.rateBps }));
+    const ledger = live.map((c) =>
+      entry({ bookingId: c.bookingId, amountMinor: c.amountMinor, rateBps: c.rateBps }),
+    );
     expect(reconcile(computePeriodCommissions(marginal, sales(12)), ledger)).toEqual([]);
   });
 
   it('retroactive: the period close uplifts earlier sales to the tier reached', () => {
     const live = sales(11).map((sale, i) => commissionAtSale(retroactive, sale, i));
-    const ledger = live.map((c) => entry({ bookingId: c.bookingId, amountMinor: c.amountMinor, rateBps: c.rateBps }));
+    const ledger = live.map((c) =>
+      entry({ bookingId: c.bookingId, amountMinor: c.amountMinor, rateBps: c.rateBps }),
+    );
     expect(total(ledger)).toBe(3 * 1500 + 7 * 2000 + 2500);
 
     const adjustments = reconcile(computePeriodCommissions(retroactive, sales(11)), ledger);
@@ -152,7 +179,9 @@ describe('progressive plans: 12 sales of 100 lei (example from the architecture 
 
   it('re-tiers after a cancellation earlier in the month', () => {
     const live = sales(4).map((sale, i) => commissionAtSale(marginal, sale, i));
-    const ledger = live.map((c) => entry({ bookingId: c.bookingId, amountMinor: c.amountMinor, rateBps: c.rateBps }));
+    const ledger = live.map((c) =>
+      entry({ bookingId: c.bookingId, amountMinor: c.amountMinor, rateBps: c.rateBps }),
+    );
     const reversal = reversalFor(ledger, 'b02', 'refund');
     expect(reversal).toMatchObject({ kind: 'reversal', amountMinor: -1500 });
     ledger.push(entry({ ...reversal!, kind: 'reversal' }));
@@ -166,7 +195,10 @@ describe('progressive plans: 12 sales of 100 lei (example from the architecture 
   it('orders sales by payment time, not by input order', () => {
     const shuffled = sales(4).reverse();
     expect(computePeriodCommissions(marginal, shuffled).map((r) => r.bookingId)).toEqual([
-      'b01', 'b02', 'b03', 'b04',
+      'b01',
+      'b02',
+      'b03',
+      'b04',
     ]);
   });
 });
@@ -174,21 +206,37 @@ describe('progressive plans: 12 sales of 100 lei (example from the architecture 
 describe('tier progress shown to the affiliate', () => {
   it('tells how many sales are left to the next tier', () => {
     expect(tierProgress(marginal, 0)).toMatchObject({
-      tierIndex: 0, currentRateBps: 1500, nextSaleRateBps: 1500, nextRateBps: 2000, salesToNextTier: 4,
+      tierIndex: 0,
+      currentRateBps: 1500,
+      nextSaleRateBps: 1500,
+      nextRateBps: 2000,
+      salesToNextTier: 4,
     });
     expect(tierProgress(marginal, 2)).toMatchObject({ currentRateBps: 1500, salesToNextTier: 2 });
     expect(tierProgress(marginal, 3)).toMatchObject({
-      currentRateBps: 1500, nextSaleRateBps: 2000, nextRateBps: 2000, salesToNextTier: 1,
+      currentRateBps: 1500,
+      nextSaleRateBps: 2000,
+      nextRateBps: 2000,
+      salesToNextTier: 1,
     });
-    expect(tierProgress(marginal, 10)).toMatchObject({ tierIndex: 1, nextRateBps: 2500, salesToNextTier: 1 });
+    expect(tierProgress(marginal, 10)).toMatchObject({
+      tierIndex: 1,
+      nextRateBps: 2500,
+      salesToNextTier: 1,
+    });
     expect(tierProgress(marginal, 11)).toMatchObject({
-      tierIndex: 2, currentRateBps: 2500, nextRateBps: null, salesToNextTier: null,
+      tierIndex: 2,
+      currentRateBps: 2500,
+      nextRateBps: null,
+      salesToNextTier: null,
     });
   });
 
   it('has no next tier on a fixed plan', () => {
     expect(tierProgress({ kind: 'fixed', rateBps: 2000, basis: 'gross' }, 7)).toMatchObject({
-      currentRateBps: 2000, nextRateBps: null, salesToNextTier: null,
+      currentRateBps: 2000,
+      nextRateBps: null,
+      salesToNextTier: null,
     });
   });
 });
@@ -200,14 +248,20 @@ describe('approval and payouts', () => {
   it('approves a sale once the ticket is scanned or the trip is 24h in the past', () => {
     const sale = { kind: 'sale' as const, status: 'pending' as const, amountMinor: 1500 };
     expect(isApprovable(sale, booking, new Date('2026-10-10T10:00:00Z'))).toBe(false);
-    expect(isApprovable(sale, { ...booking, checkedInAt: startsAt }, new Date('2026-10-10T10:00:00Z'))).toBe(true);
+    expect(
+      isApprovable(sale, { ...booking, checkedInAt: startsAt }, new Date('2026-10-10T10:00:00Z')),
+    ).toBe(true);
     expect(isApprovable(sale, booking, new Date('2026-10-11T09:00:00Z'))).toBe(true);
-    expect(isApprovable(sale, { ...booking, cancelled: true }, new Date('2026-10-20T00:00:00Z'))).toBe(false);
+    expect(
+      isApprovable(sale, { ...booking, cancelled: true }, new Date('2026-10-20T00:00:00Z')),
+    ).toBe(false);
   });
 
   it('approves reversals immediately', () => {
     const reversal = { kind: 'reversal' as const, status: 'pending' as const, amountMinor: -1500 };
-    expect(isApprovable(reversal, { ...booking, cancelled: true }, new Date('2026-10-01T00:00:00Z'))).toBe(true);
+    expect(
+      isApprovable(reversal, { ...booking, cancelled: true }, new Date('2026-10-01T00:00:00Z')),
+    ).toBe(true);
   });
 
   it('pays approved entries and carries forward a negative balance', () => {
@@ -219,7 +273,9 @@ describe('approval and payouts', () => {
     expect(paid).toMatchObject({ totalMinor: 3500, carryForward: false });
     expect(paid.entryIds).toHaveLength(2);
 
-    const clawback = buildPayout([entry({ bookingId: 'b1', amountMinor: -1500, kind: 'reversal', status: 'approved' })]);
+    const clawback = buildPayout([
+      entry({ bookingId: 'b1', amountMinor: -1500, kind: 'reversal', status: 'approved' }),
+    ]);
     expect(clawback).toEqual({ entryIds: [], totalMinor: -1500, carryForward: true });
   });
 });

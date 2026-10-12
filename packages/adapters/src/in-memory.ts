@@ -37,7 +37,12 @@ export class InMemoryProvider implements AvailabilityProvider {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  addSlot(productExternalId: string, startsAt: Date, durationMinutes: number, capacity: number): string {
+  addSlot(
+    productExternalId: string,
+    startsAt: Date,
+    durationMinutes: number,
+    capacity: number,
+  ): string {
     const externalId = randomUUID();
     this.slots.set(externalId, {
       externalId,
@@ -57,7 +62,9 @@ export class InMemoryProvider implements AvailabilityProvider {
   async getAvailability(productExternalId: string, from: Date, to: Date): Promise<ProviderSlot[]> {
     this.expireHolds();
     return [...this.slots.values()]
-      .filter((s) => s.productExternalId === productExternalId && s.startsAt >= from && s.startsAt < to)
+      .filter(
+        (s) => s.productExternalId === productExternalId && s.startsAt >= from && s.startsAt < to,
+      )
       .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
       .map(({ externalId, startsAt, endsAt, capacity, available }) => ({
         externalId,
@@ -75,7 +82,12 @@ export class InMemoryProvider implements AvailabilityProvider {
     slot.available -= request.seats;
     const holdId = randomUUID();
     const expiresAt = new Date(this.now().getTime() + request.ttlSeconds * 1000);
-    this.holds.set(holdId, { slotId: slot.externalId, seats: request.seats, expiresAt, confirmedRef: null });
+    this.holds.set(holdId, {
+      slotId: slot.externalId,
+      seats: request.seats,
+      expiresAt,
+      confirmedRef: null,
+    });
     return { holdId, expiresAt };
   }
 

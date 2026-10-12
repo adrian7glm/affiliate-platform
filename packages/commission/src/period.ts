@@ -35,7 +35,10 @@ export function periodRange(key: PeriodKey, timezone: string): { start: Date; en
 export function previousPeriod(key: PeriodKey): PeriodKey {
   const match = PERIOD_KEY.exec(key);
   if (!match) throw new RangeError(`period key must look like YYYY-MM, got "${key}"`);
-  return DateTime.fromObject({ year: Number(match[1]), month: Number(match[2]), day: 1 }, { zone: 'UTC' })
+  return DateTime.fromObject(
+    { year: Number(match[1]), month: Number(match[2]), day: 1 },
+    { zone: 'UTC' },
+  )
     .minus({ months: 1 })
     .toFormat('yyyy-MM');
 }

@@ -25,7 +25,10 @@ export const tenants = pgTable('tenants', {
   currency: text('currency').notNull().default('RON'),
   timezone: text('timezone').notNull().default('Europe/Bucharest'),
   defaultLocale: text('default_locale').notNull().default('ro'),
-  branding: jsonb('branding').$type<{ logoUrl?: string; primaryColor?: string }>().notNull().default({}),
+  branding: jsonb('branding')
+    .$type<{ logoUrl?: string; primaryColor?: string }>()
+    .notNull()
+    .default({}),
   /** Platform revenue share per booking, in basis points. */
   platformFeeBps: integer('platform_fee_bps').notNull().default(0),
   attributionWindowDays: integer('attribution_window_days').notNull().default(30),
