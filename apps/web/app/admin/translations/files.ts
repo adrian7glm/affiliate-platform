@@ -1,4 +1,4 @@
-import { flatten, unflatten } from '@ap/i18n';
+import { flatten, unflatten } from '@ap/i18n/core';
 import type { AdminLanguageDto, TranslationEntryDto } from '@ap/contracts';
 
 /** Language files for download and upload, in the format of packages/i18n/src/locales/*.json. */

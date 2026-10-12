@@ -1,4 +1,4 @@
-import { intlLocale } from '@ap/i18n';
+import { intlLocale } from '@ap/i18n/core';
 import { DEFAULT_LANG, type Lang } from './i18n';
 
 /**

@@ -4,14 +4,14 @@ import type { CheckoutResultDto, Locale } from '@ap/contracts';
 import { useEffect, useRef } from 'react';
 import { Button, ButtonLink } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { useT } from '@/components/I18nProvider';
+import { useT, useTranslatorFor } from '@/components/I18nProvider';
 import { IconChat, IconCheck, IconExternal, IconMessage, IconPlus } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { QrCode } from '@/components/QrCode';
 import { ShareActions } from '@/components/ShareActions';
 import { DEFAULT_TIMEZONE, dateKeyInTz, formatDayLong, formatTime } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
-import { getT, isLang, type Lang } from '@/lib/i18n';
+import { isLang, type Lang, type Translator } from '@/lib/i18n';
 import { parseTicketUrl, ticketPath } from '@/lib/links';
 import { smsUrl, whatsappUrl } from '@/lib/share';
 
@@ -29,14 +29,12 @@ export function customerLang(locale: Locale): Lang {
   return isLang(locale) ? locale : 'en';
 }
 
-/** Message for the customer, in their language when we have it (else English). */
+/** Message for the customer, written with a translator in the customer's language. */
 export function customerMessage(
   kind: 'pay' | 'ticket',
-  locale: Locale,
+  { t, lang }: Pick<Translator, 't' | 'lang'>,
   data: { name: string; product: string; startsAt: string; url: string },
 ): string {
-  const lang = customerLang(locale);
-  const { t } = getT(lang);
   const vars = {
     name: data.name.split(' ')[0] ?? data.name,
     product: data.product,
@@ -58,13 +56,14 @@ export function BookingResult({
   onNewBooking,
 }: BookingResultProps) {
   const { t, lang } = useT();
+  const customerT = useTranslatorFor(customerLang(locale));
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);
 
   const { booking, paymentUrl, ticketUrl } = result;
   const payOnline = !!paymentUrl;
   const shareUrl = paymentUrl ?? ticketUrl;
-  const message = customerMessage(payOnline ? 'pay' : 'ticket', locale, {
+  const message = customerMessage(payOnline ? 'pay' : 'ticket', customerT, {
     name: customerName,
     product: productName,
     startsAt: booking.startsAt,

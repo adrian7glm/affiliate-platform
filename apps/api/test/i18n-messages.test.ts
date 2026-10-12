@@ -102,7 +102,7 @@ describe.skipIf(!databaseUrl)('translated API texts (needs TEST_DATABASE_URL)', 
     await h.notifications.enqueue(db, {
       to: 'hans@example.com',
       template: 'ticket',
-      locale: 'de',
+      locale: 'nl',
       params,
     });
     await h.notifications.deliverDue();

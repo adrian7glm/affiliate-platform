@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { type CheckoutInput, type CheckoutSession, PaymentsGateway } from './gateway';
 
-const STRIPE_LOCALES = new Set(['ro', 'en', 'de', 'fr', 'it']);
+const STRIPE_LOCALES = new Set(['ro', 'en', 'de', 'fr', 'es', 'it', 'pt', 'ru']);
 /** Stripe requires a Checkout Session to stay open at least 30 minutes. */
 const MIN_SESSION_MS = 31 * 60_000;
 

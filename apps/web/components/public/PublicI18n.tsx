@@ -13,11 +13,13 @@ export function PublicI18n({
   lang,
   languages,
   overrides,
+  file,
   children,
 }: {
   lang: Lang;
   languages: LanguageInfo[];
   overrides: Messages;
+  file?: Readonly<Record<string, unknown>> | null;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -32,7 +34,13 @@ export function PublicI18n({
     [router, pathname, search],
   );
   return (
-    <I18nProvider lang={lang} languages={languages} overrides={overrides} onChange={onChange}>
+    <I18nProvider
+      lang={lang}
+      languages={languages}
+      overrides={overrides}
+      file={file}
+      onChange={onChange}
+    >
       {children}
     </I18nProvider>
   );

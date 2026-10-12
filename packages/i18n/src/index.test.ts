@@ -14,8 +14,8 @@ describe('translator', () => {
   it('interpolates variables and falls back to English', () => {
     const { t } = createTranslator('ro');
     expect(t('public.fromPrice', { price: '50 RON' })).toBe('de la 50 RON');
-    const de = createTranslator('de');
-    expect(de.t('public.fromPrice', { price: '€5' })).toBe('from €5');
+    const nl = createTranslator('nl');
+    expect(nl.t('public.fromPrice', { price: '€5' })).toBe('from €5');
   });
 
   it('picks the plural form of the language', () => {
@@ -29,9 +29,9 @@ describe('translator', () => {
   it('puts the admin overrides first, for languages without a file too', () => {
     const { t } = createTranslator('ro', { ro: { 'public.book': 'Cumpără' } });
     expect(t('public.book')).toBe('Cumpără');
-    const de = createTranslator('de', { de: { 'public.book': 'Buchen' } });
-    expect(de.t('public.book')).toBe('Buchen');
-    expect(de.t('public.noProducts')).toBe('No trips are available right now.');
+    const nl = createTranslator('nl', { nl: { 'public.book': 'Boeken' } });
+    expect(nl.t('public.book')).toBe('Boeken');
+    expect(nl.t('public.noProducts')).toBe('No trips are available right now.');
   });
 
   it('returns the key for an unknown text', () => {
@@ -57,6 +57,7 @@ describe('languages', () => {
   it('knows the plural forms of each language', () => {
     expect(pluralForms('ro')).toEqual(['one', 'few', 'other']);
     expect(pluralForms('en')).toEqual(['one', 'other']);
+    expect(pluralForms('ru')).toEqual(['one', 'few', 'many', 'other']);
   });
 });
 

@@ -7,13 +7,12 @@ import { useSession } from '@/components/AuthGate';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { SelectField } from '@/components/Field';
-import { useT } from '@/components/I18nProvider';
+import { useT, useTranslatorFor } from '@/components/I18nProvider';
 import { IconDownload, IconPrinter, IconShare } from '@/components/icons';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingBlock, Spinner } from '@/components/Spinner';
 import { affiliateApi } from '@/lib/endpoints';
 import { formatMoney, slugify } from '@/lib/format';
-import { getT } from '@/lib/i18n';
 import { jpegPdf } from '@/lib/pdf';
 import {
   KIT_FORMATS,
@@ -56,7 +55,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
   // The materials can be printed in another language than the app (e.g. English for tourists).
   const [kitLangChoice, setKitLang] = useState<string | null>(null);
   const kitLang = kitLangChoice ?? lang;
-  const kitT = useMemo(() => (kitLang === lang ? i18n : getT(kitLang)), [kitLang, lang, i18n]);
+  const kitT = useTranslatorFor(kitLang);
   const home = useAffiliateHome();
   const links = useApi('affiliate-links', (signal) => affiliateApi.links({ signal }));
   const products = useApi('affiliate-products', (signal) => affiliateApi.products({ signal }));

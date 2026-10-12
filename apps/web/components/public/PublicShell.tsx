@@ -1,7 +1,7 @@
 import type { BrandingDto } from '@ap/contracts';
 import { Suspense, type ReactNode } from 'react';
 import type { Lang } from '@/lib/i18n';
-import { serverLanguages, serverOverrides } from '@/lib/i18n-server';
+import { serverLanguageFile, serverLanguages, serverOverrides } from '@/lib/i18n-server';
 import { PublicFrame } from './PublicFrame';
 import { PublicI18n } from './PublicI18n';
 
@@ -35,7 +35,12 @@ export async function PublicShell({
   const [languages, overrides] = await Promise.all([serverLanguages(), serverOverrides(lang)]);
   return (
     <Suspense>
-      <PublicI18n lang={lang} languages={languages} overrides={overrides}>
+      <PublicI18n
+        lang={lang}
+        languages={languages}
+        overrides={overrides}
+        file={serverLanguageFile(lang)}
+      >
         {bare ? (
           children
         ) : (

@@ -13,7 +13,10 @@ import { i18nApi, type PublicLanguages, type PublicMessages } from '@/lib/i18n-a
 import {
   BUNDLED_LANGUAGES,
   DEFAULT_LANG,
+  addLanguageFile,
   getT,
+  isLangReady,
+  loadLanguage,
   pickLang,
   rememberLang,
   savedLang,
@@ -38,6 +41,21 @@ const I18nContext = createContext<I18nValue | null>(null);
 
 const LANGUAGES_CACHE = 'ap.i18n.languages';
 const messagesCacheKey = (lang: Lang) => `ap.i18n.messages.${lang}`;
+
+/**
+ * A translator for another language than the page's (e.g. a message for the customer). Until
+ * that language file has downloaded, the page language is used.
+ */
+export function useTranslatorFor(lang: Lang): Translator {
+  const page = useT();
+  const [, setLoaded] = useState(0);
+  const ready = isLangReady(lang);
+  useEffect(() => {
+    if (!ready) void loadLanguage(lang).then(() => setLoaded((n) => n + 1));
+  }, [lang, ready]);
+  if (lang === page.lang) return page;
+  return ready ? getT(lang) : page;
+}
 
 /** Translations for client components. */
 export function useT(): I18nValue {
@@ -65,6 +83,7 @@ export function I18nProvider({
   fallback = DEFAULT_LANG,
   languages: initialLanguages,
   overrides: initialOverrides,
+  file,
   onChange,
   children,
 }: {
@@ -72,6 +91,8 @@ export function I18nProvider({
   fallback?: Lang;
   languages?: LanguageInfo[];
   overrides?: Messages;
+  /** The language file of `lang` when it is not in the bundle (server-rendered pages). */
+  file?: Readonly<Record<string, unknown>> | null;
   onChange?: (lang: Lang) => void;
   children: ReactNode;
 }) {
@@ -80,7 +101,18 @@ export function I18nProvider({
   const [overrides, setOverrides] = useState<Record<Lang, Messages>>(
     fixedLang && initialOverrides ? { [fixedLang]: initialOverrides } : {},
   );
-  const lang = fixedLang ?? chosen;
+  // Before the first render, so server and browser render the same texts.
+  if (fixedLang && file) addLanguageFile(fixedLang, file);
+  const wanted = fixedLang ?? chosen;
+  // A language whose file is still downloading keeps the previous language on screen.
+  const [lastShown, setLastShown] = useState<Lang>(wanted);
+  const [, setLoaded] = useState(0);
+  const ready = isLangReady(wanted);
+  const lang = ready ? wanted : isLangReady(lastShown) ? lastShown : 'en';
+  useEffect(() => {
+    if (ready) setLastShown(wanted);
+    else void loadLanguage(wanted).then(() => setLoaded((n) => n + 1));
+  }, [wanted, ready]);
   const [version, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
