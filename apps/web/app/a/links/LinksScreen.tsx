@@ -147,11 +147,11 @@ export function LinksScreen() {
                         Cod QR
                       </Button>
                       <ButtonLink
-                        href={`/a/links/${link.id}/print`}
+                        href={`/a/kit?link=${link.id}`}
                         variant="secondary"
                         icon={<IconPrinter />}
                       >
-                        Afiș A5
+                        De tipărit
                       </ButtonLink>
                     </div>
                   </div>

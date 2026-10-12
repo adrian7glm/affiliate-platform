@@ -166,6 +166,16 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
     });
     expect(home.primaryLink.url).toMatch(/^http:\/\/web\.test\/r\/[A-Z0-9]{7}$/);
     expect(home.primaryLink.qrUrl).toBe(`${home.primaryLink.url}?s=qr`);
+    expect(home.tenant.branding).toEqual({});
+    expect(home.history.map((m) => m.periodKey)).toEqual([
+      '2026-05',
+      '2026-06',
+      '2026-07',
+      '2026-08',
+      '2026-09',
+      '2026-10',
+    ]);
+    expect(home.history.every((m) => m.paidSales === 0 && m.commissionMinor === 0)).toBe(true);
     linkCode = home.primaryLink.code;
   });
 
@@ -256,6 +266,12 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       salesToNextTier: 7,
     });
     expect(home.earnings).toMatchObject({ pendingMinor: 8_000, monthTotalMinor: 8_000 });
+    expect(home.history.at(-1)).toEqual({
+      periodKey: '2026-10',
+      paidSales: 4,
+      salesMinor: confirmed.reduce((sum, c) => sum + c.booking.totalMinor, 0),
+      commissionMinor: 8_000,
+    });
 
     // The operator's list and the affiliate's links show the same month.
     const listed = (await asOwner('get', '/operator/affiliates').expect(200))

@@ -446,6 +446,8 @@ export interface AffiliateHomeDto {
     currency: string;
     timezone: string;
     allowPayOnSite: boolean;
+    /** The operator's logo and color, for printed QR materials. */
+    branding: { logoUrl?: string; primaryColor?: string };
   };
   periodKey: string;
   earnings: {
@@ -465,6 +467,18 @@ export interface AffiliateHomeDto {
   };
   primaryLink: LinkDto;
   recentBookings: BookingDto[];
+  /** The last six months, oldest first; the last one is the current month. */
+  history: AffiliateMonthDto[];
+}
+
+export interface AffiliateMonthDto {
+  periodKey: string;
+  /** Paid, non-cancelled bookings, counted in the month they were paid. */
+  paidSales: number;
+  /** What those bookings were worth. */
+  salesMinor: number;
+  /** Net commission booked in the month (sales minus reversals and adjustments). */
+  commissionMinor: number;
 }
 
 export interface CommissionEntryDto {

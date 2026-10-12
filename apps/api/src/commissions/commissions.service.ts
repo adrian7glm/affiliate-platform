@@ -11,6 +11,7 @@ import {
   isApprovable,
   periodKeyFor,
   periodRange,
+  previousPeriod,
   reconcile,
   reversalFor,
   tierProgress,
@@ -18,6 +19,7 @@ import {
 } from '@ap/commission';
 import type {
   AffiliateHomeDto,
+  AffiliateMonthDto,
   ClosePeriodResultDto,
   CommissionPlanDto,
   CommissionReportDto,
@@ -451,6 +453,7 @@ export class CommissionsService implements OnModuleInit {
         currency: tenant.currency,
         timezone: tenant.timezone,
         allowPayOnSite: tenant.allowPayOnSite,
+        branding: tenant.branding ?? {},
       },
       periodKey,
       earnings: {
@@ -467,7 +470,62 @@ export class CommissionsService implements OnModuleInit {
       },
       primaryLink: primaryLink!,
       recentBookings: await this.bookingService.listForAffiliate(affiliateId, 10),
+      history: await this.monthlyHistory(affiliateId, tenant, periodKey, 6),
     };
+  }
+
+  /** Sales and commission per month for the last `months` periods, oldest first. */
+  private async monthlyHistory(
+    affiliateId: string,
+    tenant: Tenant,
+    currentKey: string,
+    months: number,
+  ): Promise<AffiliateMonthDto[]> {
+    const keys = [currentKey];
+    while (keys.length < months) keys.unshift(previousPeriod(keys[0]!));
+    const start = periodRange(keys[0]!, tenant.timezone).start;
+    const end = periodRange(currentKey, tenant.timezone).end;
+    const monthOfPayment = sql<string>`to_char(${bookings.paidAt} at time zone ${tenant.timezone}, 'YYYY-MM')`;
+    const sales = await this.db
+      .select({
+        periodKey: monthOfPayment,
+        count: sql<number>`count(*)::int`,
+        total: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
+      })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.affiliateId, affiliateId),
+          eq(bookings.status, 'confirmed'),
+          gte(bookings.paidAt, start),
+          lt(bookings.paidAt, end),
+        ),
+      )
+      // By position: the timezone is a bind parameter, so Postgres would not match the
+      // repeated expression.
+      .groupBy(sql`1`);
+    const commission = await this.db
+      .select({
+        periodKey: commissionEntries.periodKey,
+        total: sql<number>`coalesce(sum(${commissionEntries.amountMinor}), 0)::int`,
+      })
+      .from(commissionEntries)
+      .where(
+        and(
+          eq(commissionEntries.affiliateId, affiliateId),
+          inArray(commissionEntries.periodKey, keys),
+        ),
+      )
+      .groupBy(commissionEntries.periodKey);
+    return keys.map((key) => {
+      const s = sales.find((r) => r.periodKey === key);
+      return {
+        periodKey: key,
+        paidSales: s?.count ?? 0,
+        salesMinor: s?.total ?? 0,
+        commissionMinor: commission.find((r) => r.periodKey === key)?.total ?? 0,
+      };
+    });
   }
 
   async earnings(tenantId: string, affiliateId: string, periodKey: string): Promise<EarningsDto> {
