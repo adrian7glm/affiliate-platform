@@ -1,5 +1,6 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 import { AffiliatesModule } from './affiliates/affiliates.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { BookingModule } from './booking/booking.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { CommissionsModule } from './commissions/commissions.module';
@@ -48,6 +49,7 @@ export class AppModule {
         PaymentsModule,
         BookingModule,
         CommissionsModule,
+        AnalyticsModule,
         JobsModule,
       ],
       controllers: [HealthController],

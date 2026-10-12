@@ -29,6 +29,8 @@
   --color-on-danger: var(--on-danger);
   --color-danger-soft: var(--danger-soft);
   --color-danger-fg: var(--danger-fg);
+  --color-viz-1: var(--viz-1);
+  --color-viz-2: var(--viz-2);
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     'Noto Sans', sans-serif;
@@ -63,6 +65,9 @@
   --danger-soft: #fee2e2;
   --danger-fg: #991b1b;
   --focus: #0369a1;
+  /* Chart series, validated as a pair for colour-vision deficiency on each surface. */
+  --viz-1: #0369a1;
+  --viz-2: #eb6834;
 
   --nav-h: 4.25rem;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -98,6 +103,8 @@
     --danger-soft: #3b1212;
     --danger-fg: #fca5a5;
     --focus: #7dd3fc;
+    --viz-1: #0284c7;
+    --viz-2: #d95926;
   }
 }
 
