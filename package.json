@@ -1,0 +1,31 @@
+{
+  "name": "affiliate-platform",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @ap/db run generate",
+    "db:migrate": "pnpm --filter @ap/db run migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.8",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
