@@ -34,29 +34,37 @@ Errors: `{ statusCode, error, message, details? }`.
 
 ## Operator (roles `owner`, `staff`)
 
-| Method | Path                              | Body / query          | Response                          |
-| ------ | --------------------------------- | --------------------- | --------------------------------- |
-| GET    | `/operator/dashboard`             |                       | `OperatorDashboardDto`            |
-| GET    | `/operator/analytics`             | `?period=YYYY-MM`     | `OperatorAnalyticsDto`            |
-| GET    | `/operator/affiliates`            |                       | `AffiliateWithStatsDto[]`         |
-| POST   | `/operator/affiliates`            | `InviteAffiliateBody` | `AffiliateDto` (with `inviteUrl`) |
-| PATCH  | `/operator/affiliates/:id`        | `UpdateAffiliateBody` | `AffiliateDto`                    |
-| GET    | `/operator/commission-plans`      |                       | `CommissionPlanDto[]`             |
-| POST   | `/operator/commission-plans`      | `CreatePlanBody`      | `CommissionPlanDto`               |
-| GET    | `/operator/products`              |                       | `ProductDto[]`                    |
-| POST   | `/operator/products`              | `CreateProductBody`   | `ProductDto`                      |
-| GET    | `/operator/products/:id/slots`    | `?from&to`            | `SlotDto[]`                       |
-| POST   | `/operator/products/:id/slots`    | `CreateSlotsBody`     | `{ created: number }`             |
-| GET    | `/operator/bookings`              | `?from&to`            | `BookingDto[]`                    |
-| POST   | `/operator/bookings/:id/cancel`   | `CancelBookingBody`   | `BookingDto`                      |
-| POST   | `/operator/tickets/check-in`      | `CheckInBody`         | `CheckInResultDto`                |
-| GET    | `/operator/commissions/report`    | `?period=YYYY-MM`     | `CommissionReportDto`             |
-| POST   | `/operator/payouts/close-period`  | `ClosePeriodBody`     | `ClosePeriodResultDto`            |
-| GET    | `/operator/payouts`               | `?period=YYYY-MM`     | `PayoutDto[]`                     |
-| POST   | `/operator/payouts/:id/mark-paid` |                       | `PayoutDto`                       |
-| GET    | `/operator/sources`               |                       | `SourceDto[]`                     |
-| POST   | `/operator/sources` (owner)       | `ConnectSourceBody`   | `SourceDto`                       |
-| POST   | `/operator/sources/:id/sync`      |                       | `SyncResultDto`                   |
+| Method | Path                                          | Body / query          | Response                          |
+| ------ | --------------------------------------------- | --------------------- | --------------------------------- |
+| GET    | `/operator/dashboard`                         |                       | `OperatorDashboardDto`            |
+| GET    | `/operator/analytics`                         | `?period=YYYY-MM`     | `OperatorAnalyticsDto`            |
+| GET    | `/operator/affiliates`                        |                       | `AffiliateWithStatsDto[]`         |
+| POST   | `/operator/affiliates`                        | `InviteAffiliateBody` | `AffiliateDto` (with `inviteUrl`) |
+| PATCH  | `/operator/affiliates/:id`                    | `UpdateAffiliateBody` | `AffiliateDto`                    |
+| GET    | `/operator/commission-plans`                  |                       | `CommissionPlanDto[]`             |
+| POST   | `/operator/commission-plans`                  | `CreatePlanBody`      | `CommissionPlanDto`               |
+| PUT    | `/operator/commission-plans/:id`              | `UpdatePlanBody`      | `CommissionPlanDto` (new version) |
+| POST   | `/operator/commission-plans/:id/make-default` |                       | `CommissionPlanDto`               |
+| DELETE | `/operator/commission-plans/:id`              |                       | `ArchivePlanResultDto`            |
+| GET    | `/operator/products`                          |                       | `ProductDto[]`                    |
+| POST   | `/operator/products`                          | `CreateProductBody`   | `ProductDto`                      |
+| PATCH  | `/operator/products/:id`                      | `UpdateProductBody`   | `ProductDto`                      |
+| GET    | `/operator/products/:id/slots`                | `?from&to`            | `OperatorSlotDto[]`               |
+| POST   | `/operator/products/:id/slots`                | `CreateSlotsBody`     | `{ created: number }`             |
+| PATCH  | `/operator/products/:id/slots`                | `UpdateSlotsBody`     | `UpdateSlotsResultDto`            |
+| POST   | `/operator/products/:id/slots/delete`         | `DeleteSlotsBody`     | `DeleteSlotsResultDto`            |
+| GET    | `/operator/settings`                          |                       | `OperatorSettingsDto`             |
+| PATCH  | `/operator/settings` (owner)                  | `UpdateSettingsBody`  | `OperatorSettingsDto`             |
+| GET    | `/operator/bookings`                          | `?from&to`            | `BookingDto[]`                    |
+| POST   | `/operator/bookings/:id/cancel`               | `CancelBookingBody`   | `BookingDto`                      |
+| POST   | `/operator/tickets/check-in`                  | `CheckInBody`         | `CheckInResultDto`                |
+| GET    | `/operator/commissions/report`                | `?period=YYYY-MM`     | `CommissionReportDto`             |
+| POST   | `/operator/payouts/close-period`              | `ClosePeriodBody`     | `ClosePeriodResultDto`            |
+| GET    | `/operator/payouts`                           | `?period=YYYY-MM`     | `PayoutDto[]`                     |
+| POST   | `/operator/payouts/:id/mark-paid`             |                       | `PayoutDto`                       |
+| GET    | `/operator/sources`                           |                       | `SourceDto[]`                     |
+| POST   | `/operator/sources` (owner)                   | `ConnectSourceBody`   | `SourceDto`                       |
+| POST   | `/operator/sources/:id/sync`                  |                       | `SyncResultDto`                   |
 
 ## Public (no authentication)
 

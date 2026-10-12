@@ -139,7 +139,7 @@ export function TicketView({
   const status = STATUS[ticket.status];
 
   return (
-    <PublicShell lang={lang} path={path} tenantName={ticket.tenantName}>
+    <PublicShell lang={lang} path={path} tenantName={ticket.tenantName} branding={ticket.branding}>
       <div className="mx-auto flex max-w-md flex-col gap-5 pt-5">
         {offline ? <Alert tone="warning">{t.t('offlineTicket')}</Alert> : null}
 

@@ -140,6 +140,7 @@ export class TicketsService {
         product: products,
         tenantName: tenants.name,
         timezone: tenants.timezone,
+        branding: tenants.branding,
         ticket: tickets,
       })
       .from(bookings)
@@ -171,6 +172,7 @@ export class TicketsService {
       productName: row.product.name,
       tenantName: row.tenantName,
       timezone: row.timezone,
+      branding: row.branding,
       startsAt: booking.startsAt.toISOString(),
       meetingPoint: row.product.meetingPoint,
       seats: booking.seats,

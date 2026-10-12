@@ -1,23 +1,29 @@
+import type { BrandingDto } from '@ap/contracts';
 import Link from 'next/link';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { brandCss, safeLogoUrl } from '@/lib/brandColors';
 import { getT, LANGS, translate, type Lang } from '@/lib/i18n';
-import { parseHex, readableTextOn } from '@/lib/links';
 
-interface Branding {
-  logoUrl?: string;
-  primaryColor?: string;
-}
-
-/** CSS variables that re-brand the subtree with the operator's color (buttons, links, focus). */
-export function brandStyle(branding?: Branding | null): CSSProperties | undefined {
-  const color = branding?.primaryColor;
-  if (!color || !parseHex(color)) return undefined;
-  const hex = color.startsWith('#') ? color : `#${color}`;
-  return {
-    '--brand': hex,
-    '--brand-strong': hex,
-    '--on-brand': readableTextOn(hex),
-  } as CSSProperties;
+/**
+ * Re-brands its children with the operator's color (buttons, links, focus rings), with shades
+ * adjusted for contrast in light and dark mode.
+ */
+export function BrandScope({
+  color,
+  className,
+  children,
+}: {
+  color?: string | null;
+  className?: string;
+  children: ReactNode;
+}) {
+  const css = brandCss('.brand-scope', color);
+  return (
+    <div className={`brand-scope ${className ?? ''}`}>
+      {css ? <style>{css}</style> : null}
+      {children}
+    </div>
+  );
 }
 
 /**
@@ -36,61 +42,70 @@ export function PublicShell({
   lang: Lang;
   path: string;
   tenantName?: string | null;
-  branding?: Branding | null;
+  branding?: BrandingDto | null;
   homeHref?: string;
   children: ReactNode;
 }) {
   const { t } = getT(lang);
-  const logo = branding?.logoUrl && /^https:\/\//.test(branding.logoUrl) ? branding.logoUrl : null;
+  const logo = safeLogoUrl(branding?.logoUrl);
   const title = logo ? (
     // Operator logos come from any host, so a plain <img> rather than next/image.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={logo} alt={tenantName ?? ''} className="h-10 w-auto max-w-[12rem] object-contain" />
+    <img
+      src={logo}
+      alt={tenantName ?? ''}
+      className="h-10 w-auto max-w-[12rem] rounded-lg object-contain dark:bg-white dark:px-2 dark:py-1"
+    />
   ) : (
     <span className="truncate text-lg font-bold">{tenantName}</span>
   );
 
   return (
-    <div lang={lang} style={brandStyle(branding)} className="flex min-h-dvh flex-col bg-bg text-fg">
-      <header className="border-b border-line bg-surface" style={{ paddingTop: 'var(--safe-top)' }}>
-        <div className="page-x mx-auto flex min-h-16 max-w-3xl items-center justify-between gap-3">
-          {tenantName ? (
-            homeHref ? (
-              <Link href={homeHref} className="flex min-h-12 min-w-0 items-center">
-                {title}
-              </Link>
+    <BrandScope color={branding?.primaryColor}>
+      <div lang={lang} className="flex min-h-dvh flex-col bg-bg text-fg">
+        <header
+          className="border-b border-line bg-surface"
+          style={{ paddingTop: 'var(--safe-top)' }}
+        >
+          <div className="page-x mx-auto flex min-h-16 max-w-3xl items-center justify-between gap-3">
+            {tenantName ? (
+              homeHref ? (
+                <Link href={homeHref} className="flex min-h-12 min-w-0 items-center">
+                  {title}
+                </Link>
+              ) : (
+                <div className="flex min-h-12 min-w-0 items-center">{title}</div>
+              )
             ) : (
-              <div className="flex min-h-12 min-w-0 items-center">{title}</div>
-            )
-          ) : (
-            <span />
-          )}
-          <nav aria-label={t('language')} className="flex shrink-0 gap-1">
-            {LANGS.map((code) => (
-              <Link
-                key={code}
-                href={`${path}${path.includes('?') ? '&' : '?'}lang=${code}`}
-                hrefLang={code}
-                lang={code}
-                aria-current={code === lang ? 'true' : undefined}
-                replace
-                className={`inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl px-2 text-sm font-semibold uppercase ${
-                  code === lang
-                    ? 'bg-brand-soft text-brand-soft-fg'
-                    : 'text-muted hover:bg-surface-2'
-                }`}
-              >
-                <span aria-hidden="true">{code}</span>
-                <span className="visually-hidden">{translate(code, 'langName')}</span>
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </header>
-      <main id="content" className="page-x mx-auto w-full max-w-3xl flex-1 pb-10">
-        {children}
-      </main>
-    </div>
+              <span />
+            )}
+            <nav aria-label={t('language')} className="flex shrink-0 gap-1">
+              {LANGS.map((code) => (
+                <Link
+                  key={code}
+                  href={`${path}${path.includes('?') ? '&' : '?'}lang=${code}`}
+                  hrefLang={code}
+                  lang={code}
+                  aria-current={code === lang ? 'true' : undefined}
+                  replace
+                  className={`inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl px-2 text-sm font-semibold uppercase ${
+                    code === lang
+                      ? 'bg-brand-soft text-brand-soft-fg'
+                      : 'text-muted hover:bg-surface-2'
+                  }`}
+                >
+                  <span aria-hidden="true">{code}</span>
+                  <span className="visually-hidden">{translate(code, 'langName')}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </header>
+        <main id="content" className="page-x mx-auto w-full max-w-3xl flex-1 pb-10">
+          {children}
+        </main>
+      </div>
+    </BrandScope>
   );
 }
 

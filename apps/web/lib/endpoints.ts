@@ -1,4 +1,13 @@
 import type {
+  ArchivePlanResultDto,
+  DeleteSlotsResultDto,
+  OperatorSettingsDto,
+  OperatorSlotDto,
+  UpdatePlanBody,
+  UpdateProductBody,
+  UpdateSettingsBody,
+  UpdateSlotsBody,
+  UpdateSlotsResultDto,
   ConnectSourceBody,
   PublicCheckoutBody,
   SourceDto,
@@ -94,11 +103,29 @@ export const operatorApi = {
   plans: (o?: Opts) => apiFetch<CommissionPlanDto[]>('/operator/commission-plans', o),
   createPlan: (body: CreatePlanBody, o?: Opts) =>
     apiFetch<CommissionPlanDto>('/operator/commission-plans', { ...o, method: 'POST', body }),
+  updatePlan: (id: string, body: UpdatePlanBody, o?: Opts) =>
+    apiFetch<CommissionPlanDto>(`/operator/commission-plans/${enc(id)}`, {
+      ...o,
+      method: 'PUT',
+      body,
+    }),
+  makeDefaultPlan: (id: string, o?: Opts) =>
+    apiFetch<CommissionPlanDto>(`/operator/commission-plans/${enc(id)}/make-default`, {
+      ...o,
+      method: 'POST',
+    }),
+  archivePlan: (id: string, o?: Opts) =>
+    apiFetch<ArchivePlanResultDto>(`/operator/commission-plans/${enc(id)}`, {
+      ...o,
+      method: 'DELETE',
+    }),
   products: (o?: Opts) => apiFetch<ProductDto[]>('/operator/products', o),
   createProduct: (body: CreateProductBody, o?: Opts) =>
     apiFetch<ProductDto>('/operator/products', { ...o, method: 'POST', body }),
+  updateProduct: (id: string, body: UpdateProductBody, o?: Opts) =>
+    apiFetch<ProductDto>(`/operator/products/${enc(id)}`, { ...o, method: 'PATCH', body }),
   slots: (productId: string, range: DateRange, o?: Opts) =>
-    apiFetch<SlotDto[]>(`/operator/products/${enc(productId)}/slots`, {
+    apiFetch<OperatorSlotDto[]>(`/operator/products/${enc(productId)}/slots`, {
       ...o,
       query: { ...range },
     }),
@@ -108,6 +135,21 @@ export const operatorApi = {
       method: 'POST',
       body,
     }),
+  updateSlots: (productId: string, body: UpdateSlotsBody, o?: Opts) =>
+    apiFetch<UpdateSlotsResultDto>(`/operator/products/${enc(productId)}/slots`, {
+      ...o,
+      method: 'PATCH',
+      body,
+    }),
+  deleteSlots: (productId: string, slotIds: string[], o?: Opts) =>
+    apiFetch<DeleteSlotsResultDto>(`/operator/products/${enc(productId)}/slots/delete`, {
+      ...o,
+      method: 'POST',
+      body: { slotIds },
+    }),
+  settings: (o?: Opts) => apiFetch<OperatorSettingsDto>('/operator/settings', o),
+  updateSettings: (body: UpdateSettingsBody, o?: Opts) =>
+    apiFetch<OperatorSettingsDto>('/operator/settings', { ...o, method: 'PATCH', body }),
   bookings: (range: DateRange, o?: Opts) =>
     apiFetch<BookingDto[]>('/operator/bookings', { ...o, query: { ...range } }),
   cancelBooking: (id: string, body: CancelBookingBody, o?: Opts) =>

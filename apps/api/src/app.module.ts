@@ -13,6 +13,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SettingsModule } from './settings/settings.module';
 import { SourcesModule } from './sources/sources.module';
 import { TrackingModule } from './tracking/tracking.module';
 
@@ -52,6 +53,7 @@ export class AppModule {
         BookingModule,
         CommissionsModule,
         AnalyticsModule,
+        SettingsModule,
         JobsModule,
       ],
       controllers: [HealthController],

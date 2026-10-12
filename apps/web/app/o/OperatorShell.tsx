@@ -17,6 +17,7 @@ import {
   IconPercent,
   IconRefresh,
   IconScan,
+  IconSettings,
   IconUsers,
 } from '@/components/icons';
 import { DEFAULT_TIMEZONE } from '@/lib/dates';
@@ -34,6 +35,7 @@ const NAV = [
   { href: '/o/products', label: 'Excursii și plecări', icon: <IconBoat /> },
   { href: '/o/payouts', label: 'Comisioane și plăți', icon: <IconBanknote /> },
   { href: '/o/sources', label: 'Sistemul de rezervări', icon: <IconRefresh /> },
+  { href: '/o/settings', label: 'Setări și aspect', icon: <IconSettings /> },
 ];
 
 export function OperatorShell({ children }: { children: ReactNode }) {
