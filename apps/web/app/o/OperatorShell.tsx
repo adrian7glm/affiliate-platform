@@ -17,8 +17,10 @@ import {
   IconPercent,
   IconRefresh,
   IconScan,
+  IconTicket,
   IconUsers,
 } from '@/components/icons';
+import { BOARDING_TEXT } from '@/lib/boarding-text';
 import { DEFAULT_TIMEZONE } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
 import { ROLE_LABELS_RO } from '@/lib/session';
@@ -28,7 +30,8 @@ import { OperatorContext, type OperatorContextValue } from './OperatorContext';
 const NAV = [
   { href: '/o', label: 'Panou', icon: <IconGauge />, exact: true },
   { href: '/o/bookings', label: 'Rezervări', icon: <IconList /> },
-  { href: '/o/scan', label: 'Scanează bilete', icon: <IconScan /> },
+  { href: '/o/scan', label: BOARDING_TEXT.scanTitle, icon: <IconScan /> },
+  { href: '/o/team', label: BOARDING_TEXT.teamNav, icon: <IconTicket /> },
   { href: '/o/affiliates', label: 'Afiliați', icon: <IconUsers /> },
   { href: '/o/plans', label: 'Planuri de comision', icon: <IconPercent /> },
   { href: '/o/products', label: 'Excursii și plecări', icon: <IconBoat /> },

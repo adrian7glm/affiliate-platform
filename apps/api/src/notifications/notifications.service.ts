@@ -5,10 +5,18 @@ import QRCode from 'qrcode';
 import { Clock } from '../common/clock';
 import { DomainError } from '../common/errors';
 import { DB, type DbOrTx } from '../database/database.module';
-import { QR_CONTENT_ID, type TemplateName, type TemplateParams, render } from './templates';
+import {
+  QR_CONTENT_ID,
+  type TemplateName,
+  type TemplateParams,
+  messageLang,
+  render,
+} from './templates';
+import { renderTicketPdf, ticketPdfFilename } from './ticket-pdf';
 import {
   type DeliveryReceipt,
   DeliveryError,
+  type EmailAttachment,
   EmailTransport,
   SmsTransport,
 } from './transports/transport';
@@ -231,27 +239,35 @@ export class NotificationsService {
   ): Promise<DeliveryReceipt> {
     const message = render(template, locale, params);
     if (channel === 'sms') return this.sms.send({ to, text: message.sms });
-    const attachments = message.qr
-      ? [
-          {
-            filename: 'bilet-qr.png',
-            contentType: 'image/png',
-            contentId: QR_CONTENT_ID,
-            content: await QRCode.toBuffer(message.qr, {
-              type: 'png',
-              width: 440,
-              margin: 2,
-              errorCorrectionLevel: 'M',
-            }),
-          },
-        ]
-      : undefined;
+    const attachments: EmailAttachment[] = [];
+    if (message.qr) {
+      attachments.push({
+        filename: 'bilet-qr.png',
+        contentType: 'image/png',
+        contentId: QR_CONTENT_ID,
+        content: await QRCode.toBuffer(message.qr, {
+          type: 'png',
+          width: 440,
+          margin: 2,
+          errorCorrectionLevel: 'M',
+        }),
+      });
+    }
+    if (template === 'ticket' && message.qr) {
+      // The same ticket as a PDF, so the customer can keep it on the phone without printing.
+      const ticket = params as TemplateParams['ticket'];
+      attachments.push({
+        filename: ticketPdfFilename(ticket.reference),
+        contentType: 'application/pdf',
+        content: await renderTicketPdf({ ...ticket, qrToken: message.qr }, messageLang(locale)),
+      });
+    }
     return this.email.send({
       to,
       subject: message.subject,
       text: message.text,
       html: message.html,
-      attachments,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
   }
 }

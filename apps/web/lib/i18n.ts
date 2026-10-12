@@ -72,6 +72,8 @@ const en = {
 
   ticketTitle: 'Your ticket',
   showAtBoarding: 'Show this code when you board.',
+  downloadPdf: 'Save ticket as PDF',
+  downloadPdfHint: 'Keep it on your phone; no need to print it.',
   statusValid: 'Valid',
   statusCheckedIn: 'Used',
   checkedInText: 'This ticket was scanned at boarding. Enjoy the trip!',
@@ -174,6 +176,8 @@ const ro: Dictionary & Record<string, string> = {
 
   ticketTitle: 'Biletul tău',
   showAtBoarding: 'Arată acest cod la îmbarcare.',
+  downloadPdf: 'Salvează biletul PDF',
+  downloadPdfHint: 'Îl păstrezi pe telefon, nu trebuie printat.',
   statusValid: 'Valabil',
   statusCheckedIn: 'Folosit',
   checkedInText: 'Biletul a fost scanat la îmbarcare. Distracție plăcută!',

@@ -1,6 +1,6 @@
 import type { PriceDto, SlotDto } from '@ap/contracts';
 import { describe, expect, it } from 'vitest';
-import { looksLikeToken } from '@/app/o/scan/qrDecoder';
+import { looksLikeToken } from '@/components/scanner/qrDecoder';
 import { qrPath } from '@/components/QrCode';
 import {
   defaultQuantities,

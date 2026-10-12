@@ -15,7 +15,8 @@ import {
 import { createdAt, id } from './_common';
 
 export const payoutModeEnum = pgEnum('payout_mode', ['manual', 'stripe_connect']);
-export const roleEnum = pgEnum('membership_role', ['owner', 'staff', 'affiliate']);
+/** `scanner`: boarding staff who only scan tickets; no access to the operator or affiliate screens. */
+export const roleEnum = pgEnum('membership_role', ['owner', 'staff', 'affiliate', 'scanner']);
 
 /** An operator (boat trips, excursions) subscribed to the platform. */
 export const tenants = pgTable('tenants', {

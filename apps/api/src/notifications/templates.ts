@@ -21,6 +21,7 @@ interface TripParams {
 export interface TemplateParams {
   login_code: { code: string; webHost: string };
   affiliate_invite: { tenantName: string; url: string };
+  scanner_invite: { tenantName: string; name: string; url: string };
   payment_link: TripParams & { url: string; totalMinor: number; currency: string };
   ticket: TripParams & {
     customerName: string;
@@ -31,6 +32,10 @@ export interface TemplateParams {
     qrToken: string | null;
     amountDueOnSiteMinor: number;
     currency: string;
+    /** Ticket types and quantities, printed on the PDF ticket. Missing in older queued messages. */
+    items?: { label: string; quantity: number }[];
+    /** Operator brand colour for the PDF ticket. */
+    brandColor?: string | null;
   };
   booking_cancelled: TripParams & { refunded: boolean };
 }
@@ -40,6 +45,7 @@ export type TemplateName = keyof TemplateParams;
 export const TEMPLATE_NAMES = [
   'login_code',
   'affiliate_invite',
+  'scanner_invite',
   'payment_link',
   'ticket',
   'booking_cancelled',
@@ -153,6 +159,31 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], lang: MessageLang
           ],
           action: { label: 'Activate your account', url },
           sms: `${tenantName} invites you to their affiliate network: recommend trips and earn commission. Activate: ${url}`,
+        },
+
+  scanner_invite: ({ tenantName, name, url }, lang) =>
+    lang === 'ro'
+      ? {
+          subject: `${tenantName}: cont pentru scanarea biletelor`,
+          brand: tenantName,
+          greeting: `Bună, ${name},`,
+          lines: [
+            `${tenantName} ți-a făcut un cont pentru scanarea biletelor la îmbarcare.`,
+            `Intră cu adresa sau numărul pe care ai primit acest mesaj: ${url}`,
+          ],
+          action: { label: 'Deschide scanerul', url },
+          sms: `${tenantName}: ai un cont pentru scanarea biletelor la imbarcare. Intra cu acest numar: ${url}`,
+        }
+      : {
+          subject: `${tenantName}: your ticket scanning account`,
+          brand: tenantName,
+          greeting: `Hello ${name},`,
+          lines: [
+            `${tenantName} created an account for you to scan tickets at boarding.`,
+            `Sign in with the address or number this message was sent to: ${url}`,
+          ],
+          action: { label: 'Open the scanner', url },
+          sms: `${tenantName}: you have an account to scan tickets at boarding. Sign in with this number: ${url}`,
         },
 
   payment_link: (p, lang) => {

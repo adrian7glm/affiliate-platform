@@ -19,7 +19,9 @@ import {
 } from '@/lib/contact';
 import { authApi } from '@/lib/endpoints';
 import {
+  AREA_LABELS_RO,
   ROLE_LABELS_RO,
+  areaForPath,
   areaForRole,
   clearSession,
   getCachedMe,
@@ -40,7 +42,16 @@ type Step = 'destination' | 'code' | 'tenant';
 const METHOD_KEY = 'ap.loginMethod';
 const RESEND_SECONDS = 30;
 
-export function LoginFlow({ next, reason }: { next: string | null; reason: string | null }) {
+export function LoginFlow({
+  next,
+  reason,
+  prefill,
+}: {
+  next: string | null;
+  reason: string | null;
+  /** Phone number or email from an invitation link, filled in for the person. */
+  prefill?: string | null;
+}) {
   const router = useRouter();
   const nextPath = safeNextPath(next);
   const [step, setStep] = useState<Step>('destination');
@@ -59,7 +70,10 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
   // Remember the preferred login method; offer the account chooser if already signed in.
   useEffect(() => {
     const saved = readString(METHOD_KEY);
-    if (saved === 'email' || saved === 'phone') setMethod(saved);
+    if (prefill) {
+      setMethod(prefill.includes('@') ? 'email' : 'phone');
+      setRawDestination(prefill);
+    } else if (saved === 'email' || saved === 'phone') setMethod(saved);
     const cached = getCachedMe();
     if (getToken() && cached && cached.memberships.length > 0 && !nextPath) {
       setMe(cached);
@@ -147,9 +161,9 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
       setStep('tenant');
       return;
     }
-    if (nextPath && (nextPath.startsWith('/a') || nextPath.startsWith('/o'))) {
-      const area = nextPath.startsWith('/a') ? 'affiliate' : 'operator';
-      const membership = pickMembership(memberships, area, getTenantId());
+    const nextArea = nextPath ? areaForPath(nextPath) : null;
+    if (nextPath && nextArea) {
+      const membership = pickMembership(memberships, nextArea, getTenantId());
       if (membership) {
         setTenantId(membership.tenantId);
         router.replace(nextPath);
@@ -159,11 +173,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
     if (memberships.length === 1) {
       const only = memberships[0]!;
       setTenantId(only.tenantId);
-      router.replace(
-        nextPath && !nextPath.startsWith('/a') && !nextPath.startsWith('/o')
-          ? nextPath
-          : homePathForRole(only.role),
-      );
+      router.replace(nextPath && !nextArea ? nextPath : homePathForRole(only.role));
       return;
     }
     setMe(session);
@@ -395,10 +405,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{m.tenantName}</span>
                       <span className="block text-sm text-muted">
-                        {ROLE_LABELS_RO[m.role]} ·{' '}
-                        {areaForRole(m.role) === 'affiliate'
-                          ? 'aplicația de afiliat'
-                          : 'administrare'}
+                        {ROLE_LABELS_RO[m.role]} · {AREA_LABELS_RO[areaForRole(m.role)]}
                       </span>
                     </span>
                     <IconChevronRight className="shrink-0 text-muted" />

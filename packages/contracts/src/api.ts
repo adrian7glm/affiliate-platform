@@ -49,7 +49,8 @@ export const verifyOtpBody = z.object({
 });
 export type VerifyOtpBody = z.infer<typeof verifyOtpBody>;
 
-export type Role = 'owner' | 'staff' | 'affiliate';
+/** `scanner`: boarding staff who can only scan tickets at the departure point. */
+export type Role = 'owner' | 'staff' | 'affiliate' | 'scanner';
 
 export interface MembershipDto {
   tenantId: string;
@@ -418,6 +419,43 @@ export interface CheckInResultDto {
   ticket: TicketDto | null;
   /** Money to take from the customer now: a pay-at-boarding booking checked in by this scan. */
   collectMinor: number;
+  /** When the ticket was first scanned (set for `checked_in` and `already_checked_in`). */
+  checkedInAt: string | null;
+  /** Who scanned it first, as their name or masked contact. */
+  checkedInBy: string | null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Boarding staff (ticket scanner accounts)
+// ---------------------------------------------------------------------------------------------
+
+export interface ScannerAccountDto {
+  userId: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  createdAt: string;
+  /** The last ticket this person scanned, if any. */
+  lastScanAt: string | null;
+}
+
+export const addScannerBody = z.object({
+  name: z.string().trim().min(1).max(120),
+  destination: destinationSchema,
+});
+export type AddScannerBody = z.infer<typeof addScannerBody>;
+
+export interface ScannerContextDto {
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    currency: string;
+    timezone: string;
+    logoUrl: string | null;
+  };
+  /** Tickets the signed-in person checked in since midnight, operator time. */
+  scannedTodayByMe: number;
 }
 
 export const cancelBookingBody = z.object({ reason: z.string().trim().min(1).max(400) });
