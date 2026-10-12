@@ -2,8 +2,10 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { createApp } from './bootstrap';
 import { loadConfig } from './config';
+import { loadDotEnv } from './env';
 
 async function main(): Promise<void> {
+  loadDotEnv();
   const config = loadConfig();
   const app = await createApp(config);
   await app.listen(config.PORT);

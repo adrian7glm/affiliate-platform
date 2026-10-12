@@ -14,12 +14,14 @@ import {
 import { eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { randomCode } from './common/crypto';
+import { loadDotEnv } from './env';
 
 /**
  * Local demo data: one operator, a progressive plan, a trip with departures for the next
  * 30 days and one affiliate. Safe to run again: it does nothing if the demo operator exists.
  */
 async function main(): Promise<void> {
+  loadDotEnv();
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set');
   const { db, close } = createDb(url, { max: 1 });

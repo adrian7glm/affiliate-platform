@@ -8,13 +8,14 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=1",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @ap/db run generate",
-    "db:migrate": "pnpm --filter @ap/db run migrate"
+    "db:migrate": "pnpm --filter @ap/api run migrate",
+    "db:seed": "pnpm --filter @ap/api run seed"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",
