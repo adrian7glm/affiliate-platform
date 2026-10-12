@@ -1,0 +1,24 @@
+{
+  "name": "@ap/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PostgreSQL schema (Drizzle ORM), migrations and client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "migrations"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "node dist/migrate.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.7",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.5"
+  }
+}
