@@ -69,8 +69,7 @@ export function pickLang(
   fallback: Lang = DEFAULT_LANG,
 ): Lang {
   const available = options.available ?? LANGS;
-  const browser =
-    typeof options.browser === 'string' ? [options.browser] : (options.browser ?? []);
+  const browser = typeof options.browser === 'string' ? [options.browser] : (options.browser ?? []);
   return (
     langFromTag(options.query, available) ??
     langFromTag(options.saved, available) ??

@@ -21,8 +21,10 @@ export interface TierValidation {
 export function validateTiers(rows: TierDraft[], t: Translator): TierValidation {
   const errors: Record<string, string> = {};
   const tiers: { fromSale: number; rateBps: number }[] = [];
-  if (rows.length === 0) return { tiers: null, errors, general: t.t('labels.tierEditor.atLeastOne') };
-  if (rows.length > 20) return { tiers: null, errors, general: t.t('labels.tierEditor.atMost', { count: 20 }) };
+  if (rows.length === 0)
+    return { tiers: null, errors, general: t.t('labels.tierEditor.atLeastOne') };
+  if (rows.length > 20)
+    return { tiers: null, errors, general: t.t('labels.tierEditor.atMost', { count: 20 }) };
 
   let previous = 0;
   rows.forEach((row, index) => {

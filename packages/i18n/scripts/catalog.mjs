@@ -14,11 +14,14 @@ const codes = readdirSync(dir)
   .sort();
 for (const code of codes) {
   if (!/^[a-z]{2,3}(-[a-z0-9]{2,8})?$/.test(code)) {
-    throw new Error(`src/locales/${code}.json: name the file after a language code, e.g. de.json or pt-br.json`);
+    throw new Error(
+      `src/locales/${code}.json: name the file after a language code, e.g. de.json or pt-br.json`,
+    );
   }
   JSON.parse(readFileSync(join(dir, `${code}.json`), 'utf8'));
 }
-if (!codes.includes('en')) throw new Error('src/locales/en.json is required: it is the reference language');
+if (!codes.includes('en'))
+  throw new Error('src/locales/en.json is required: it is the reference language');
 
 const ident = (code) => `lang_${code.replace(/-/g, '_')}`;
 const content = [

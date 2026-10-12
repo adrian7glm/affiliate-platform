@@ -18,8 +18,7 @@ const enc = encodeURIComponent;
 
 /** Languages and the admin's text overrides (public), and the translation editor (admin). */
 export const i18nApi = {
-  languages: (o?: Opts) =>
-    apiFetch<PublicLanguagesDto>('/i18n/languages', { ...o, auth: false }),
+  languages: (o?: Opts) => apiFetch<PublicLanguagesDto>('/i18n/languages', { ...o, auth: false }),
   messages: (lang: string, o?: Opts) =>
     apiFetch<PublicMessagesDto>(`/i18n/messages/${enc(lang)}`, { ...o, auth: false }),
 };

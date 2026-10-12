@@ -57,7 +57,9 @@ export function tierRows(tiers: Tier[], t: Translator): { label: string; rateBps
     let label: string;
     if (!next)
       label =
-        i === 0 ? t.t('labels.tier.allSales') : t.t('labels.tier.fromSale', { from: tier.fromSale });
+        i === 0
+          ? t.t('labels.tier.allSales')
+          : t.t('labels.tier.fromSale', { from: tier.fromSale });
     else if (next.fromSale - 1 === tier.fromSale)
       label = t.t('labels.tier.oneSale', { from: tier.fromSale });
     else label = t.t('labels.tier.salesRange', { from: tier.fromSale, to: next.fromSale - 1 });

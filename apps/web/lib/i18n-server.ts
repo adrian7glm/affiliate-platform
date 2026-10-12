@@ -38,7 +38,9 @@ export const serverLanguages = cache(async (): Promise<LanguageInfo[]> => {
 
 /** The admin's texts for one language (empty when the API cannot be reached). */
 export const serverOverrides = cache(async (lang: Lang): Promise<Messages> => {
-  const result = await getJson<{ messages: Messages }>(`/i18n/messages/${encodeURIComponent(lang)}`);
+  const result = await getJson<{ messages: Messages }>(
+    `/i18n/messages/${encodeURIComponent(lang)}`,
+  );
   return result?.messages ?? {};
 });
 
