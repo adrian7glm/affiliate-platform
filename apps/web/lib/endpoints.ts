@@ -1,0 +1,164 @@
+import type {
+  AcceptInviteBody,
+  AffiliateDto,
+  AffiliateHomeDto,
+  AffiliateWithStatsDto,
+  AssistedBookingBody,
+  BookingDto,
+  CancelBookingBody,
+  CheckInBody,
+  CheckInResultDto,
+  CheckoutResultDto,
+  ClosePeriodBody,
+  ClosePeriodResultDto,
+  CommissionPlanDto,
+  CommissionReportDto,
+  CreateLinkBody,
+  CreatePlanBody,
+  CreateProductBody,
+  CreateSlotsBody,
+  EarningsDto,
+  InviteAffiliateBody,
+  InvitePreviewDto,
+  LinkDto,
+  MeDto,
+  OperatorDashboardDto,
+  PayoutDto,
+  ProductDto,
+  PublicTenantDto,
+  RequestOtpBody,
+  SessionDto,
+  SlotDto,
+  TicketDto,
+  UpdateAffiliateBody,
+  VerifyOtpBody,
+} from '@ap/contracts';
+import { apiFetch, type RequestOptions } from './api';
+import type { CheckoutBody, ConnectSourceBody, SourceDto, SyncResultDto } from './contracts-ext';
+
+/**
+ * One typed function per endpoint in docs/api.md. Pages call these instead of building URLs.
+ */
+
+type Opts = Pick<RequestOptions, 'signal' | 'baseUrl'>;
+const enc = encodeURIComponent;
+
+export interface DateRange {
+  from?: string;
+  to?: string;
+}
+
+export const authApi = {
+  requestOtp: (body: RequestOtpBody, o?: Opts) =>
+    apiFetch<void>('/auth/otp/request', { ...o, method: 'POST', body, auth: false }),
+  verifyOtp: (body: VerifyOtpBody, o?: Opts) =>
+    apiFetch<SessionDto>('/auth/otp/verify', { ...o, method: 'POST', body, auth: false }),
+  me: (o?: Opts) => apiFetch<MeDto>('/me', { ...o, tenant: false }),
+  invitePreview: (token: string, o?: Opts) =>
+    apiFetch<InvitePreviewDto>(`/invites/${enc(token)}`, { ...o, auth: false }),
+  acceptInvite: (body: AcceptInviteBody, o?: Opts) =>
+    apiFetch<MeDto>('/invites/accept', { ...o, method: 'POST', body, tenant: false }),
+};
+
+export const affiliateApi = {
+  home: (o?: Opts) => apiFetch<AffiliateHomeDto>('/affiliate/home', o),
+  earnings: (period: string, o?: Opts) =>
+    apiFetch<EarningsDto>('/affiliate/earnings', { ...o, query: { period } }),
+  links: (o?: Opts) => apiFetch<LinkDto[]>('/affiliate/links', o),
+  createLink: (body: CreateLinkBody, o?: Opts) =>
+    apiFetch<LinkDto>('/affiliate/links', { ...o, method: 'POST', body }),
+  products: (o?: Opts) => apiFetch<ProductDto[]>('/affiliate/products', o),
+  slots: (productId: string, range: DateRange, o?: Opts) =>
+    apiFetch<SlotDto[]>(`/affiliate/products/${enc(productId)}/slots`, {
+      ...o,
+      query: { ...range },
+    }),
+  createBooking: (body: AssistedBookingBody, o?: Opts) =>
+    apiFetch<CheckoutResultDto>('/affiliate/bookings', { ...o, method: 'POST', body }),
+  bookings: (o?: Opts) => apiFetch<BookingDto[]>('/affiliate/bookings', o),
+};
+
+export const operatorApi = {
+  dashboard: (o?: Opts) => apiFetch<OperatorDashboardDto>('/operator/dashboard', o),
+  affiliates: (o?: Opts) => apiFetch<AffiliateWithStatsDto[]>('/operator/affiliates', o),
+  inviteAffiliate: (body: InviteAffiliateBody, o?: Opts) =>
+    apiFetch<AffiliateDto>('/operator/affiliates', { ...o, method: 'POST', body }),
+  updateAffiliate: (id: string, body: UpdateAffiliateBody, o?: Opts) =>
+    apiFetch<AffiliateDto>(`/operator/affiliates/${enc(id)}`, { ...o, method: 'PATCH', body }),
+  plans: (o?: Opts) => apiFetch<CommissionPlanDto[]>('/operator/commission-plans', o),
+  createPlan: (body: CreatePlanBody, o?: Opts) =>
+    apiFetch<CommissionPlanDto>('/operator/commission-plans', { ...o, method: 'POST', body }),
+  products: (o?: Opts) => apiFetch<ProductDto[]>('/operator/products', o),
+  createProduct: (body: CreateProductBody, o?: Opts) =>
+    apiFetch<ProductDto>('/operator/products', { ...o, method: 'POST', body }),
+  slots: (productId: string, range: DateRange, o?: Opts) =>
+    apiFetch<SlotDto[]>(`/operator/products/${enc(productId)}/slots`, {
+      ...o,
+      query: { ...range },
+    }),
+  createSlots: (productId: string, body: CreateSlotsBody, o?: Opts) =>
+    apiFetch<{ created: number }>(`/operator/products/${enc(productId)}/slots`, {
+      ...o,
+      method: 'POST',
+      body,
+    }),
+  bookings: (range: DateRange, o?: Opts) =>
+    apiFetch<BookingDto[]>('/operator/bookings', { ...o, query: { ...range } }),
+  cancelBooking: (id: string, body: CancelBookingBody, o?: Opts) =>
+    apiFetch<BookingDto>(`/operator/bookings/${enc(id)}/cancel`, { ...o, method: 'POST', body }),
+  checkIn: (body: CheckInBody, o?: Opts) =>
+    apiFetch<CheckInResultDto>('/operator/tickets/check-in', { ...o, method: 'POST', body }),
+  commissionReport: (period: string, o?: Opts) =>
+    apiFetch<CommissionReportDto>('/operator/commissions/report', { ...o, query: { period } }),
+  closePeriod: (body: ClosePeriodBody, o?: Opts) =>
+    apiFetch<ClosePeriodResultDto>('/operator/payouts/close-period', {
+      ...o,
+      method: 'POST',
+      body,
+    }),
+  payouts: (period: string, o?: Opts) =>
+    apiFetch<PayoutDto[]>('/operator/payouts', { ...o, query: { period } }),
+  markPayoutPaid: (id: string, o?: Opts) =>
+    apiFetch<PayoutDto>(`/operator/payouts/${enc(id)}/mark-paid`, { ...o, method: 'POST' }),
+  sources: (o?: Opts) => apiFetch<SourceDto[]>('/operator/sources', o),
+  connectSource: (body: ConnectSourceBody, o?: Opts) =>
+    apiFetch<SourceDto>('/operator/sources', { ...o, method: 'POST', body }),
+  syncSource: (id: string, o?: Opts) =>
+    apiFetch<SyncResultDto>(`/operator/sources/${enc(id)}/sync`, { ...o, method: 'POST' }),
+};
+
+export const publicApi = {
+  tenant: (slug: string, o?: Opts) =>
+    apiFetch<PublicTenantDto>(`/public/tenants/${enc(slug)}`, { ...o, auth: false }),
+  product: (slug: string, productSlug: string, o?: Opts) =>
+    apiFetch<ProductDto>(`/public/tenants/${enc(slug)}/products/${enc(productSlug)}`, {
+      ...o,
+      auth: false,
+    }),
+  slots: (slug: string, productSlug: string, range: DateRange, o?: Opts) =>
+    apiFetch<SlotDto[]>(`/public/tenants/${enc(slug)}/products/${enc(productSlug)}/slots`, {
+      ...o,
+      auth: false,
+      query: { ...range },
+    }),
+  checkout: (slug: string, body: CheckoutBody, o?: Opts) =>
+    apiFetch<CheckoutResultDto>(`/public/tenants/${enc(slug)}/checkout`, {
+      ...o,
+      method: 'POST',
+      body,
+      auth: false,
+    }),
+  ticket: (bookingId: string, key: string, o?: Opts) =>
+    apiFetch<TicketDto>(`/public/tickets/${enc(bookingId)}`, {
+      ...o,
+      auth: false,
+      query: { k: key },
+    }),
+  devPaymentSucceed: (bookingId: string, key: string, o?: Opts) =>
+    apiFetch<void>(`/public/dev-payments/${enc(bookingId)}/succeed`, {
+      ...o,
+      method: 'POST',
+      auth: false,
+      query: { k: key },
+    }),
+};
