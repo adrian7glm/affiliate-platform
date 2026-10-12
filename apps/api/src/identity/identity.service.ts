@@ -6,8 +6,8 @@ import { APP_CONFIG, type AppConfig } from '../config';
 import { Clock } from '../common/clock';
 import { generateOtp, hashOtp, signSession } from '../common/crypto';
 import { DomainError } from '../common/errors';
-import { Notifier } from '../common/notifier';
 import { DB, type DbOrTx } from '../database/database.module';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const OTP_TTL_MS = 10 * 60_000;
 const OTP_MAX_ATTEMPTS = 5;
@@ -21,7 +21,7 @@ export class IdentityService {
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
     private readonly clock: Clock,
   ) {}
 
@@ -48,10 +48,12 @@ export class IdentityService {
       codeHash: hashOtp(this.config.APP_SECRET, destination, code),
       expiresAt: new Date(now.getTime() + OTP_TTL_MS),
     });
-    await this.notifier.send({
+    // Operator and affiliate screens are in Romanian, so their login codes are too.
+    await this.notifications.sendNow({
       to: destination,
-      subject: 'Codul tău de conectare',
-      text: `Codul tău de conectare este ${code}. Expiră în 10 minute.`,
+      template: 'login_code',
+      locale: 'ro',
+      params: { code, webHost: new URL(this.config.WEB_URL).hostname },
     });
   }
 

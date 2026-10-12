@@ -21,7 +21,7 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { randomToken } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
-import { Notifier } from '../common/notifier';
+import { NotificationsService } from '../notifications/notifications.service';
 import { TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB } from '../database/database.module';
@@ -44,7 +44,7 @@ export class AffiliatesService {
     private readonly identity: IdentityService,
     private readonly commissions: CommissionsService,
     private readonly links: LinksService,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private dto(row: AffiliateRow): AffiliateDto {
@@ -108,15 +108,17 @@ export class AffiliatesService {
         })
         .returning();
       await this.links.primaryLinkId(tx, tenantId, created!.id);
+      if (body.destination) {
+        await this.notifications.enqueue(tx, {
+          to: body.destination,
+          template: 'affiliate_invite',
+          locale: tenant.defaultLocale,
+          tenantId,
+          params: { tenantName: tenant.name, url: `${this.config.WEB_URL}/join/${token}` },
+        });
+      }
       return created!;
     });
-    if (body.destination) {
-      await this.notifier.send({
-        to: body.destination,
-        subject: `${tenant.name} te invită în rețeaua de afiliați`,
-        text: `${tenant.name} te invită să recomanzi excursiile lor și să câștigi comision. Activează-ți contul: ${this.config.WEB_URL}/join/${token}`,
-      });
-    }
     return this.dto(row);
   }
 

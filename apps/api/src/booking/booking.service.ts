@@ -24,10 +24,10 @@ import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../common/clock';
 import { randomCode, ticketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
-import { Notifier } from '../common/notifier';
 import { type Tenant, TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from '../payments/gateway';
 import { SourcesService } from '../sources/sources.service';
@@ -67,7 +67,7 @@ export class BookingService {
     private readonly gateway: PaymentsGateway,
     private readonly outbox: Outbox,
     private readonly tickets: TicketsService,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
     private readonly sources: SourcesService,
   ) {}
 
@@ -116,14 +116,27 @@ export class BookingService {
       createdByUserId: userId,
       paymentMode: body.payment === 'on_site' ? 'on_site' : 'online',
     });
+    // Pay-on-site bookings get their ticket when it is issued; online ones get the payment link.
+    // The phone first: the customer is standing at the desk and reads an SMS at once.
     const contact = body.customer.phone ?? body.customer.email;
-    if (contact) {
-      await this.notifier.send({
+    if (contact && result.paymentUrl) {
+      const { booking } = result;
+      await this.notifications.enqueue(this.db, {
         to: contact,
-        subject: `${tenant.name}: ${result.booking.productName}`,
-        text: result.paymentUrl
-          ? `Finalizează plata pentru rezervarea ${result.booking.reference}: ${result.paymentUrl}`
-          : `Biletul tău ${result.booking.reference}: ${result.ticketUrl}`,
+        template: 'payment_link',
+        locale: body.customer.locale,
+        tenantId,
+        dedupeKey: `payment_link:${booking.id}`,
+        params: {
+          tenantName: tenant.name,
+          productName: booking.productName,
+          reference: booking.reference,
+          startsAt: booking.startsAt,
+          timezone: tenant.timezone,
+          totalMinor: booking.totalMinor,
+          currency: booking.currency,
+          url: result.paymentUrl,
+        },
       });
     }
     return result;
@@ -431,6 +444,7 @@ export class BookingService {
           .where(eq(payments.id, payment.id));
       }
       await this.tickets.void(tx, bookingId);
+      if (wasConfirmed) await this.tickets.notifyCancelled(tx, tenant, booking, refunded);
       await this.audit(tx, booking, 'booking_cancelled', { reason, actorUserId, refunded });
       // Confirmed in the operator's system after we read the booking above: cancel it there too.
       const lateRef =

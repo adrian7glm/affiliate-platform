@@ -131,7 +131,9 @@ async function main(): Promise<void> {
     console.log('demo data created');
     console.log('  operator login:  owner@demo.test');
     console.log('  affiliate login: +40700000001');
-    console.log('  login codes are printed in the API log (NOTIFIER=console)');
+    console.log(
+      '  login codes are printed in the API log (EMAIL_PROVIDER=console, SMS_PROVIDER=console)',
+    );
   } finally {
     await close();
   }

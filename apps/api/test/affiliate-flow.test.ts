@@ -134,7 +134,7 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
     affiliate = invited.body as AffiliateDto;
     expect(affiliate.status).toBe('invited');
     const token = affiliate.inviteUrl!.split('/join/')[1]!;
-    expect(h.notifier.last(affiliatePhone)?.text).toContain(affiliate.inviteUrl);
+    expect((await h.lastMessage(affiliatePhone))?.text).toContain(affiliate.inviteUrl);
 
     await h.http
       .get(`/invites/${token}`)
@@ -217,7 +217,16 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
         amountMinor: 3_000,
       }),
     ]);
-    expect(h.notifier.last('tourist@example.com')?.text).toContain(`/t/${checkout.booking.id}`);
+    const ticketEmail = await h.lastMessage('tourist@example.com');
+    expect(ticketEmail).toMatchObject({
+      channel: 'email',
+      subject: 'Your ticket: Sunset cruise, 6 Oct 10:00',
+    });
+    expect(ticketEmail?.text).toContain(`/t/${checkout.booking.id}?k=${keyOf(checkout)}&lang=en`);
+    expect(ticketEmail?.html).toContain('src="cid:ticket-qr"');
+    expect(ticketEmail?.attachments).toEqual([
+      expect.objectContaining({ contentId: 'ticket-qr', contentType: 'image/png' }),
+    ]);
   });
 
   it('ignores unknown referral codes', async () => {
@@ -238,7 +247,10 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
         .expect(201);
       const result = response.body as CheckoutResultDto;
       expect(result.booking.channel).toBe('affiliate_assisted');
-      expect(h.notifier.last('+40733000000')?.text).toContain(result.paymentUrl);
+      await h.notifications.deliverDue();
+      expect(
+        h.messages.sent.filter((m) => m.to === '+40733000000').map((m) => m.text),
+      ).toContainEqual(expect.stringContaining(result.paymentUrl!));
       h.clock.set(`2026-10-05T08:0${i + 1}:00Z`);
       await pay(result);
       confirmed.push(result);
@@ -338,6 +350,9 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       await h.http.get(`/public/tickets/${second.booking.id}?k=${keyOf(second)}`).expect(200)
     ).body as TicketDto;
     expect(ticket).toMatchObject({ status: 'void', qrToken: null });
+    const notice = await h.lastMessage('+40733000000');
+    expect(notice?.text).toContain(`rezervarea ${second.booking.reference}`);
+    expect(notice?.text).toContain('a fost anulata. Banii iti sunt returnati');
   });
 
   it('counts a pay-at-boarding booking only once the customer boards', async () => {
@@ -365,6 +380,10 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       await h.http.get(`/public/tickets/${result.booking.id}?k=${keyOf(result)}`).expect(200)
     ).body as TicketDto;
     expect(ticket).toMatchObject({ amountDueOnSiteMinor: 20_000, timezone: 'Europe/Bucharest' });
+    const ticketSms = await h.lastMessage('+40744000000');
+    expect(ticketSms).toMatchObject({ channel: 'sms' });
+    expect(ticketSms?.text).toContain(`ticket ${result.booking.reference} for Sunset cruise`);
+    expect(ticketSms?.text).toContain('to pay at boarding RON');
     h.clock.set('2026-10-06T14:50:00Z');
     const boarding = await asOwner('post', '/operator/tickets/check-in')
       .send({ token: ticket.qrToken })
