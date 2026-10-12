@@ -42,7 +42,10 @@ export type RequestOtpBody = z.infer<typeof requestOtpBody>;
 
 export const verifyOtpBody = z.object({
   destination: destinationSchema,
-  code: z.string().trim().regex(/^\d{6}$/, 'the code has 6 digits'),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'the code has 6 digits'),
 });
 export type VerifyOtpBody = z.infer<typeof verifyOtpBody>;
 
@@ -57,7 +60,13 @@ export interface MembershipDto {
 }
 
 export interface MeDto {
-  user: { id: string; name: string | null; email: string | null; phone: string | null; isPlatformAdmin: boolean };
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    isPlatformAdmin: boolean;
+  };
   memberships: MembershipDto[];
 }
 
@@ -165,12 +174,20 @@ export const createProductBody = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'lowercase letters, digits and dashes')
     .max(80),
   description: z.string().trim().max(4000).optional(),
-  durationMinutes: z.number().int().min(5).max(24 * 60),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(24 * 60),
   meetingPoint: z.string().trim().max(400).optional(),
   prices: z
     .array(
       z.object({
-        code: z.string().trim().regex(/^[a-z0-9_]+$/).max(40),
+        code: z
+          .string()
+          .trim()
+          .regex(/^[a-z0-9_]+$/)
+          .max(40),
         label: z.string().trim().min(1).max(80),
         amountMinor: z.number().int().min(0),
         taxRateBps: rateBps.default(0),
@@ -208,7 +225,10 @@ export interface ProductDto {
 export const createSlotsBody = z.object({
   fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  times: z.array(z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)).min(1).max(48),
+  times: z
+    .array(z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/))
+    .min(1)
+    .max(48),
   weekdays: z.array(z.number().int().min(1).max(7)).min(1).max(7).default([1, 2, 3, 4, 5, 6, 7]),
   capacity: z.number().int().min(1).max(10_000),
 });
@@ -237,6 +257,8 @@ export interface LinkDto {
   id: string;
   code: string;
   url: string;
+  /** Same link marked as a QR scan (`?s=qr`); encode this one in QR codes. */
+  qrUrl: string;
   label: string | null;
   campaign: string | null;
   productId: string | null;
@@ -286,6 +308,8 @@ export const publicCheckoutBody = z.object({
   customer: customerSchema,
   /** The affiliate link code from the attribution cookie, if any. */
   ref: z.string().max(32).optional(),
+  /** Whether the customer arrived by scanning the QR code (`/r/CODE?s=qr`) or opening the link. */
+  refSource: z.enum(['qr', 'link']).optional(),
   visitorId: z.string().max(64).optional(),
 });
 export type PublicCheckoutBody = z.infer<typeof publicCheckoutBody>;
@@ -388,7 +412,11 @@ export interface AffiliateHomeDto {
     payableMinor: number;
   };
   progress: TierProgressDto;
-  plan: { kind: 'fixed' | 'tiered'; mode: 'marginal' | 'retroactive' | null; tiers: { fromSale: number; rateBps: number }[] };
+  plan: {
+    kind: 'fixed' | 'tiered';
+    mode: 'marginal' | 'retroactive' | null;
+    tiers: { fromSale: number; rateBps: number }[];
+  };
   primaryLink: LinkDto;
   recentBookings: BookingDto[];
 }

@@ -25,7 +25,9 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "@swc/core",
+      "@nestjs/core"
     ]
   }
 }
