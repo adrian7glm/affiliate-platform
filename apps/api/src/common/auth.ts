@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Role } from '@ap/contracts';
-import { type Database, affiliates, memberships, users } from '@ap/db';
+import { type Database, affiliates, memberships, tenants, users } from '@ap/db';
 import { and, eq } from 'drizzle-orm';
 import type { Request } from 'express';
 import { APP_CONFIG, type AppConfig } from '../config';
@@ -80,10 +80,14 @@ export class TenantGuard implements CanActivate {
       throw new ForbiddenException('choose an operator first (X-Tenant-Id)');
 
     const rows = await this.db
-      .select({ role: memberships.role })
+      .select({ role: memberships.role, tenantStatus: tenants.status })
       .from(memberships)
+      .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
       .where(and(eq(memberships.userId, user.id), eq(memberships.tenantId, tenantId)));
     const roles = rows.map((r) => r.role);
+    if (rows[0]?.tenantStatus === 'suspended') {
+      throw new ForbiddenException('this operator account is suspended');
+    }
 
     const required = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, [
       context.getHandler(),

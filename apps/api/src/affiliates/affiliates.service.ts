@@ -28,6 +28,7 @@ import { DB } from '../database/database.module';
 import { CommissionsService } from '../commissions/commissions.service';
 import { IdentityService } from '../identity/identity.service';
 import { LinksService } from '../tracking/links.service';
+import { SubscriptionsService } from '../platform/subscriptions.service';
 import { col } from '../common/sql';
 
 const INVITE_TTL_MS = 14 * 24 * 3_600_000;
@@ -45,6 +46,7 @@ export class AffiliatesService {
     private readonly commissions: CommissionsService,
     private readonly links: LinksService,
     private readonly notifications: NotificationsService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   private dto(row: AffiliateRow): AffiliateDto {
@@ -89,6 +91,7 @@ export class AffiliatesService {
 
   async invite(tenantId: string, body: InviteAffiliateBody): Promise<AffiliateDto> {
     const tenant = await this.tenants.get(tenantId);
+    await this.subscriptions.assertCanAddAffiliate(tenantId);
     await this.commissions.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.parentAffiliateId) await this.get(tenantId, body.parentAffiliateId);
     const token = randomToken();

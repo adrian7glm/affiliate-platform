@@ -65,10 +65,13 @@ export default function LandingPage() {
             turiștilor plimbările tale, cu linkuri, coduri QR și comisioane calculate automat.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <ButtonLink href="/login" size="lg">
+            <ButtonLink href="/start" size="lg">
+              Începe gratuit
+            </ButtonLink>
+            <ButtonLink href="/login" size="lg" variant="secondary">
               Intră în cont
             </ButtonLink>
-            <ButtonLink href="#cum-functioneaza" size="lg" variant="secondary">
+            <ButtonLink href="#cum-functioneaza" size="lg" variant="ghost">
               Cum funcționează
             </ButtonLink>
           </div>

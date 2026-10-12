@@ -16,6 +16,7 @@ import { createdAt, id } from './_common';
 
 export const payoutModeEnum = pgEnum('payout_mode', ['manual', 'stripe_connect']);
 export const roleEnum = pgEnum('membership_role', ['owner', 'staff', 'affiliate']);
+export const tenantStatusEnum = pgEnum('tenant_status', ['active', 'suspended']);
 
 /** An operator (boat trips, excursions) subscribed to the platform. */
 export const tenants = pgTable('tenants', {
@@ -37,6 +38,10 @@ export const tenants = pgTable('tenants', {
   /** Hours after departure before an unscanned booking's commission is approved. */
   approvalGraceHours: integer('approval_grace_hours').notNull().default(24),
   stripeAccountId: text('stripe_account_id'),
+  /** Suspended operators cannot sign in to their console and their booking pages are offline. */
+  status: tenantStatusEnum('status').notNull().default('active'),
+  suspendedAt: timestamp('suspended_at', { withTimezone: true }),
+  suspendedReason: text('suspended_reason'),
   createdAt: createdAt(),
 });
 

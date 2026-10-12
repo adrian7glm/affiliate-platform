@@ -21,6 +21,8 @@ interface TripParams {
 export interface TemplateParams {
   login_code: { code: string; webHost: string };
   affiliate_invite: { tenantName: string; url: string };
+  operator_invite: { businessName: string; url: string };
+  new_operator: { name: string; contact: string; url: string };
   payment_link: TripParams & { url: string; totalMinor: number; currency: string };
   ticket: TripParams & {
     customerName: string;
@@ -40,6 +42,8 @@ export type TemplateName = keyof TemplateParams;
 export const TEMPLATE_NAMES = [
   'login_code',
   'affiliate_invite',
+  'operator_invite',
+  'new_operator',
   'payment_link',
   'ticket',
   'booking_cancelled',
@@ -153,6 +157,48 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], lang: MessageLang
           ],
           action: { label: 'Activate your account', url },
           sms: `${tenantName} invites you to their affiliate network: recommend trips and earn commission. Activate: ${url}`,
+        },
+
+  operator_invite: ({ businessName, url }, lang) =>
+    lang === 'ro'
+      ? {
+          subject: `Invitație: ${businessName} pe platforma de afiliere`,
+          greeting: 'Bună,',
+          lines: [
+            `Ai fost invitat să deschizi contul de operator pentru ${businessName}.`,
+            `Deschide contul: ${url}`,
+            '',
+            'Linkul e valabil 30 de zile.',
+          ],
+          action: { label: 'Deschide contul', url },
+          sms: `Ai fost invitat sa deschizi contul de operator pentru ${businessName}: ${url}`,
+        }
+      : {
+          subject: `Invitation: ${businessName} on the affiliate platform`,
+          greeting: 'Hello,',
+          lines: [
+            `You have been invited to open the operator account for ${businessName}.`,
+            `Open your account: ${url}`,
+            '',
+            'The link is valid for 30 days.',
+          ],
+          action: { label: 'Open your account', url },
+          sms: `You have been invited to open the operator account for ${businessName}: ${url}`,
+        },
+
+  new_operator: ({ name, contact, url }, lang) =>
+    lang === 'ro'
+      ? {
+          subject: `Operator nou: ${name}`,
+          lines: [`${name} și-a deschis contul (${contact}).`, `Vezi-l: ${url}`],
+          action: { label: 'Vezi operatorul', url },
+          sms: `Operator nou: ${name} (${contact}): ${url}`,
+        }
+      : {
+          subject: `New operator: ${name}`,
+          lines: [`${name} has opened an account (${contact}).`, `See it: ${url}`],
+          action: { label: 'See the operator', url },
+          sms: `New operator: ${name} (${contact}): ${url}`,
         },
 
   payment_link: (p, lang) => {

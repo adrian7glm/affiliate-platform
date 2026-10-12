@@ -83,6 +83,9 @@ export class IdentityService {
     }
     await this.db.update(otpCodes).set({ consumedAt: now }).where(eq(otpCodes.id, otp.id));
     const userId = await this.findOrCreateUser(this.db, destination);
+    if (isEmail(destination) && this.config.PLATFORM_ADMIN_EMAILS.includes(destination)) {
+      await this.db.update(users).set({ isPlatformAdmin: true }).where(eq(users.id, userId));
+    }
     const me = await this.me(userId);
     return {
       ...me,
@@ -113,6 +116,7 @@ export class IdentityService {
         tenantId: tenants.id,
         tenantSlug: tenants.slug,
         tenantName: tenants.name,
+        tenantStatus: tenants.status,
         role: memberships.role,
         affiliateId: affiliates.id,
       })

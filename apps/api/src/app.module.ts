@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
 import { SettingsModule } from './settings/settings.module';
+import { PlatformModule } from './platform/platform.module';
 import { SourcesModule } from './sources/sources.module';
 import { TrackingModule } from './tracking/tracking.module';
 
@@ -54,6 +55,7 @@ export class AppModule {
         CommissionsModule,
         AnalyticsModule,
         SettingsModule,
+        PlatformModule,
         JobsModule,
       ],
       controllers: [HealthController],

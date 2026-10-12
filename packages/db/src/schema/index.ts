@@ -6,3 +6,4 @@ export * from './payments';
 export * from './commissions';
 export * from './platform';
 export * from './notifications';
+export * from './billing';

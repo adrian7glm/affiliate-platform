@@ -35,6 +35,7 @@ pnpm dev                                   # API pe :4000, aplicația web pe :30
 
 Date demo după `pnpm db:seed`:
 
+- proprietarul platformei: `admin@demo.test` (deschide `/admin`: operatori, planuri și tarife, invitații)
 - operator: `owner@demo.test` (operatorul „Delta Boats”, excursia „Plimbare cu barca la apus”)
 - afiliat: `+40700000001` (Ana), cu plan progresiv 15% / 20% / 25% pe lună
 
@@ -65,6 +66,14 @@ Pentru trimitere reală, în `apps/api/.env`:
 | `TWILIO_FROM` sau `TWILIO_MESSAGING_SERVICE_SID` | numărul Twilio (`+40...`) sau un nume de expeditor de max. 11 caractere    |
 
 Oricare canal poate fi oprit cu `disabled`. În producție `console` nu este permis.
+
+## Operatori, planuri și abonamente
+
+Operatorii noi își deschid singuri contul la `/start` (sau prin invitația ta, cu link pe email),
+primesc o perioadă de probă pe planul implicit și un ghid de pornire în 5 pași. Planurile
+(abonament lunar + procent pe rezervare) se editează din `/admin/plans`. Implicit abonamentele se
+facturează manual (`BILLING_PROVIDER=manual`); cu `BILLING_PROVIDER=stripe` operatorii plătesc cu
+cardul prin Stripe Billing.
 
 ## Teste
 

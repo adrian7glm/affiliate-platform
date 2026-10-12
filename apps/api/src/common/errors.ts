@@ -52,13 +52,12 @@ export class ApiErrorFilter implements ExceptionFilter {
 
   private toBody(exception: unknown): ApiError {
     if (isZodError(exception)) {
+      const issues = exception.issues;
       return {
         statusCode: 400,
         error: 'Bad Request',
-        message: exception.issues
-          .map((i) => `${i.path.join('.') || 'body'}: ${i.message}`)
-          .join('; '),
-        details: exception.issues,
+        message: issues.map((i) => `${i.path.join('.') || 'body'}: ${i.message}`).join('; '),
+        details: issues,
       };
     }
     if (exception instanceof HttpException) {

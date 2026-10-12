@@ -55,7 +55,11 @@ export interface Harness {
 }
 
 /** Boots the whole API against a fresh database, with a controllable clock and in-memory SMS and email. */
-export async function startHarness(url: string, now: string): Promise<Harness> {
+export async function startHarness(
+  url: string,
+  now: string,
+  env: Record<string, string> = {},
+): Promise<Harness> {
   await resetDatabase(url);
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -65,6 +69,7 @@ export async function startHarness(url: string, now: string): Promise<Harness> {
     PAYMENTS_PROVIDER: 'fake',
     WORKER_ENABLED: 'false',
     HOLD_MINUTES: '30',
+    ...env,
   });
   const clock = new TestClock(new Date(now));
   const messages = new MemoryTransport();

@@ -19,6 +19,7 @@ import {
   IconScan,
   IconSettings,
   IconUsers,
+  IconWallet,
 } from '@/components/icons';
 import { DEFAULT_TIMEZONE } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
@@ -36,6 +37,7 @@ const NAV = [
   { href: '/o/payouts', label: 'Comisioane și plăți', icon: <IconBanknote /> },
   { href: '/o/sources', label: 'Sistemul de rezervări', icon: <IconRefresh /> },
   { href: '/o/settings', label: 'Setări și aspect', icon: <IconSettings /> },
+  { href: '/o/billing', label: 'Abonament', icon: <IconWallet /> },
 ];
 
 export function OperatorShell({ children }: { children: ReactNode }) {
