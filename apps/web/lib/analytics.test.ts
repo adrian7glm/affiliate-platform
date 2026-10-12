@@ -32,7 +32,8 @@ describe('dashboard chart helpers', () => {
     expect(compactMoney(0, 'RON')).toBe('0');
     expect(compactMoney(85_000, 'RON')).toBe('850');
     expect(compactMoney(250_000, 'RON', 'en')).toBe('2,500');
-    expect(compactMoney(1_200_000, 'RON', 'en')).toBe('12K');
+    // The compact suffix differs between ICU versions ("12K" or "12k").
+    expect(compactMoney(1_200_000, 'RON', 'en')).toMatch(/^12k$/i);
   });
 
   it('measures the climb to the next tier from the start of the month', () => {
