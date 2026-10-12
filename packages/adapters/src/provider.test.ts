@@ -1,5 +1,5 @@
 import { type AddressInfo } from 'node:net';
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import type { Server } from 'node:http';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   type AvailabilityProvider,
@@ -8,6 +8,7 @@ import {
   ProviderError,
   RestProvider,
   SoldOutError,
+  createReferenceServer,
 } from './index';
 
 const product = {
@@ -18,101 +19,6 @@ const product = {
 };
 const startsAt = new Date('2026-10-20T16:00:00Z');
 const day = { from: new Date('2026-10-20T00:00:00Z'), to: new Date('2026-10-21T00:00:00Z') };
-
-/**
- * A minimal operator system implementing the REST adapter contract (docs/rest-adapter.md),
- * backed by the in-memory provider. Proves the REST adapter end to end over real HTTP.
- */
-function referenceServer(backend: InMemoryProvider, token: string): Server {
-  const send = (res: ServerResponse, status: number, body?: unknown) => {
-    res.writeHead(status, { 'content-type': 'application/json' });
-    res.end(body === undefined ? undefined : JSON.stringify(body));
-  };
-  const readBody = async (req: IncomingMessage): Promise<Record<string, unknown>> => {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) chunks.push(chunk as Buffer);
-    return chunks.length
-      ? (JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>)
-      : {};
-  };
-
-  return createServer((req, res) => {
-    void (async () => {
-      if (req.headers.authorization !== `Bearer ${token}`)
-        return send(res, 401, { error: 'unauthorized' });
-      const url = new URL(req.url ?? '/', 'http://localhost');
-      const parts = url.pathname.split('/').filter(Boolean);
-      try {
-        if (req.method === 'GET' && url.pathname === '/products') {
-          const products = await backend.listProducts();
-          return send(
-            res,
-            200,
-            products.map((p) => ({ ...p, id: p.externalId })),
-          );
-        }
-        if (req.method === 'GET' && parts[0] === 'products' && parts[2] === 'availability') {
-          const slots = await backend.getAvailability(
-            parts[1]!,
-            new Date(url.searchParams.get('from')!),
-            new Date(url.searchParams.get('to')!),
-          );
-          return send(
-            res,
-            200,
-            slots.map((s) => ({
-              ...s,
-              id: s.externalId,
-              startsAt: s.startsAt.toISOString(),
-              endsAt: s.endsAt.toISOString(),
-            })),
-          );
-        }
-        if (req.method === 'POST' && url.pathname === '/holds') {
-          const body = await readBody(req);
-          const hold = await backend.hold({
-            productExternalId: String(body.productId),
-            slotExternalId: (body.slotId as string | null) ?? null,
-            startsAt: new Date(String(body.startsAt)),
-            seats: Number(body.seats),
-            ttlSeconds: Number(body.ttlSeconds),
-          });
-          return send(res, 201, { id: hold.holdId, expiresAt: hold.expiresAt.toISOString() });
-        }
-        if (req.method === 'POST' && parts[0] === 'holds' && parts[2] === 'confirm') {
-          const body = await readBody(req);
-          const customer = body.customer as {
-            name: string;
-            email: string | null;
-            phone: string | null;
-          };
-          const result = await backend.confirm({
-            holdId: parts[1]!,
-            reference: String(body.reference),
-            customerName: customer.name,
-            customerEmail: customer.email,
-            customerPhone: customer.phone,
-            seats: Number(body.seats),
-          });
-          return send(res, 200, { bookingRef: result.externalRef });
-        }
-        if (req.method === 'DELETE' && parts[0] === 'holds') {
-          await backend.release(parts[1]!);
-          return send(res, 204);
-        }
-        if (req.method === 'POST' && parts[0] === 'bookings' && parts[2] === 'cancel') {
-          await backend.cancel(decodeURIComponent(parts[1]!));
-          return send(res, 204);
-        }
-        return send(res, 404, { error: 'not found' });
-      } catch (error) {
-        if (error instanceof SoldOutError) return send(res, 409, { available: error.available });
-        if (error instanceof HoldExpiredError) return send(res, 410, { error: 'hold expired' });
-        return send(res, 500, { error: (error as Error).message });
-      }
-    })();
-  });
-}
 
 /** The behaviour every provider must have, whatever system is behind it. */
 function contract(
@@ -221,7 +127,7 @@ describe('REST adapter over HTTP', () => {
         return typeof value === 'function' ? value.bind(current.backend) : value;
       },
     });
-    server = referenceServer(proxy, 'secret');
+    server = createReferenceServer(proxy, 'secret');
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });

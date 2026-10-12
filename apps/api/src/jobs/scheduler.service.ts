@@ -9,6 +9,7 @@ import { BookingService } from '../booking/booking.service';
 import { CommissionsService } from '../commissions/commissions.service';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { Outbox } from '../outbox/outbox';
+import { SourcesService } from '../sources/sources.service';
 
 /**
  * Background work, run in the API process when WORKER_ENABLED=true. The same jobs can move to a
@@ -24,6 +25,7 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     private readonly outbox: Outbox,
     private readonly bookingService: BookingService,
     private readonly commissions: CommissionsService,
+    private readonly sources: SourcesService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -31,6 +33,7 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     this.every('outbox', 3_000, () => this.outbox.drain());
     this.every('expire-unpaid-bookings', 60_000, () => this.bookingService.expireUnpaid());
     this.every('approve-commissions', 10 * 60_000, () => this.commissions.approveDue());
+    this.every('sync-availability-sources', 10 * 60_000, () => this.sources.syncAll());
     this.logger.log('background jobs started');
   }
 

@@ -12,6 +12,7 @@ import { DateTime } from 'luxon';
 import { DomainError, NotFound } from '../common/errors';
 import { TenantsService } from '../common/tenants';
 import { DB, type DbOrTx } from '../database/database.module';
+import { SourcesService } from '../sources/sources.service';
 
 export type Product = typeof products.$inferSelect;
 export type Price = typeof productPrices.$inferSelect;
@@ -23,6 +24,7 @@ export class CatalogService {
   constructor(
     @Inject(DB) private readonly db: Database,
     private readonly tenants: TenantsService,
+    private readonly sources: SourcesService,
   ) {}
 
   async listProducts(tenantId: string, onlyActive = true): Promise<ProductDto[]> {
@@ -140,6 +142,12 @@ export class CatalogService {
   ): Promise<{ created: number }> {
     const tenant = await this.tenants.get(tenantId);
     const product = await this.product(tenantId, productId);
+    if (product.sourceId) {
+      throw new DomainError(
+        'the departures of this trip come from your booking system',
+        HttpStatus.CONFLICT,
+      );
+    }
     const from = DateTime.fromISO(body.fromDate, { zone: tenant.timezone });
     const to = DateTime.fromISO(body.toDate, { zone: tenant.timezone });
     if (!from.isValid || !to.isValid || to < from) {
@@ -187,13 +195,14 @@ export class CatalogService {
     now: Date,
   ): Promise<SlotDto[]> {
     const tenant = await this.tenants.get(tenantId);
-    await this.product(tenantId, productId);
+    const product = await this.product(tenantId, productId);
     const from = DateTime.fromISO(fromDate, { zone: tenant.timezone }).startOf('day');
     const to = DateTime.fromISO(toDate, { zone: tenant.timezone }).plus({ days: 1 }).startOf('day');
     if (!from.isValid || !to.isValid || to <= from || to.diff(from, 'days').days > 62) {
       throw new DomainError('choose a range of at most 62 days', HttpStatus.BAD_REQUEST);
     }
     const start = from.toJSDate() > now ? from.toJSDate() : now;
+    await this.sources.refreshSlots(product, from.toJSDate(), to.toJSDate());
     const rows = await this.db
       .select()
       .from(slots)
@@ -248,5 +257,6 @@ export function toProductDto(product: Product, prices: Price[], currency: string
     currency,
     prices: priceDtos,
     fromMinor: seatPrices.length ? Math.min(...seatPrices) : 0,
+    managedExternally: product.sourceId !== null,
   };
 }

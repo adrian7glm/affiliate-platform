@@ -219,6 +219,8 @@ export interface ProductDto {
   prices: PriceDto[];
   /** Lowest adult-like price, for listings. */
   fromMinor: number;
+  /** True when prices and departures come from the operator's own system (not editable here). */
+  managedExternally: boolean;
 }
 
 /** Generates departures for a date range: every day in range, at each local time. */
@@ -240,6 +242,37 @@ export interface SlotDto {
   endsAt: string;
   capacity: number;
   available: number;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Availability sources (the operator's own booking system)
+// ---------------------------------------------------------------------------------------------
+
+export const connectSourceBody = z.object({
+  name: z.string().trim().min(1).max(80),
+  /** Base URL of the operator's API implementing docs/rest-adapter.md. */
+  baseUrl: z
+    .string()
+    .trim()
+    .url()
+    .refine((url) => /^https?:\/\//.test(url), 'use an http(s) address'),
+  token: z.string().trim().min(1).max(500),
+});
+export type ConnectSourceBody = z.infer<typeof connectSourceBody>;
+
+export interface SourceDto {
+  id: string;
+  kind: 'internal' | 'rest';
+  name: string;
+  baseUrl: string | null;
+  active: boolean;
+  lastSyncedAt: string | null;
+  productCount: number;
+}
+
+export interface SyncResultDto {
+  products: number;
+  slots: number;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -345,6 +378,8 @@ export interface BookingDto {
   affiliateName: string | null;
   createdAt: string;
   paidAt: string | null;
+  /** The booking's reference in the operator's own system, once it is confirmed there. */
+  externalRef: string | null;
 }
 
 export interface CheckoutResultDto {

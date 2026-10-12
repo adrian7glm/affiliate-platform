@@ -1,8 +1,11 @@
 import {
+  createCipheriv,
+  createDecipheriv,
   createHmac,
   createPrivateKey,
   createPublicKey,
   type KeyObject,
+  randomBytes,
   randomInt,
   sign,
   timingSafeEqual,
@@ -151,4 +154,32 @@ export function randomToken(bytes = 24): string {
 
 export function hashIp(secret: string, ip: string | undefined): string | null {
   return ip ? b64(hmac(secret, 'ip', ip)).slice(0, 22) : null;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Stored secrets (an operator's API token): AES-256-GCM, `s1.<iv>.<ciphertext>.<tag>`.
+// ------------------------------------------------------------------------------------------------
+
+export function sealSecret(secret: string, plaintext: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', hmac(secret, 'stored-secret', 'v1'), iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  return ['s1', b64(iv), b64(ciphertext), b64(cipher.getAuthTag())].join('.');
+}
+
+export function openSecret(secret: string, sealed: string): string {
+  const [version, iv, ciphertext, tag] = sealed.split('.');
+  if (version !== 's1' || !iv || ciphertext === undefined || !tag) {
+    throw new Error('unknown secret format');
+  }
+  const decipher = createDecipheriv(
+    'aes-256-gcm',
+    hmac(secret, 'stored-secret', 'v1'),
+    Buffer.from(iv, 'base64url'),
+  );
+  decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+  return Buffer.concat([
+    decipher.update(Buffer.from(ciphertext, 'base64url')),
+    decipher.final(),
+  ]).toString('utf8');
 }

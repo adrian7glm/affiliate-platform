@@ -30,6 +30,7 @@ import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from '../payments/gateway';
+import { SourcesService } from '../sources/sources.service';
 import { type Attribution, LinksService } from '../tracking/links.service';
 import { TicketsService } from './tickets.service';
 
@@ -67,6 +68,7 @@ export class BookingService {
     private readonly outbox: Outbox,
     private readonly tickets: TicketsService,
     private readonly notifier: Notifier,
+    private readonly sources: SourcesService,
   ) {}
 
   ticketUrl(bookingId: string): string {
@@ -154,49 +156,72 @@ export class BookingService {
     const onSite = input.paymentMode === 'on_site';
     const holdExpiresAt = new Date(now.getTime() + this.config.HOLD_MINUTES * 60_000);
 
-    const booking = await this.db.transaction(async (tx) => {
-      const holdId = await this.availability.hold(tx, slot, seats, holdExpiresAt, now);
-      const created = await this.insertBooking(tx, {
-        tenantId: tenant.id,
-        productId: product.id,
-        slotId: slot.id,
-        holdId,
-        startsAt: slot.startsAt,
-        status: onSite ? 'confirmed' : 'pending_payment',
-        channel: input.channel,
-        affiliateId: input.attribution?.affiliateId ?? null,
-        linkId: input.attribution?.linkId ?? null,
-        createdByUserId: input.createdByUserId,
-        customerName: input.customer.name,
-        customerEmail: input.customer.email ?? null,
-        customerPhone: input.customer.phone ?? null,
-        customerLocale: input.customer.locale,
-        hotelRoom: input.customer.hotelRoom ?? null,
-        seats,
-        currency: tenant.currency,
-        totalMinor,
-        taxMinor,
-        platformFeeMinor: applyRate(totalMinor, tenant.platformFeeBps),
-        paymentMode: input.paymentMode,
-        createdAt: now,
+    // Trips from the operator's own system: their system decides first whether the seats are free.
+    this.availability.assertBookable(slot, now);
+    const externalHoldId = product.sourceId
+      ? await this.sources.hold(product, slot, seats, this.config.HOLD_MINUTES * 60)
+      : null;
+
+    const booking = await this.db
+      .transaction(async (tx) => {
+        const holdId = await this.availability.hold(
+          tx,
+          slot,
+          seats,
+          holdExpiresAt,
+          now,
+          externalHoldId,
+        );
+        const created = await this.insertBooking(tx, {
+          tenantId: tenant.id,
+          productId: product.id,
+          slotId: slot.id,
+          holdId,
+          startsAt: slot.startsAt,
+          status: onSite ? 'confirmed' : 'pending_payment',
+          channel: input.channel,
+          affiliateId: input.attribution?.affiliateId ?? null,
+          linkId: input.attribution?.linkId ?? null,
+          createdByUserId: input.createdByUserId,
+          customerName: input.customer.name,
+          customerEmail: input.customer.email ?? null,
+          customerPhone: input.customer.phone ?? null,
+          customerLocale: input.customer.locale,
+          hotelRoom: input.customer.hotelRoom ?? null,
+          seats,
+          currency: tenant.currency,
+          totalMinor,
+          taxMinor,
+          platformFeeMinor: applyRate(totalMinor, tenant.platformFeeBps),
+          paymentMode: input.paymentMode,
+          createdAt: now,
+        });
+        await tx.insert(bookingItems).values(
+          lines.map((l) => ({
+            bookingId: created.id,
+            priceId: l.price.id,
+            code: l.price.code,
+            label: l.price.label,
+            quantity: l.quantity,
+            unitAmountMinor: l.price.amountMinor,
+            taxRateBps: l.price.taxRateBps,
+          })),
+        );
+        if (onSite) {
+          await this.availability.confirmHold(tx, holdId, now);
+          await this.tickets.issue(tx, created.id, tenant.id);
+          await this.outbox.publish(tx, {
+            type: 'booking.seats_confirmed',
+            tenantId: tenant.id,
+            bookingId: created.id,
+          });
+        }
+        return created;
+      })
+      .catch(async (error: unknown) => {
+        if (externalHoldId) await this.sources.release(product.id, externalHoldId);
+        throw error;
       });
-      await tx.insert(bookingItems).values(
-        lines.map((l) => ({
-          bookingId: created.id,
-          priceId: l.price.id,
-          code: l.price.code,
-          label: l.price.label,
-          quantity: l.quantity,
-          unitAmountMinor: l.price.amountMinor,
-          taxRateBps: l.price.taxRateBps,
-        })),
-      );
-      if (onSite) {
-        await this.availability.confirmHold(tx, holdId, now);
-        await this.tickets.issue(tx, created.id, tenant.id);
-      }
-      return created;
-    });
 
     let paymentUrl: string | null = null;
     if (!onSite) {
@@ -235,6 +260,7 @@ export class BookingService {
           if (booking.holdId) await this.availability.releaseHold(tx, booking.holdId, now);
           await tx.update(bookings).set({ status: 'expired' }).where(eq(bookings.id, booking.id));
         });
+        if (externalHoldId) await this.sources.release(product.id, externalHoldId);
         throw new DomainError(
           'payments are unavailable right now, try again in a minute',
           HttpStatus.BAD_GATEWAY,
@@ -290,9 +316,13 @@ export class BookingService {
         : false;
       if (!confirmed) {
         // The hold expired before the money arrived: take the seats again if they are still free.
-        const reserved = await this.availability.reserveLate(tx, booking.slotId, booking.seats);
-        if (!reserved)
+        // For a trip from the operator's own system, their system decides (SourcesService.confirm).
+        const product = await this.catalog.product(booking.tenantId, booking.productId, tx);
+        if (product.sourceId) {
+          await this.availability.reserveCached(tx, booking.slotId, booking.seats);
+        } else if (!(await this.availability.reserveLate(tx, booking.slotId, booking.seats))) {
           await this.audit(tx, booking, 'overbooked_after_late_payment', { seats: booking.seats });
+        }
       }
       await tx
         .update(bookings)
@@ -307,6 +337,11 @@ export class BookingService {
         totalMinor: booking.totalMinor,
         taxMinor: booking.taxMinor,
         currency: booking.currency,
+      });
+      await this.outbox.publish(tx, {
+        type: 'booking.seats_confirmed',
+        tenantId: booking.tenantId,
+        bookingId: booking.id,
       });
     });
   }
@@ -327,12 +362,16 @@ export class BookingService {
       )
       .limit(500);
     for (const { id } of stale) {
-      await this.db.transaction(async (tx) => {
+      const released = await this.db.transaction(async (tx) => {
         const [booking] = await tx.select().from(bookings).where(eq(bookings.id, id)).for('update');
-        if (booking?.status !== 'pending_payment') return;
-        if (booking.holdId) await this.availability.releaseHold(tx, booking.holdId, now);
+        if (booking?.status !== 'pending_payment') return null;
+        const externalHoldId = booking.holdId
+          ? await this.availability.releaseHold(tx, booking.holdId, now)
+          : null;
         await tx.update(bookings).set({ status: 'expired' }).where(eq(bookings.id, id));
+        return externalHoldId ? { productId: booking.productId, externalHoldId } : null;
       });
+      if (released) await this.sources.release(released.productId, released.externalHoldId);
     }
     return stale.length;
   }
@@ -351,6 +390,8 @@ export class BookingService {
       .where(and(eq(bookings.id, bookingId), eq(bookings.tenantId, tenantId)));
     if (!current) throw new NotFound('booking');
     if (['cancelled', 'refunded', 'expired'].includes(current.status)) return this.dto(bookingId);
+    // The operator's own system first: if it does not answer, nothing is cancelled or refunded.
+    if (current.externalRef) await this.sources.cancel(current.productId, current.externalRef);
 
     const [payment] = await this.db
       .select()
@@ -365,16 +406,18 @@ export class BookingService {
       );
     }
 
-    await this.db.transaction(async (tx) => {
+    const external = await this.db.transaction(async (tx) => {
       const [booking] = await tx
         .select()
         .from(bookings)
         .where(eq(bookings.id, bookingId))
         .for('update');
-      if (!booking || ['cancelled', 'refunded', 'expired'].includes(booking.status)) return;
+      if (!booking || ['cancelled', 'refunded', 'expired'].includes(booking.status)) return null;
       const wasConfirmed = booking.status === 'confirmed';
+      let externalHoldId: string | null = null;
       if (wasConfirmed) await this.availability.freeSeats(tx, booking.slotId, booking.seats);
-      else if (booking.holdId) await this.availability.releaseHold(tx, booking.holdId, now);
+      else if (booking.holdId)
+        externalHoldId = await this.availability.releaseHold(tx, booking.holdId, now);
 
       const refunded = Boolean(payment && wasConfirmed);
       await tx
@@ -389,6 +432,11 @@ export class BookingService {
       }
       await this.tickets.void(tx, bookingId);
       await this.audit(tx, booking, 'booking_cancelled', { reason, actorUserId, refunded });
+      // Confirmed in the operator's system after we read the booking above: cancel it there too.
+      const lateRef =
+        booking.externalRef && booking.externalRef !== current.externalRef
+          ? booking.externalRef
+          : null;
       if (wasConfirmed) {
         await this.outbox.publish(tx, {
           type: 'booking.cancelled',
@@ -399,7 +447,20 @@ export class BookingService {
           refunded,
         });
       }
+      return { productId: booking.productId, externalHoldId, lateRef };
     });
+    if (external?.externalHoldId) {
+      await this.sources.release(external.productId, external.externalHoldId);
+    }
+    if (external?.lateRef) {
+      await this.sources
+        .cancel(external.productId, external.lateRef)
+        .catch((error: unknown) =>
+          this.logger.error(
+            `booking ${bookingId} is cancelled here but not in the operator's system: ${(error as Error).message}`,
+          ),
+        );
+    }
     return this.dto(bookingId);
   }
 
@@ -477,6 +538,7 @@ export class BookingService {
           affiliateName: row.affiliateName,
           createdAt: b.createdAt.toISOString(),
           paidAt: b.paidAt?.toISOString() ?? null,
+          externalRef: b.externalRef,
         },
       ];
     });

@@ -18,6 +18,16 @@ export const bookingConfirmedEvent = z.object({
   currency: z.string().length(3),
 });
 
+/**
+ * The booking's seats are definitively taken: paid online, or booked to be paid at boarding.
+ * Lets an external availability source turn its temporary hold into a booking.
+ */
+export const bookingSeatsConfirmedEvent = z.object({
+  type: z.literal('booking.seats_confirmed'),
+  tenantId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+});
+
 export const bookingCancelledEvent = z.object({
   type: z.literal('booking.cancelled'),
   tenantId: z.string().uuid(),
@@ -44,6 +54,7 @@ export const ticketIssuedEvent = z.object({
 
 export const domainEvent = z.discriminatedUnion('type', [
   bookingConfirmedEvent,
+  bookingSeatsConfirmedEvent,
   bookingCancelledEvent,
   ticketCheckedInEvent,
   ticketIssuedEvent,

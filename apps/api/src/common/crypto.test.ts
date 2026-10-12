@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   TicketSigner,
   checkTicketLinkKey,
+  openSecret,
   randomCode,
+  sealSecret,
   signSession,
   ticketLinkKey,
   verifySession,
@@ -44,5 +46,13 @@ describe('crypto helpers', () => {
 
   it('makes codes without ambiguous characters', () => {
     expect(randomCode(200)).toMatch(/^[A-HJKMNP-Z2-9]+$/);
+  });
+
+  it('seals stored secrets so only the same app secret opens them', () => {
+    const sealed = sealSecret(secret, 'operator-api-token');
+    expect(sealed).not.toContain('operator-api-token');
+    expect(sealSecret(secret, 'operator-api-token')).not.toBe(sealed);
+    expect(openSecret(secret, sealed)).toBe('operator-api-token');
+    expect(() => openSecret('another-secret-value', sealed)).toThrow();
   });
 });

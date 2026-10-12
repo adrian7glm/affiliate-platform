@@ -11,6 +11,7 @@ import { IdentityModule } from './identity/identity.module';
 import { JobsModule } from './jobs/jobs.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SourcesModule } from './sources/sources.module';
 import { TrackingModule } from './tracking/tracking.module';
 
 @Global()
@@ -42,6 +43,7 @@ export class AppModule {
         IdentityModule,
         AffiliatesModule,
         TrackingModule,
+        SourcesModule,
         CatalogModule,
         PaymentsModule,
         BookingModule,

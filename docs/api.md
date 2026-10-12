@@ -53,6 +53,9 @@ Errors: `{ statusCode, error, message, details? }`.
 | POST   | `/operator/payouts/close-period`  | `ClosePeriodBody`     | `ClosePeriodResultDto`            |
 | GET    | `/operator/payouts`               | `?period=YYYY-MM`     | `PayoutDto[]`                     |
 | POST   | `/operator/payouts/:id/mark-paid` |                       | `PayoutDto`                       |
+| GET    | `/operator/sources`               |                       | `SourceDto[]`                     |
+| POST   | `/operator/sources` (owner)       | `ConnectSourceBody`   | `SourceDto`                       |
+| POST   | `/operator/sources/:id/sync`      |                       | `SyncResultDto`                   |
 
 ## Public (no authentication)
 
