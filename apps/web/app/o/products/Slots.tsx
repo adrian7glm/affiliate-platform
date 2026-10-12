@@ -1,14 +1,15 @@
 'use client';
 
-import type { ProductDto } from '@ap/contracts';
+import type { OperatorSlotDto, ProductDto } from '@ap/contracts';
 import { useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
+import { Dialog } from '@/components/Dialog';
 import { Field, INPUT_CLASSES } from '@/components/Field';
-import { IconPlus, IconX } from '@/components/icons';
+import { IconChevronLeft, IconChevronRight, IconPlus, IconX } from '@/components/icons';
 import { LoadingBlock } from '@/components/Spinner';
 import { groupSlotsByDay } from '@/lib/booking';
-import { addDays, formatDayLabel, formatTime, todayKey } from '@/lib/dates';
+import { addDays, formatDayLabel, formatDayLong, formatTime, todayKey } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
 import { errorMessageRo, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
@@ -200,49 +201,374 @@ export function SlotsDialog({
   );
 }
 
-/** Next 14 days of departures for a product, grouped by day. */
-export function UpcomingSlots({ productId }: { productId: string }) {
+const WINDOW_DAYS = 14;
+
+function seatsText(n: number): string {
+  return n === 1 ? '1 loc' : `${n} locuri`;
+}
+
+/**
+ * Departures of a trip, two weeks at a time, grouped by day. For the operator's own calendar
+ * each departure can be resized, closed or deleted, and a whole day closed at once (bad weather).
+ */
+export function UpcomingSlots({ product }: { product: ProductDto }) {
   const { tenant } = useOperator();
-  const from = todayKey(tenant.timezone);
-  const to = addDays(from, 13);
-  const slots = useApi(`operator-slots:${productId}`, (signal) =>
-    operatorApi.slots(productId, { from, to }, { signal }),
+  const today = todayKey(tenant.timezone);
+  const [offset, setOffset] = useState(0);
+  const from = addDays(today, offset);
+  const to = addDays(from, WINDOW_DAYS - 1);
+  const slots = useApi(`operator-slots:${product.id}:${from}`, (signal) =>
+    operatorApi.slots(product.id, { from, to }, { signal }),
+  );
+  const [editing, setEditing] = useState<OperatorSlotDto | null>(null);
+  const [closingDay, setClosingDay] = useState<{ day: string; list: OperatorSlotDto[] } | null>(
+    null,
+  );
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busyDay, setBusyDay] = useState<string | null>(null);
+  const editable = !product.managedExternally;
+
+  function merge(updated: OperatorSlotDto[]) {
+    const byId = new Map(updated.map((s) => [s.id, s]));
+    slots.setData((prev) => (prev ?? []).map((s) => byId.get(s.id) ?? s));
+  }
+
+  async function setDayClosed(day: string, list: OperatorSlotDto[], closed: boolean) {
+    setBusyDay(day);
+    setError(null);
+    try {
+      const result = await operatorApi.updateSlots(product.id, {
+        slotIds: list.map((s) => s.id),
+        closed,
+      });
+      merge(result.slots);
+      const label = formatDayLong(day);
+      setNotice(
+        closed ? `Plecările din ${label} sunt închise.` : `Plecările din ${label} sunt redeschise.`,
+      );
+    } catch (err) {
+      setError(errorMessageRo(err));
+    } finally {
+      setBusyDay(null);
+      setClosingDay(null);
+    }
+  }
+
+  const nav = (
+    <div className="flex items-center justify-between gap-2">
+      <button
+        type="button"
+        onClick={() => setOffset((o) => Math.max(0, o - WINDOW_DAYS))}
+        disabled={offset === 0}
+        aria-label="Cele 14 zile dinainte"
+        className="inline-flex size-12 items-center justify-center rounded-xl text-brand hover:bg-brand-soft disabled:opacity-40"
+      >
+        <IconChevronLeft />
+      </button>
+      <p className="text-center font-semibold" aria-live="polite">
+        {formatDayLabel(from).day} – {formatDayLabel(to).day}
+      </p>
+      <button
+        type="button"
+        onClick={() => setOffset((o) => o + WINDOW_DAYS)}
+        disabled={offset >= 365}
+        aria-label="Următoarele 14 zile"
+        className="inline-flex size-12 items-center justify-center rounded-xl text-brand hover:bg-brand-soft disabled:opacity-40"
+      >
+        <IconChevronRight />
+      </button>
+    </div>
   );
 
-  if (slots.loading && !slots.data) return <LoadingBlock label="Se încarcă plecările…" />;
-  if (slots.error) return <Alert tone="error">{errorMessageRo(slots.error)}</Alert>;
-  if (!slots.data || slots.data.length === 0) {
-    return (
-      <p className="rounded-2xl bg-surface-2 p-3 text-muted">
-        Nicio plecare în următoarele 14 zile.
-      </p>
+  let body;
+  if (slots.loading && !slots.data) body = <LoadingBlock label="Se încarcă plecările…" />;
+  else if (slots.error) body = <Alert tone="error">{errorMessageRo(slots.error)}</Alert>;
+  else if (!slots.data || slots.data.length === 0) {
+    body = (
+      <p className="rounded-2xl bg-surface-2 p-3 text-muted">Nicio plecare în aceste 14 zile.</p>
+    );
+  } else {
+    const byDay = groupSlotsByDay(slots.data, tenant.timezone);
+    body = (
+      <ul className="flex flex-col gap-2">
+        {[...byDay.entries()].map(([day, list]) => {
+          const label = formatDayLabel(day);
+          const allClosed = list.every((s) => s.closed);
+          return (
+            <li key={day} className="rounded-2xl bg-surface-2 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold">
+                  {label.weekday} {label.day}
+                </p>
+                {editable ? (
+                  <Button
+                    variant="ghost"
+                    className="-my-1"
+                    loading={busyDay === day}
+                    loadingText="Se salvează…"
+                    onClick={() =>
+                      allClosed
+                        ? void setDayClosed(day, list, false)
+                        : list.some((s) => s.reserved > 0 && !s.closed)
+                          ? setClosingDay({ day, list })
+                          : void setDayClosed(day, list, true)
+                    }
+                  >
+                    {allClosed ? 'Redeschide ziua' : 'Închide ziua'}
+                  </Button>
+                ) : null}
+              </div>
+              <ul className="mt-2 grid grid-cols-3 gap-2 text-sm sm:grid-cols-4">
+                {list.map((slot) => {
+                  const content = (
+                    <>
+                      <span
+                        className={`text-base font-semibold tabular-nums ${slot.closed ? 'line-through' : ''}`}
+                      >
+                        {formatTime(slot.startsAt, tenant.timezone)}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {slot.closed ? 'închisă' : `${slot.available}/${slot.capacity} libere`}
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={slot.id}>
+                      {editable ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditing(slot)}
+                          className={`flex min-h-14 w-full flex-col items-center justify-center rounded-2xl border px-2 py-1 hover:border-brand ${
+                            slot.closed
+                              ? 'border-dashed border-line-strong bg-transparent'
+                              : 'border-line bg-surface'
+                          }`}
+                          aria-label={`${formatTime(slot.startsAt, tenant.timezone)}, ${
+                            slot.closed
+                              ? 'închisă'
+                              : `${slot.available} din ${slot.capacity} locuri libere`
+                          }. Modifică plecarea`}
+                        >
+                          {content}
+                        </button>
+                      ) : (
+                        <span className="flex min-h-14 w-full flex-col items-center justify-center rounded-2xl bg-surface px-2 py-1">
+                          {content}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
     );
   }
-  const byDay = groupSlotsByDay(slots.data, tenant.timezone);
+
   return (
-    <ul className="flex flex-col gap-2">
-      {[...byDay.entries()].map(([day, list]) => {
-        const label = formatDayLabel(day);
-        return (
-          <li key={day} className="rounded-2xl bg-surface-2 p-3">
-            <p className="font-semibold">
-              {label.weekday} {label.day}
-            </p>
-            <ul className="mt-1 flex flex-wrap gap-2 text-sm">
-              {list.map((slot) => (
-                <li key={slot.id} className="rounded-full bg-surface px-3 py-1">
-                  <span className="font-semibold tabular-nums">
-                    {formatTime(slot.startsAt, tenant.timezone)}
-                  </span>{' '}
-                  <span className="text-muted">
-                    {slot.available}/{slot.capacity} libere
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="flex flex-col gap-3">
+      {nav}
+      {notice ? <Alert tone="success">{notice}</Alert> : null}
+      {error ? <Alert tone="error">{error}</Alert> : null}
+      {body}
+
+      <Dialog
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title={
+          editing
+            ? `Plecarea de ${formatDayLong(todayKeyOf(editing.startsAt, tenant.timezone))}, ${formatTime(editing.startsAt, tenant.timezone)}`
+            : ''
+        }
+      >
+        {editing ? (
+          <SlotEditor
+            key={editing.id}
+            product={product}
+            slot={editing}
+            onDone={(message, updated, removedId) => {
+              if (updated) merge([updated]);
+              if (removedId)
+                slots.setData((prev) => (prev ?? []).filter((s) => s.id !== removedId));
+              setNotice(message);
+              setError(null);
+              setEditing(null);
+            }}
+          />
+        ) : null}
+      </Dialog>
+
+      <Dialog
+        open={!!closingDay}
+        onClose={() => setClosingDay(null)}
+        title="Închizi ziua?"
+        description={
+          closingDay
+            ? `Sunt ${seatsText(closingDay.list.reduce((n, s) => n + (s.closed ? 0 : s.reserved), 0))} rezervate în ${formatDayLong(closingDay.day)}. Biletele rămân valabile; anunță clienții dacă excursia nu mai are loc.`
+            : undefined
+        }
+      >
+        {closingDay ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button variant="secondary" onClick={() => setClosingDay(null)}>
+              Renunță
+            </Button>
+            <Button
+              variant="danger"
+              loading={busyDay === closingDay.day}
+              loadingText="Se închide…"
+              onClick={() => void setDayClosed(closingDay.day, closingDay.list, true)}
+            >
+              Închide vânzările
+            </Button>
+          </div>
+        ) : null}
+      </Dialog>
+    </div>
+  );
+}
+
+function todayKeyOf(iso: string, tz: string): string {
+  return todayKey(tz, new Date(iso));
+}
+
+/** One departure: change its seats, close or reopen it, or delete it. */
+function SlotEditor({
+  product,
+  slot,
+  onDone,
+}: {
+  product: ProductDto;
+  slot: OperatorSlotDto;
+  onDone: (message: string, updated?: OperatorSlotDto, removedId?: string) => void;
+}) {
+  const [capacity, setCapacity] = useState(String(slot.capacity));
+  const [capacityError, setCapacityError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<'capacity' | 'closed' | 'delete' | null>(null);
+
+  async function run(kind: 'capacity' | 'closed' | 'delete', action: () => Promise<void>) {
+    setBusy(kind);
+    setError(null);
+    try {
+      await action();
+    } catch (err) {
+      setError(errorMessageRo(err));
+      setBusy(null);
+    }
+  }
+
+  function saveCapacity(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const seats = Number(capacity);
+    if (!Number.isInteger(seats) || seats < 1 || seats > 10000) {
+      setCapacityError('Între 1 și 10000 de locuri.');
+      return;
+    }
+    if (seats < slot.reserved) {
+      setCapacityError(`Sunt deja ${seatsText(slot.reserved)} rezervate; nu poți scădea sub atât.`);
+      return;
+    }
+    setCapacityError(null);
+    void run('capacity', async () => {
+      const result = await operatorApi.updateSlots(product.id, {
+        slotIds: [slot.id],
+        capacity: seats,
+      });
+      onDone(`Plecarea are acum ${seatsText(result.slots[0]!.capacity)}.`, result.slots[0]);
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <dl className="grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-2xl bg-surface-2 p-3">
+          <dt className="text-sm text-muted">Rezervate</dt>
+          <dd className="text-xl font-bold tabular-nums">{slot.reserved}</dd>
+        </div>
+        <div className="rounded-2xl bg-surface-2 p-3">
+          <dt className="text-sm text-muted">Libere</dt>
+          <dd className="text-xl font-bold tabular-nums">{slot.closed ? 0 : slot.available}</dd>
+        </div>
+        <div className="rounded-2xl bg-surface-2 p-3">
+          <dt className="text-sm text-muted">Stare</dt>
+          <dd className="mt-1 font-bold">{slot.closed ? 'Închisă' : 'Deschisă'}</dd>
+        </div>
+      </dl>
+
+      <form onSubmit={saveCapacity} noValidate className="flex items-end gap-2">
+        <Field
+          label="Locuri în total"
+          name="capacity"
+          inputMode="numeric"
+          autoComplete="off"
+          className="flex-1"
+          value={capacity}
+          onChange={(e) => setCapacity(e.target.value.replace(/\D/g, ''))}
+          error={capacityError ?? undefined}
+        />
+        <Button
+          type="submit"
+          loading={busy === 'capacity'}
+          loadingText="…"
+          className={capacityError ? 'mb-7' : ''}
+        >
+          Salvează
+        </Button>
+      </form>
+
+      {error ? <Alert tone="error">{error}</Alert> : null}
+
+      <div className="flex flex-col gap-2 border-t border-line pt-4">
+        <Button
+          variant="secondary"
+          loading={busy === 'closed'}
+          loadingText="Se salvează…"
+          onClick={() =>
+            void run('closed', async () => {
+              const result = await operatorApi.updateSlots(product.id, {
+                slotIds: [slot.id],
+                closed: !slot.closed,
+              });
+              onDone(
+                slot.closed
+                  ? 'Plecarea e din nou deschisă.'
+                  : 'Plecarea e închisă pentru rezervări noi.',
+                result.slots[0],
+              );
+            })
+          }
+        >
+          {slot.closed ? 'Redeschide plecarea' : 'Închide plecarea'}
+        </Button>
+        {slot.reserved > 0 && !slot.closed ? (
+          <p className="text-sm text-muted">
+            Închiderea oprește doar rezervările noi; biletele vândute rămân valabile.
+          </p>
+        ) : null}
+        <Button
+          variant="ghost"
+          className="text-danger-fg hover:bg-danger-soft"
+          loading={busy === 'delete'}
+          loadingText="Se șterge…"
+          onClick={() =>
+            void run('delete', async () => {
+              const result = await operatorApi.deleteSlots(product.id, [slot.id]);
+              if (result.deleted === 1) onDone('Plecarea a fost ștearsă.', undefined, slot.id);
+              else
+                onDone('Plecarea are rezervări, așa că a fost închisă în loc să fie ștearsă.', {
+                  ...slot,
+                  closed: true,
+                });
+            })
+          }
+        >
+          Șterge plecarea
+        </Button>
+      </div>
+    </div>
   );
 }
