@@ -9,8 +9,11 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   type AssistedBookingBody,
   type BookingDto,
@@ -120,6 +123,28 @@ export class PublicBookingController {
     return this.tickets.view(bookingId, typeof key === 'string' ? key : '');
   }
 
+  /** The ticket as a PDF the customer can save on the phone. */
+  @Get('tickets/:bookingId/pdf')
+  async ticketPdf(
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+    @Query('k') key: unknown,
+    @Query('lang') lang: unknown,
+    @Query('download') download: unknown,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.tickets.pdf(
+      bookingId,
+      typeof key === 'string' ? key : '',
+      typeof lang === 'string' ? lang : null,
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    return new StreamableFile(pdf.content, {
+      type: 'application/pdf',
+      disposition: `${download === '1' ? 'attachment' : 'inline'}; filename="${pdf.filename}"`,
+      length: pdf.content.length,
+    });
+  }
+
   /** Public key that verifies ticket QR codes, for offline scanners. */
   @Get('ticket-key')
   ticketKey(): { algorithm: 'Ed25519'; publicKeyPem: string } {
@@ -213,8 +238,10 @@ export class OperatorBookingController {
     return result;
   }
 
+  /** Boarding scan. Scanner accounts reach only this route of the operator API. */
   @Post('tickets/check-in')
   @HttpCode(200)
+  @Roles('owner', 'staff', 'scanner')
   async checkIn(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthUser,

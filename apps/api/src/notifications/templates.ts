@@ -23,6 +23,7 @@ export interface TemplateParams {
   affiliate_invite: { tenantName: string; url: string };
   operator_invite: { businessName: string; url: string };
   new_operator: { name: string; contact: string; url: string };
+  scanner_invite: { tenantName: string; name: string; url: string };
   payment_link: TripParams & { url: string; totalMinor: number; currency: string };
   ticket: TripParams & {
     customerName: string;
@@ -33,6 +34,10 @@ export interface TemplateParams {
     qrToken: string | null;
     amountDueOnSiteMinor: number;
     currency: string;
+    /** Ticket types and quantities, printed on the PDF ticket. Missing in older queued messages. */
+    items?: { label: string; quantity: number }[];
+    /** Operator brand colour for the PDF ticket. */
+    brandColor?: string | null;
   };
   booking_cancelled: TripParams & { refunded: boolean };
 }
@@ -44,6 +49,7 @@ export const TEMPLATE_NAMES = [
   'affiliate_invite',
   'operator_invite',
   'new_operator',
+  'scanner_invite',
   'payment_link',
   'ticket',
   'booking_cancelled',
@@ -145,6 +151,18 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
     lines: [t('email.newOperator.intro', { name, contact }), t('email.newOperator.see', { url })],
     action: { label: t('email.newOperator.action'), url },
     sms: t('email.newOperator.sms', { name, contact, url }),
+  }),
+
+  scanner_invite: ({ tenantName, name, url }, { t }) => ({
+    subject: t('email.scannerInvite.subject', { tenant: tenantName }),
+    brand: tenantName,
+    greeting: t('email.greetingName', { name }),
+    lines: [
+      t('email.scannerInvite.intro', { tenant: tenantName }),
+      t('email.scannerInvite.signIn', { url }),
+    ],
+    action: { label: t('email.scannerInvite.action'), url },
+    sms: t('email.scannerInvite.sms', { tenant: tenantName, url }),
   }),
 
   payment_link: (p, tr) => {

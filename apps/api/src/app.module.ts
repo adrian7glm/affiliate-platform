@@ -1,6 +1,7 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 import { AffiliatesModule } from './affiliates/affiliates.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { BoardingModule } from './boarding/boarding.module';
 import { BookingModule } from './booking/booking.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { CommissionsModule } from './commissions/commissions.module';
@@ -54,6 +55,7 @@ export class AppModule {
         CatalogModule,
         PaymentsModule,
         BookingModule,
+        BoardingModule,
         CommissionsModule,
         AnalyticsModule,
         SettingsModule,

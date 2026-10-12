@@ -203,7 +203,8 @@
       "price": "price not found",
       "product": "product not found",
       "ticket": "ticket not found",
-      "user": "user not found"
+      "user": "user not found",
+      "scannerAccount": "scanner account not found"
     },
     "auth": {
       "signInAgain": "sign in again",
@@ -303,6 +304,12 @@
       "alreadyCheckedIn": "This ticket was already scanned.",
       "notValid": "This ticket is not valid (cancelled, refunded or unpaid).",
       "otherOperator": "This QR code is not a ticket of this operator."
+    },
+    "ticket": {
+      "noPdf": "this ticket is not valid, so it has no PDF"
+    },
+    "scanners": {
+      "exists": "this person already has a scanner account"
     }
   },
   "auth": {
@@ -314,7 +321,13 @@
     "role": {
       "owner": "Administrator",
       "staff": "Staff",
-      "affiliate": "Affiliate"
+      "affiliate": "Affiliate",
+      "scanner": "Ticket scanning"
+    },
+    "area": {
+      "affiliate": "affiliate app",
+      "operator": "management",
+      "scanner": "ticket scanner"
     },
     "login": {
       "title": "Sign in",
@@ -349,8 +362,6 @@
       "noMembershipTitle": "No access yet",
       "noMembershipBody": "Your account isn't linked to any operator yet. If you're an affiliate, open the invitation link the operator sent you.",
       "membershipLine": "{role} · {area}",
-      "areaAffiliate": "affiliate app",
-      "areaOperator": "management",
       "platformAdmin": "Platform admin",
       "openOperator": "Open an operator account"
     },
@@ -473,6 +484,8 @@
   "ticket": {
     "title": "Your ticket",
     "showAtBoarding": "Show this code when you board.",
+    "downloadPdf": "Save ticket as PDF",
+    "downloadPdfHint": "Keep it on your phone; no need to print it.",
     "statusValid": "Valid",
     "statusCheckedIn": "Used",
     "checkedInText": "This ticket was scanned at boarding. Enjoy the trip!",
@@ -752,6 +765,7 @@
       "dashboard": "Dashboard",
       "bookings": "Bookings",
       "scan": "Scan tickets",
+      "team": "Boarding team",
       "affiliates": "Affiliates",
       "plans": "Commission plans",
       "products": "Trips and departures",
@@ -1539,6 +1553,27 @@
       "refunded": "Your money is being refunded to your card. It can take 5-10 business days to appear.",
       "sms": "{tenant}: booking {reference} ({product}, {when}) has been cancelled.",
       "smsRefunded": "{tenant}: booking {reference} ({product}, {when}) has been cancelled. Your money is refunded to your card in 5-10 business days."
+    },
+    "scannerInvite": {
+      "subject": "{tenant}: your ticket scanning account",
+      "intro": "{tenant} created an account for you to scan tickets at boarding.",
+      "signIn": "Sign in with the address or number this message was sent to: {url}",
+      "action": "Open the scanner",
+      "sms": "{tenant}: you have an account to scan tickets at boarding. Sign in with this number: {url}"
+    },
+    "ticketPdf": {
+      "ticket": "TICKET",
+      "showAtBoarding": "Show this QR code when you board.",
+      "used": "Ticket used at boarding",
+      "booking": "Booking",
+      "customer": "Name",
+      "seats": "Seats",
+      "tickets": "Tickets",
+      "meetingPoint": "Meeting point",
+      "dueOnSite": "To pay at boarding",
+      "onlineTicket": "Online ticket",
+      "keepOnPhone": "No need to print it: keep it on your phone.",
+      "fileName": "ticket-{reference}.pdf"
     }
   },
   "catalog": {
@@ -1796,7 +1831,32 @@
       "token": "Access token",
       "connecting": "Connecting…",
       "connect": "Connect"
-    },
+    }
+  },
+  "charts": {
+    "earningsLabel": "Commission over the last months",
+    "earningsBar_one": "{month}: {amount}, 1 sale",
+    "earningsBar_other": "{month}: {amount}, {count} sales",
+    "colMonth": "Month",
+    "colSales": "Sales",
+    "colCommission": "Commission",
+    "affiliate": "Through affiliates",
+    "direct": "Direct",
+    "bookings_one": "1 booking",
+    "bookings_other": "{count} bookings",
+    "dayBar_one": "{day}: {amount}, 1 booking",
+    "dayBar_other": "{day}: {amount}, {count} bookings",
+    "revenueByDay": "Revenue by day",
+    "legend": "Legend",
+    "showTable": "See the days as a table",
+    "noSales": "No sales this month so far.",
+    "colDay": "Day",
+    "colBookings": "Bookings",
+    "colTotal": "Total",
+    "channelLine_one": "1 booking · {share}% of revenue",
+    "channelLine_other": "{count} bookings · {share}% of revenue"
+  },
+  "boarding": {
     "scan": {
       "title": "Scan tickets",
       "description": "Hold the customer’s QR code in the frame. The check starts by itself.",
@@ -1835,30 +1895,42 @@
       "reference": "Reference",
       "tickets": "Tickets",
       "itemLine": "{quantity} × {label}",
-      "next": "Scan the next one"
-    }
-  },
-  "charts": {
-    "earningsLabel": "Commission over the last months",
-    "earningsBar_one": "{month}: {amount}, 1 sale",
-    "earningsBar_other": "{month}: {amount}, {count} sales",
-    "colMonth": "Month",
-    "colSales": "Sales",
-    "colCommission": "Commission",
-    "affiliate": "Through affiliates",
-    "direct": "Direct",
-    "bookings_one": "1 booking",
-    "bookings_other": "{count} bookings",
-    "dayBar_one": "{day}: {amount}, 1 booking",
-    "dayBar_other": "{day}: {amount}, {count} bookings",
-    "revenueByDay": "Revenue by day",
-    "legend": "Legend",
-    "showTable": "See the days as a table",
-    "noSales": "No sales this month so far.",
-    "colDay": "Day",
-    "colBookings": "Bookings",
-    "colTotal": "Total",
-    "channelLine_one": "1 booking · {share}% of revenue",
-    "channelLine_other": "{count} bookings · {share}% of revenue"
+      "next": "Scan the next one",
+      "usedAt": "Scanned {when}",
+      "usedAtBy": "Scanned {when} by {who}",
+      "usedToday": "today at {time}",
+      "usedOnDay": "{day} at {time}"
+    },
+    "app": {
+      "title": "Ticket scanner",
+      "scannedTodayNone": "You have not scanned any tickets today",
+      "scannedToday_one": "You scanned {count} ticket today",
+      "scannedToday_other": "You scanned {count} tickets today",
+      "logout": "Sign out"
+    },
+    "team": {
+      "title": "Boarding team",
+      "description": "Accounts for the people who scan tickets at departure. They only see the scanner, not bookings, affiliates or money.",
+      "add": "Add a person",
+      "name": "Name",
+      "nameHint": "How it appears on scanned tickets, for example “Mihai, pier”.",
+      "contact": "Phone or email",
+      "contactHint": "Where they receive the sign-in link and the login codes.",
+      "submit": "Create the account",
+      "added": "{name} received the sign-in link.",
+      "errorName": "Enter the person’s name.",
+      "errorContact": "Enter a phone number (e.g. 0722 123 456) or an email address.",
+      "errorDuplicate": "This person already has a scanning account.",
+      "empty": "There is no one at boarding yet. Add the first person above.",
+      "listTitle": "People with access to the scanner",
+      "lastScan": "Last scan: {when}",
+      "neverScanned": "Has not scanned any tickets yet",
+      "remove": "Remove access",
+      "removeTitle": "Remove access for {name}?",
+      "removeText": "They will no longer be able to scan tickets. Tickets they already scanned stay recorded under their name.",
+      "removeConfirm": "Yes, remove access",
+      "howTo": "The person opens the link, signs in with the code from the SMS or email and goes straight to the scanner."
+    },
+    "noName": "No name"
   }
 }

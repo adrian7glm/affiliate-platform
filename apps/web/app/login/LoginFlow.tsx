@@ -20,6 +20,8 @@ import {
 } from '@/lib/contact';
 import { authApi } from '@/lib/endpoints';
 import {
+  areaForPath,
+  areaLabel,
   areaForRole,
   clearSession,
   getCachedMe,
@@ -41,7 +43,16 @@ type Step = 'destination' | 'code' | 'tenant';
 const METHOD_KEY = 'ap.loginMethod';
 const RESEND_SECONDS = 30;
 
-export function LoginFlow({ next, reason }: { next: string | null; reason: string | null }) {
+export function LoginFlow({
+  next,
+  reason,
+  prefill,
+}: {
+  next: string | null;
+  reason: string | null;
+  /** Phone number or email from an invitation link, filled in for the person. */
+  prefill?: string | null;
+}) {
   const router = useRouter();
   const i18n = useT();
   const { t, lang } = i18n;
@@ -62,7 +73,10 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
   // Remember the preferred login method; offer the account chooser if already signed in.
   useEffect(() => {
     const saved = readString(METHOD_KEY);
-    if (saved === 'email' || saved === 'phone') setMethod(saved);
+    if (prefill) {
+      setMethod(prefill.includes('@') ? 'email' : 'phone');
+      setRawDestination(prefill);
+    } else if (saved === 'email' || saved === 'phone') setMethod(saved);
     const cached = getCachedMe();
     if (getToken() && cached && cached.memberships.length > 0 && !nextPath) {
       setMe(cached);
@@ -161,9 +175,9 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
       setStep('tenant');
       return;
     }
-    if (nextPath && (nextPath.startsWith('/a') || nextPath.startsWith('/o'))) {
-      const area = nextPath.startsWith('/a') ? 'affiliate' : 'operator';
-      const membership = pickMembership(memberships, area, getTenantId());
+    const nextArea = nextPath ? areaForPath(nextPath) : null;
+    if (nextPath && nextArea) {
+      const membership = pickMembership(memberships, nextArea, getTenantId());
       if (membership) {
         setTenantId(membership.tenantId);
         router.replace(nextPath);
@@ -173,11 +187,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
     if (memberships.length === 1) {
       const only = memberships[0]!;
       setTenantId(only.tenantId);
-      router.replace(
-        nextPath && !nextPath.startsWith('/a') && !nextPath.startsWith('/o')
-          ? nextPath
-          : homePathForRole(only.role),
-      );
+      router.replace(nextPath && !nextArea ? nextPath : homePathForRole(only.role));
       return;
     }
     setMe(session);
@@ -429,10 +439,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
                       <span className="block text-sm text-muted">
                         {t('auth.login.membershipLine', {
                           role: roleLabel(i18n, m.role),
-                          area:
-                            areaForRole(m.role) === 'affiliate'
-                              ? t('auth.login.areaAffiliate')
-                              : t('auth.login.areaOperator'),
+                          area: areaLabel(i18n, areaForRole(m.role)),
                         })}
                       </span>
                     </span>

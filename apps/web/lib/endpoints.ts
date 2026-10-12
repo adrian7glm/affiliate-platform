@@ -8,6 +8,9 @@ import type {
   UpdateSettingsBody,
   UpdateSlotsBody,
   UpdateSlotsResultDto,
+  AddScannerBody,
+  ScannerAccountDto,
+  ScannerContextDto,
   ConnectSourceBody,
   PublicCheckoutBody,
   SourceDto,
@@ -47,7 +50,7 @@ import type {
   UpdateAffiliateBody,
   VerifyOtpBody,
 } from '@ap/contracts';
-import { apiFetch, type RequestOptions } from './api';
+import { API_URL, apiFetch, buildUrl, type RequestOptions } from './api';
 
 /**
  * One typed function per endpoint in docs/api.md. Pages call these instead of building URLs.
@@ -173,6 +176,16 @@ export const operatorApi = {
     apiFetch<SourceDto>('/operator/sources', { ...o, method: 'POST', body }),
   syncSource: (id: string, o?: Opts) =>
     apiFetch<SyncResultDto>(`/operator/sources/${enc(id)}/sync`, { ...o, method: 'POST' }),
+  scanners: (o?: Opts) => apiFetch<ScannerAccountDto[]>('/operator/scanners', o),
+  addScanner: (body: AddScannerBody, o?: Opts) =>
+    apiFetch<ScannerAccountDto>('/operator/scanners', { ...o, method: 'POST', body }),
+  removeScanner: (userId: string, o?: Opts) =>
+    apiFetch<void>(`/operator/scanners/${enc(userId)}`, { ...o, method: 'DELETE' }),
+};
+
+/** The boarding scanner app (scanner accounts and operator staff). */
+export const scannerApi = {
+  context: (o?: Opts) => apiFetch<ScannerContextDto>('/scanner/context', o),
 };
 
 export const publicApi = {
@@ -201,6 +214,13 @@ export const publicApi = {
       ...o,
       auth: false,
       query: { k: key },
+    }),
+  /** Direct link to the PDF ticket; `download` asks the browser to save it. */
+  ticketPdfUrl: (bookingId: string, key: string, lang: string, download = false) =>
+    buildUrl(API_URL, `/public/tickets/${enc(bookingId)}/pdf`, {
+      k: key,
+      lang,
+      download: download ? 1 : undefined,
     }),
   devPaymentSucceed: (bookingId: string, key: string, o?: Opts) =>
     apiFetch<void>(`/public/dev-payments/${enc(bookingId)}/succeed`, {

@@ -1,15 +1,16 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { CheckInResultDto, TicketDto } from '@ap/contracts';
-import { type Database, bookingItems, bookings, products, tenants, tickets } from '@ap/db';
+import { type Database, bookingItems, bookings, products, tenants, tickets, users } from '@ap/db';
 import { and, eq } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { TicketSigner, checkTicketLinkKey, ticketLinkKey } from '../common/crypto';
-import { NotFound } from '../common/errors';
+import { DomainError, NotFound } from '../common/errors';
 import type { Tenant } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
 import { I18nService } from '../i18n/i18n.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsService, mask } from '../notifications/notifications.service';
+import { renderTicketPdf, ticketPdfFilename } from '../notifications/ticket-pdf';
 import { Outbox } from '../outbox/outbox';
 
 @Injectable()
@@ -48,6 +49,10 @@ export class TicketsService {
       .where(eq(bookings.id, bookingId));
     if (!row) return;
     const { booking, tenant } = row;
+    const items = await tx
+      .select({ label: bookingItems.label, quantity: bookingItems.quantity })
+      .from(bookingItems)
+      .where(eq(bookingItems.bookingId, bookingId));
     // Email first: it carries the QR code itself and costs nothing.
     const contact = booking.customerEmail ?? booking.customerPhone;
     if (!contact) return;
@@ -71,6 +76,8 @@ export class TicketsService {
         amountDueOnSiteMinor:
           booking.paymentMode === 'on_site' && !booking.paidAt ? booking.totalMinor : 0,
         currency: booking.currency,
+        items,
+        brandColor: tenant.branding.primaryColor ?? null,
       },
     });
   }
@@ -132,6 +139,51 @@ export class TicketsService {
   async view(bookingId: string, key: string): Promise<TicketDto> {
     if (!checkTicketLinkKey(this.config.APP_SECRET, bookingId, key)) throw new NotFound('ticket');
     return this.ticketDto(bookingId);
+  }
+
+  /**
+   * The ticket as a PDF to keep on the phone. Only for tickets that can be boarded with (valid,
+   * or already used, which prints as used); the language defaults to the customer's.
+   */
+  async pdf(
+    bookingId: string,
+    key: string,
+    lang: string | null,
+  ): Promise<{ filename: string; content: Buffer }> {
+    const ticket = await this.view(bookingId, key);
+    if (!ticket.qrToken) {
+      throw new DomainError('errors.ticket.noPdf', HttpStatus.CONFLICT);
+    }
+    const [row] = await this.db
+      .select({ locale: bookings.customerLocale, branding: tenants.branding })
+      .from(bookings)
+      .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
+      .where(eq(bookings.id, bookingId));
+    const language = this.i18n.pick(lang ?? row?.locale, 'en');
+    const content = await renderTicketPdf(
+      {
+        tenantName: ticket.tenantName,
+        productName: ticket.productName,
+        reference: ticket.bookingReference,
+        startsAt: ticket.startsAt,
+        timezone: ticket.timezone,
+        customerName: ticket.customerName,
+        meetingPoint: ticket.meetingPoint,
+        seats: ticket.seats,
+        items: ticket.items,
+        qrToken: ticket.qrToken,
+        amountDueOnSiteMinor: ticket.amountDueOnSiteMinor,
+        currency: ticket.currency,
+        url: this.customerUrl(bookingId, language),
+        used: ticket.status === 'checked_in',
+        brandColor: row?.branding.primaryColor ?? null,
+      },
+      this.i18n.translator(language),
+    );
+    return {
+      filename: ticketPdfFilename(ticket.bookingReference, this.i18n.translator(language)),
+      content,
+    };
   }
 
   private async ticketDto(bookingId: string): Promise<TicketDto> {
@@ -200,6 +252,8 @@ export class TicketsService {
         message: this.i18n.translate(lang, 'errors.checkIn.otherOperator'),
         ticket: null,
         collectMinor: 0,
+        checkedInAt: null,
+        checkedInBy: null,
       };
     }
     const now = this.clock.now();
@@ -210,6 +264,10 @@ export class TicketsService {
         .where(and(eq(tickets.id, payload.tid), eq(tickets.tenantId, tenantId)))
         .for('update');
       if (!ticket) return { result: 'not_valid' as const, bookingId: null, collectMinor: 0 };
+      const firstScan = {
+        checkedInAt: ticket.checkedInAt,
+        checkedInByUserId: ticket.checkedInByUserId,
+      };
       const [booking] = await tx
         .select()
         .from(bookings)
@@ -218,8 +276,14 @@ export class TicketsService {
       if (!booking || ticket.status === 'void' || booking.status !== 'confirmed') {
         return { result: 'not_valid' as const, bookingId: ticket.bookingId, collectMinor: 0 };
       }
-      if (ticket.status === 'checked_in')
-        return { result: 'already_checked_in' as const, bookingId: booking.id, collectMinor: 0 };
+      if (ticket.status === 'checked_in') {
+        return {
+          result: 'already_checked_in' as const,
+          bookingId: booking.id,
+          collectMinor: 0,
+          ...firstScan,
+        };
+      }
 
       await tx
         .update(tickets)
@@ -247,10 +311,17 @@ export class TicketsService {
         bookingId: booking.id,
         checkedInAt: now.toISOString(),
       });
-      return { result: 'checked_in' as const, bookingId: booking.id, collectMinor };
+      return {
+        result: 'checked_in' as const,
+        bookingId: booking.id,
+        collectMinor,
+        checkedInAt: now,
+        checkedInByUserId: userId,
+      };
     });
 
     const ticket = outcome.bookingId ? await this.ticketDto(outcome.bookingId) : null;
+    const scan = 'checkedInAt' in outcome ? outcome : null;
     const messages = {
       checked_in: 'errors.checkIn.checkedIn',
       already_checked_in: 'errors.checkIn.alreadyCheckedIn',
@@ -261,6 +332,19 @@ export class TicketsService {
       message: this.i18n.translate(lang, messages[outcome.result]),
       ticket,
       collectMinor: outcome.collectMinor,
+      checkedInAt: scan?.checkedInAt?.toISOString() ?? null,
+      checkedInBy: scan?.checkedInByUserId ? await this.personLabel(scan.checkedInByUserId) : null,
     };
+  }
+
+  /** A name to show on the scanner for whoever scanned a ticket. */
+  private async personLabel(userId: string): Promise<string | null> {
+    const [user] = await this.db
+      .select({ name: users.name, email: users.email, phone: users.phone })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!user) return null;
+    const contact = user.email ?? user.phone;
+    return user.name ?? (contact ? mask(contact) : null);
   }
 }

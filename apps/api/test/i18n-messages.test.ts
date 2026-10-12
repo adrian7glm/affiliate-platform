@@ -112,10 +112,16 @@ describe.skipIf(!databaseUrl)('translated API texts (needs TEST_DATABASE_URL)', 
     expect(ro?.text).toContain('Bună, Ion,');
     expect(ro?.text).toContain('marți, 6 octombrie 2026, ora 10:00');
     expect(ro?.html).toContain('<html lang="ro">');
-    expect(ro?.attachments).toEqual([expect.objectContaining({ filename: 'bilet-qr.png' })]);
+    expect(ro?.attachments).toEqual([
+      expect.objectContaining({ filename: 'bilet-qr.png' }),
+      expect.objectContaining({ filename: 'bilet-ABC123.pdf', contentType: 'application/pdf' }),
+    ]);
 
     const en = h.messages.last('hans@example.com');
     expect(en?.subject).toBe('Your ticket: Plimbare pe Dunăre, 6 Oct 10:00');
-    expect(en?.attachments).toEqual([expect.objectContaining({ filename: 'ticket-qr.png' })]);
+    expect(en?.attachments).toEqual([
+      expect.objectContaining({ filename: 'ticket-qr.png' }),
+      expect.objectContaining({ filename: 'ticket-ABC123.pdf' }),
+    ]);
   });
 });

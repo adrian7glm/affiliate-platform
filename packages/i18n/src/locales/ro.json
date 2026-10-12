@@ -205,7 +205,8 @@
       "price": "prețul nu a fost găsit",
       "product": "excursia nu a fost găsită",
       "ticket": "biletul nu a fost găsit",
-      "user": "utilizatorul nu a fost găsit"
+      "user": "utilizatorul nu a fost găsit",
+      "scannerAccount": "contul de scanare nu a fost găsit"
     },
     "auth": {
       "signInAgain": "conectează-te din nou",
@@ -307,6 +308,12 @@
       "alreadyCheckedIn": "Acest bilet a fost deja scanat.",
       "notValid": "Acest bilet nu este valabil (anulat, rambursat sau neplătit).",
       "otherOperator": "Acest cod QR nu este un bilet al acestui operator."
+    },
+    "ticket": {
+      "noPdf": "acest bilet nu este valabil, deci nu are PDF"
+    },
+    "scanners": {
+      "exists": "această persoană are deja un cont de scanare"
     }
   },
   "auth": {
@@ -318,7 +325,13 @@
     "role": {
       "owner": "Administrator",
       "staff": "Personal",
-      "affiliate": "Afiliat"
+      "affiliate": "Afiliat",
+      "scanner": "Scanare bilete"
+    },
+    "area": {
+      "affiliate": "aplicația de afiliat",
+      "operator": "administrare",
+      "scanner": "scanerul de bilete"
     },
     "login": {
       "title": "Intră în cont",
@@ -353,8 +366,6 @@
       "noMembershipTitle": "Niciun acces încă",
       "noMembershipBody": "Contul tău nu este încă legat de niciun operator. Dacă ești afiliat, deschide linkul de invitație primit de la operator.",
       "membershipLine": "{role} · {area}",
-      "areaAffiliate": "aplicația de afiliat",
-      "areaOperator": "administrare",
       "platformAdmin": "Administrare platformă",
       "openOperator": "Deschide un cont de operator"
     },
@@ -479,6 +490,8 @@
   "ticket": {
     "title": "Biletul tău",
     "showAtBoarding": "Arată acest cod la îmbarcare.",
+    "downloadPdf": "Salvează biletul PDF",
+    "downloadPdfHint": "Îl păstrezi pe telefon, nu trebuie printat.",
     "statusValid": "Valabil",
     "statusCheckedIn": "Folosit",
     "checkedInText": "Biletul a fost scanat la îmbarcare. Distracție plăcută!",
@@ -766,6 +779,7 @@
       "dashboard": "Panou",
       "bookings": "Rezervări",
       "scan": "Scanează bilete",
+      "team": "Echipa la îmbarcare",
       "affiliates": "Afiliați",
       "plans": "Planuri de comision",
       "products": "Excursii și plecări",
@@ -1600,6 +1614,27 @@
       "refunded": "Banii îți sunt returnați pe card. Pot apărea în cont în 5-10 zile lucrătoare.",
       "sms": "{tenant}: rezervarea {reference} ({product}, {when}) a fost anulată.",
       "smsRefunded": "{tenant}: rezervarea {reference} ({product}, {when}) a fost anulată. Banii îți sunt returnați pe card în 5-10 zile lucrătoare."
+    },
+    "scannerInvite": {
+      "subject": "{tenant}: cont pentru scanarea biletelor",
+      "intro": "{tenant} ți-a făcut un cont pentru scanarea biletelor la îmbarcare.",
+      "signIn": "Intră cu adresa sau numărul pe care ai primit acest mesaj: {url}",
+      "action": "Deschide scanerul",
+      "sms": "{tenant}: ai un cont pentru scanarea biletelor la imbarcare. Intra cu acest numar: {url}"
+    },
+    "ticketPdf": {
+      "ticket": "BILET",
+      "showAtBoarding": "Arată acest cod QR la îmbarcare.",
+      "used": "Bilet folosit la îmbarcare",
+      "booking": "Rezervare",
+      "customer": "Client",
+      "seats": "Locuri",
+      "tickets": "Bilete",
+      "meetingPoint": "Punct de întâlnire",
+      "dueOnSite": "De plată la îmbarcare",
+      "onlineTicket": "Biletul online",
+      "keepOnPhone": "Nu trebuie printat: păstrează-l pe telefon.",
+      "fileName": "bilet-{reference}.pdf"
     }
   },
   "catalog": {
@@ -1869,7 +1904,36 @@
       "token": "Token de acces",
       "connecting": "Se conectează…",
       "connect": "Conectează"
-    },
+    }
+  },
+  "charts": {
+    "earningsLabel": "Comisionul pe ultimele luni",
+    "earningsBar_one": "{month}: {amount}, 1 vânzare",
+    "earningsBar_few": "{month}: {amount}, {count} vânzări",
+    "earningsBar_other": "{month}: {amount}, {count} de vânzări",
+    "colMonth": "Luna",
+    "colSales": "Vânzări",
+    "colCommission": "Comision",
+    "affiliate": "Prin afiliați",
+    "direct": "Direct",
+    "bookings_one": "1 rezervare",
+    "bookings_few": "{count} rezervări",
+    "bookings_other": "{count} de rezervări",
+    "dayBar_one": "{day}: {amount}, 1 rezervare",
+    "dayBar_few": "{day}: {amount}, {count} rezervări",
+    "dayBar_other": "{day}: {amount}, {count} de rezervări",
+    "revenueByDay": "Încasări pe zile",
+    "legend": "Legendă",
+    "showTable": "Vezi zilele ca tabel",
+    "noSales": "Nicio vânzare în luna aceasta până acum.",
+    "colDay": "Ziua",
+    "colBookings": "Rezervări",
+    "colTotal": "Total",
+    "channelLine_one": "1 rezervare · {share}% din încasări",
+    "channelLine_few": "{count} rezervări · {share}% din încasări",
+    "channelLine_other": "{count} de rezervări · {share}% din încasări"
+  },
+  "boarding": {
     "scan": {
       "title": "Scanează bilete",
       "description": "Ține codul QR al clientului în cadru. Verificarea pornește singură.",
@@ -1908,34 +1972,43 @@
       "reference": "Referință",
       "tickets": "Bilete",
       "itemLine": "{quantity} × {label}",
-      "next": "Scanează următorul"
-    }
-  },
-  "charts": {
-    "earningsLabel": "Comisionul pe ultimele luni",
-    "earningsBar_one": "{month}: {amount}, 1 vânzare",
-    "earningsBar_few": "{month}: {amount}, {count} vânzări",
-    "earningsBar_other": "{month}: {amount}, {count} de vânzări",
-    "colMonth": "Luna",
-    "colSales": "Vânzări",
-    "colCommission": "Comision",
-    "affiliate": "Prin afiliați",
-    "direct": "Direct",
-    "bookings_one": "1 rezervare",
-    "bookings_few": "{count} rezervări",
-    "bookings_other": "{count} de rezervări",
-    "dayBar_one": "{day}: {amount}, 1 rezervare",
-    "dayBar_few": "{day}: {amount}, {count} rezervări",
-    "dayBar_other": "{day}: {amount}, {count} de rezervări",
-    "revenueByDay": "Încasări pe zile",
-    "legend": "Legendă",
-    "showTable": "Vezi zilele ca tabel",
-    "noSales": "Nicio vânzare în luna aceasta până acum.",
-    "colDay": "Ziua",
-    "colBookings": "Rezervări",
-    "colTotal": "Total",
-    "channelLine_one": "1 rezervare · {share}% din încasări",
-    "channelLine_few": "{count} rezervări · {share}% din încasări",
-    "channelLine_other": "{count} de rezervări · {share}% din încasări"
+      "next": "Scanează următorul",
+      "usedAt": "Scanat {when}",
+      "usedAtBy": "Scanat {when} de {who}",
+      "usedToday": "azi la {time}",
+      "usedOnDay": "{day}, ora {time}"
+    },
+    "app": {
+      "title": "Scaner bilete",
+      "scannedTodayNone": "Azi nu ai scanat încă bilete",
+      "scannedToday_one": "Azi ai scanat {count} bilet",
+      "scannedToday_few": "Azi ai scanat {count} bilete",
+      "scannedToday_other": "Azi ai scanat {count} de bilete",
+      "logout": "Ieși din cont"
+    },
+    "team": {
+      "title": "Echipa la îmbarcare",
+      "description": "Conturi pentru cei care scanează biletele la plecare. Ei văd doar scanerul, nu și rezervările, afiliații sau banii.",
+      "add": "Adaugă o persoană",
+      "name": "Nume",
+      "nameHint": "Cum apare la biletele scanate, de exemplu „Mihai, ponton”.",
+      "contact": "Telefon sau email",
+      "contactHint": "Aici primește linkul de intrare și codurile de conectare.",
+      "submit": "Creează contul",
+      "added": "{name} a primit linkul de intrare.",
+      "errorName": "Scrie numele persoanei.",
+      "errorContact": "Scrie un număr de telefon (ex. 0722 123 456) sau o adresă de email.",
+      "errorDuplicate": "Persoana are deja cont de scanare.",
+      "empty": "Nu ai încă pe nimeni la îmbarcare. Adaugă prima persoană mai sus.",
+      "listTitle": "Persoane cu acces la scaner",
+      "lastScan": "Ultima scanare: {when}",
+      "neverScanned": "Nu a scanat încă bilete",
+      "remove": "Scoate accesul",
+      "removeTitle": "Scoți accesul lui {name}?",
+      "removeText": "Nu va mai putea scana bilete. Biletele scanate deja rămân trecute pe numele lui.",
+      "removeConfirm": "Da, scoate accesul",
+      "howTo": "Persoana deschide linkul primit, intră cu codul din SMS sau email și ajunge direct la scaner."
+    },
+    "noName": "Fără nume"
   }
 }

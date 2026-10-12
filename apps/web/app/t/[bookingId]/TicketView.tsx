@@ -3,8 +3,9 @@
 import type { TicketDto } from '@ap/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from '@/components/Alert';
-import { Button } from '@/components/Button';
+import { Button, ButtonLink } from '@/components/Button';
 import { useT } from '@/components/I18nProvider';
+import { IconDownload } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PublicFrame, PublicMessage } from '@/components/public/PublicFrame';
 import { QrCode } from '@/components/QrCode';
@@ -235,6 +236,23 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
             </div>
           ) : null}
         </dl>
+
+        {ticket.status === 'valid' && ticket.qrToken && !offline ? (
+          <div className="flex flex-col gap-2">
+            <ButtonLink
+              external
+              href={publicApi.ticketPdfUrl(bookingId, ticketKey, lang, true)}
+              download
+              variant="secondary"
+              size="lg"
+              block
+              icon={<IconDownload />}
+            >
+              {t.t('ticket.downloadPdf')}
+            </ButtonLink>
+            <p className="text-center text-sm text-muted">{t.t('ticket.downloadPdfHint')}</p>
+          </div>
+        ) : null}
 
         {ticket.status === 'valid' ? <AddToHome /> : null}
       </div>

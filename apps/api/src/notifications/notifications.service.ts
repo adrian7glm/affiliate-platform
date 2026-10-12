@@ -7,9 +7,11 @@ import { DomainError } from '../common/errors';
 import { DB, type DbOrTx } from '../database/database.module';
 import { I18nService } from '../i18n/i18n.service';
 import { QR_CONTENT_ID, type TemplateName, type TemplateParams, render } from './templates';
+import { renderTicketPdf, ticketPdfFilename } from './ticket-pdf';
 import {
   type DeliveryReceipt,
   DeliveryError,
+  type EmailAttachment,
   EmailTransport,
   SmsTransport,
 } from './transports/transport';
@@ -239,27 +241,35 @@ export class NotificationsService {
     const t = this.i18n.translator(this.i18n.pick(locale, 'en'));
     const message = render(template, t, params);
     if (channel === 'sms') return this.sms.send({ to, text: message.sms });
-    const attachments = message.qr
-      ? [
-          {
-            filename: message.qrFileName,
-            contentType: 'image/png',
-            contentId: QR_CONTENT_ID,
-            content: await QRCode.toBuffer(message.qr, {
-              type: 'png',
-              width: 440,
-              margin: 2,
-              errorCorrectionLevel: 'M',
-            }),
-          },
-        ]
-      : undefined;
+    const attachments: EmailAttachment[] = [];
+    if (message.qr) {
+      attachments.push({
+        filename: message.qrFileName,
+        contentType: 'image/png',
+        contentId: QR_CONTENT_ID,
+        content: await QRCode.toBuffer(message.qr, {
+          type: 'png',
+          width: 440,
+          margin: 2,
+          errorCorrectionLevel: 'M',
+        }),
+      });
+    }
+    if (template === 'ticket' && message.qr) {
+      // The same ticket as a PDF, so the customer can keep it on the phone without printing.
+      const ticket = params as TemplateParams['ticket'];
+      attachments.push({
+        filename: ticketPdfFilename(ticket.reference, t),
+        contentType: 'application/pdf',
+        content: await renderTicketPdf({ ...ticket, qrToken: message.qr }, t),
+      });
+    }
     return this.email.send({
       to,
       subject: message.subject,
       text: message.text,
       html: message.html,
-      attachments,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
   }
 }

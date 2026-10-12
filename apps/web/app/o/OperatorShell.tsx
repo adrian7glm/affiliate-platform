@@ -19,6 +19,7 @@ import {
   IconRefresh,
   IconScan,
   IconSettings,
+  IconTicket,
   IconUsers,
   IconWallet,
 } from '@/components/icons';
@@ -34,6 +35,7 @@ const NAV = [
   { href: '/o', label: 'operator.nav.dashboard', icon: <IconGauge />, exact: true },
   { href: '/o/bookings', label: 'operator.nav.bookings', icon: <IconList /> },
   { href: '/o/scan', label: 'operator.nav.scan', icon: <IconScan /> },
+  { href: '/o/team', label: 'operator.nav.team', icon: <IconTicket /> },
   { href: '/o/affiliates', label: 'operator.nav.affiliates', icon: <IconUsers /> },
   { href: '/o/plans', label: 'operator.nav.plans', icon: <IconPercent /> },
   { href: '/o/products', label: 'operator.nav.products', icon: <IconBoat /> },

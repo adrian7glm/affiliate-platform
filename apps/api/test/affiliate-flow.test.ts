@@ -236,6 +236,10 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
     expect(ticketEmail?.html).toContain('src="cid:ticket-qr"');
     expect(ticketEmail?.attachments).toEqual([
       expect.objectContaining({ contentId: 'ticket-qr', contentType: 'image/png' }),
+      expect.objectContaining({
+        filename: `ticket-${checkout.booking.reference}.pdf`,
+        contentType: 'application/pdf',
+      }),
     ]);
   });
 
