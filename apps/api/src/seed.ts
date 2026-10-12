@@ -5,9 +5,11 @@ import {
   commissionPlans,
   createDb,
   memberships,
+  platformPlans,
   productPrices,
   products,
   slots,
+  tenantSubscriptions,
   tenants,
   users,
 } from '@ap/db';
@@ -47,6 +49,25 @@ async function main(): Promise<void> {
         .values({ email: 'owner@demo.test', name: 'Operator Demo' })
         .returning();
       await tx.insert(memberships).values({ userId: owner!.id, tenantId, role: 'owner' });
+
+      // The platform owner (admin area at /admin) and the demo operator's trial on Start.
+      await tx
+        .insert(users)
+        .values({ email: 'admin@demo.test', name: 'Admin platformă', isPlatformAdmin: true })
+        .onConflictDoNothing();
+      const [start] = await tx.select().from(platformPlans).where(eq(platformPlans.code, 'start'));
+      if (start) {
+        await tx.insert(tenantSubscriptions).values({
+          tenantId,
+          planId: start.id,
+          status: 'trialing',
+          trialEndsAt: DateTime.now().plus({ days: start.trialDays }).toJSDate(),
+        });
+        await tx
+          .update(tenants)
+          .set({ platformFeeBps: start.platformFeeBps })
+          .where(eq(tenants.id, tenantId));
+      }
 
       const [plan] = await tx
         .insert(commissionPlans)
@@ -129,6 +150,7 @@ async function main(): Promise<void> {
         .values({ tenantId, affiliateId: affiliate!.id, code: randomCode(7), label: 'General' });
     });
     console.log('demo data created');
+    console.log('  platform admin:  admin@demo.test (open /admin)');
     console.log('  operator login:  owner@demo.test');
     console.log('  affiliate login: +40700000001');
     console.log('  login codes are printed in the API log (NOTIFIER=console)');

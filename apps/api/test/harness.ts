@@ -49,7 +49,11 @@ export interface Harness {
 }
 
 /** Boots the whole API against a fresh database, with a controllable clock and in-memory notifier. */
-export async function startHarness(url: string, now: string): Promise<Harness> {
+export async function startHarness(
+  url: string,
+  now: string,
+  env: Record<string, string> = {},
+): Promise<Harness> {
   await resetDatabase(url);
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -60,6 +64,7 @@ export async function startHarness(url: string, now: string): Promise<Harness> {
     WORKER_ENABLED: 'false',
     NOTIFIER: 'silent',
     HOLD_MINUTES: '30',
+    ...env,
   });
   const clock = new TestClock(new Date(now));
   const notifier = new MemoryNotifier();

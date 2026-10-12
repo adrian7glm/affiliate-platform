@@ -16,9 +16,11 @@ export class TenantsService {
     return tenant;
   }
 
+  /** For public pages: only operators that are not suspended. */
   async bySlug(slug: string): Promise<Tenant> {
     const [tenant] = await this.db.select().from(tenants).where(eq(tenants.slug, slug));
-    if (!tenant) throw new NotFound('operator');
+    // A suspended operator's public pages are offline.
+    if (!tenant || tenant.status === 'suspended') throw new NotFound('operator');
     return tenant;
   }
 }

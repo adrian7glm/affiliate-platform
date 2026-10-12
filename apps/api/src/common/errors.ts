@@ -41,14 +41,14 @@ export class ApiErrorFilter implements ExceptionFilter {
   }
 
   private toBody(exception: unknown): ApiError {
-    if (exception instanceof ZodError) {
+    // By name too: a package loaded through another module system has its own ZodError class.
+    if (exception instanceof ZodError || (exception as Error | null)?.name === 'ZodError') {
+      const issues = (exception as ZodError).issues;
       return {
         statusCode: 400,
         error: 'Bad Request',
-        message: exception.issues
-          .map((i) => `${i.path.join('.') || 'body'}: ${i.message}`)
-          .join('; '),
-        details: exception.issues,
+        message: issues.map((i) => `${i.path.join('.') || 'body'}: ${i.message}`).join('; '),
+        details: issues,
       };
     }
     if (exception instanceof HttpException) {

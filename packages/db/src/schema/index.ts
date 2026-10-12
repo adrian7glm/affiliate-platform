@@ -5,3 +5,4 @@ export * from './bookings';
 export * from './payments';
 export * from './commissions';
 export * from './platform';
+export * from './billing';

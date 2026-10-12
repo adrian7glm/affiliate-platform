@@ -15,6 +15,13 @@
       "when": 1791834848117,
       "tag": "0001_ledger_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791840535385,
+      "tag": "0002_platform_admin",
+      "breakpoints": true
     }
   ]
 }
