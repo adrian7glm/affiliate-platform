@@ -5,9 +5,11 @@ import { and, eq } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { TicketSigner, checkTicketLinkKey, ticketLinkKey } from '../common/crypto';
 import { NotFound } from '../common/errors';
-import { Notifier } from '../common/notifier';
+import type { Tenant } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
+import { NotificationsService } from '../notifications/notifications.service';
+import { messageLang } from '../notifications/templates';
 import { Outbox } from '../outbox/outbox';
 
 @Injectable()
@@ -19,12 +21,12 @@ export class TicketsService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly clock: Clock,
     private readonly outbox: Outbox,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
   ) {
     this.signer = new TicketSigner(config.APP_SECRET);
   }
 
-  /** Creates the booking's ticket once and sends its link to the customer. Idempotent. */
+  /** Creates the booking's ticket once and sends it to the customer. Idempotent. */
   async issue(tx: DbOrTx, bookingId: string, tenantId: string): Promise<void> {
     const [ticket] = await tx
       .insert(tickets)
@@ -33,19 +35,92 @@ export class TicketsService {
       .returning({ id: tickets.id });
     if (!ticket) return;
     const [row] = await tx
-      .select({ booking: bookings, productName: products.name })
+      .select({
+        booking: bookings,
+        productName: products.name,
+        meetingPoint: products.meetingPoint,
+        tenant: tenants,
+      })
       .from(bookings)
       .innerJoin(products, eq(products.id, bookings.productId))
+      .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
       .where(eq(bookings.id, bookingId));
-    const contact = row?.booking.customerEmail ?? row?.booking.customerPhone;
-    if (row && contact) {
-      const key = ticketLinkKey(this.config.APP_SECRET, bookingId);
-      await this.notifier.send({
-        to: contact,
-        subject: `${row.productName}: biletul tău ${row.booking.reference}`,
-        text: `Biletul tău pentru ${row.productName}: ${this.config.WEB_URL}/t/${bookingId}?k=${key}`,
-      });
-    }
+    if (!row) return;
+    const { booking, tenant } = row;
+    // Email first: it carries the QR code itself and costs nothing.
+    const contact = booking.customerEmail ?? booking.customerPhone;
+    if (!contact) return;
+    await this.notifications.enqueue(tx, {
+      to: contact,
+      template: 'ticket',
+      locale: booking.customerLocale,
+      tenantId,
+      dedupeKey: `ticket:${bookingId}`,
+      params: {
+        tenantName: tenant.name,
+        productName: row.productName,
+        reference: booking.reference,
+        startsAt: booking.startsAt.toISOString(),
+        timezone: tenant.timezone,
+        customerName: booking.customerName,
+        meetingPoint: row.meetingPoint,
+        seats: booking.seats,
+        url: this.customerUrl(bookingId, booking.customerLocale),
+        qrToken: this.qrToken(ticket.id, booking),
+        amountDueOnSiteMinor:
+          booking.paymentMode === 'on_site' && !booking.paidAt ? booking.totalMinor : 0,
+        currency: booking.currency,
+      },
+    });
+  }
+
+  /** Tells the customer that a confirmed booking was cancelled, and whether it was refunded. */
+  async notifyCancelled(
+    tx: DbOrTx,
+    tenant: Tenant,
+    booking: typeof bookings.$inferSelect,
+    refunded: boolean,
+  ): Promise<void> {
+    const contact = booking.customerEmail ?? booking.customerPhone;
+    if (!contact) return;
+    const [product] = await tx
+      .select({ name: products.name })
+      .from(products)
+      .where(eq(products.id, booking.productId));
+    await this.notifications.enqueue(tx, {
+      to: contact,
+      template: 'booking_cancelled',
+      locale: booking.customerLocale,
+      tenantId: tenant.id,
+      dedupeKey: `booking_cancelled:${booking.id}`,
+      params: {
+        tenantName: tenant.name,
+        productName: product?.name ?? '',
+        reference: booking.reference,
+        startsAt: booking.startsAt.toISOString(),
+        timezone: tenant.timezone,
+        refunded,
+      },
+    });
+  }
+
+  /** The ticket page link sent to the customer, in their language. */
+  customerUrl(bookingId: string, locale: string): string {
+    const key = ticketLinkKey(this.config.APP_SECRET, bookingId);
+    return `${this.config.WEB_URL}/t/${bookingId}?k=${key}&lang=${messageLang(locale)}`;
+  }
+
+  private qrToken(
+    ticketId: string,
+    booking: Pick<typeof bookings.$inferSelect, 'tenantId' | 'reference' | 'startsAt' | 'seats'>,
+  ): string {
+    return this.signer.sign({
+      tid: ticketId,
+      ten: booking.tenantId,
+      ref: booking.reference,
+      at: booking.startsAt.toISOString(),
+      seats: booking.seats,
+    });
   }
 
   async void(tx: DbOrTx, bookingId: string): Promise<void> {
@@ -87,13 +162,7 @@ export class TicketsService {
           : ticket.status;
     const qrToken =
       ticket && (status === 'valid' || status === 'checked_in')
-        ? this.signer.sign({
-            tid: ticket.id,
-            ten: booking.tenantId,
-            ref: booking.reference,
-            at: booking.startsAt.toISOString(),
-            seats: booking.seats,
-          })
+        ? this.qrToken(ticket.id, booking)
         : null;
     const dueOnSite = booking.paymentMode === 'on_site' && !booking.paidAt ? booking.totalMinor : 0;
     return {

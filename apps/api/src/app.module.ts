@@ -10,6 +10,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './identity/identity.module';
 import { JobsModule } from './jobs/jobs.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
 import { SourcesModule } from './sources/sources.module';
@@ -41,6 +42,7 @@ export class AppModule {
         DatabaseModule,
         OutboxModule,
         CommonModule,
+        NotificationsModule,
         IdentityModule,
         AffiliatesModule,
         TrackingModule,
