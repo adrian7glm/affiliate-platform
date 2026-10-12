@@ -174,6 +174,10 @@ export function AuthGate({ area, children }: { area: Area; children: ReactNode }
     );
   }
 
+  if (value.membership.tenantStatus === 'suspended') {
+    return <SuspendedNotice session={value} />;
+  }
+
   return (
     <SessionContext.Provider value={value}>
       {/* Remount the area when the tenant changes so every screen refetches its data. */}
@@ -181,5 +185,33 @@ export function AuthGate({ area, children }: { area: Area; children: ReactNode }
         {children}
       </div>
     </SessionContext.Provider>
+  );
+}
+
+/** A suspended operator: nothing works until the platform reactivates the account. */
+function SuspendedNotice({ session }: { session: SessionValue }) {
+  const others = session.memberships.filter(
+    (m) => m.tenantId !== session.membership.tenantId && m.tenantStatus !== 'suspended',
+  );
+  return (
+    <main className="page-x mx-auto flex max-w-xl flex-col gap-4 py-10">
+      <Alert tone="error" title={`Contul ${session.membership.tenantName} este suspendat`}>
+        {session.membership.role === 'affiliate'
+          ? 'Operatorul nu primește rezervări momentan. Reîncearcă mai târziu.'
+          : 'Administrarea și paginile de rezervare sunt oprite. Scrie-ne ca să reactivăm contul; datele tale sunt păstrate.'}
+      </Alert>
+      {others.map((m) => (
+        <Button
+          key={m.tenantId}
+          variant="secondary"
+          onClick={() => session.switchTenant(m.tenantId)}
+        >
+          Mergi la {m.tenantName}
+        </Button>
+      ))}
+      <Button variant="ghost" onClick={() => void session.logout()}>
+        Ieși din cont
+      </Button>
+    </main>
   );
 }

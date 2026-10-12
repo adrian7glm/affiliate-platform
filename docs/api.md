@@ -69,3 +69,44 @@ Errors: `{ statusCode, error, message, details? }`.
 | GET    | `/public/tickets/:bookingId`                        | `?k=<ticket key>`    | `TicketDto`                             |
 | POST   | `/public/dev-payments/:bookingId/succeed`           | `?k=<ticket key>`    | 204, only with `PAYMENTS_PROVIDER=fake` |
 | POST   | `/webhooks/stripe`                                  | Stripe event         | 200                                     |
+
+## Platform owner, operator signup and billing
+
+Types in `packages/contracts/src/platform.ts`. Fees are basis points (300 = 3%).
+
+Operator signup (`SELF_SIGNUP=false` allows only invitations):
+
+| Method | Path                     | Body / query       | Response                                      |
+| ------ | ------------------------ | ------------------ | --------------------------------------------- |
+| GET    | `/signup/options`        |                    | `SignupOptionsDto` (public)                   |
+| GET    | `/signup/slug`           | `?slug`            | `SlugCheckDto` (public)                       |
+| GET    | `/signup/invites/:token` |                    | `OperatorInvitePreviewDto` (public)           |
+| POST   | `/signup/tenants`        | `CreateTenantBody` | `CreateTenantResultDto`; signed in, no tenant |
+
+Operator (roles `owner`, `staff`; changing the plan is `owner` only):
+
+| Method | Path                         | Body                    | Response             |
+| ------ | ---------------------------- | ----------------------- | -------------------- |
+| GET    | `/operator/onboarding`       |                         | `OnboardingDto`      |
+| GET    | `/operator/billing`          |                         | `OperatorBillingDto` |
+| POST   | `/operator/billing/checkout` | `StartSubscriptionBody` | `BillingRedirectDto` |
+| POST   | `/operator/billing/portal`   |                         | `BillingRedirectDto` |
+
+Platform admin (users with `isPlatformAdmin`, set at sign-in for `PLATFORM_ADMIN_EMAILS`):
+
+| Method | Path                         | Body                       | Response               |
+| ------ | ---------------------------- | -------------------------- | ---------------------- |
+| GET    | `/admin/overview`            | `?period=YYYY-MM`          | `AdminOverviewDto`     |
+| GET    | `/admin/tenants/:id`         |                            | `AdminTenantDetailDto` |
+| PATCH  | `/admin/tenants/:id/status`  | `UpdateTenantStatusBody`   | `AdminTenantDetailDto` |
+| PATCH  | `/admin/tenants/:id/billing` | `UpdateTenantBillingBody`  | `SubscriptionDto`      |
+| GET    | `/admin/plans`               |                            | `PlatformPlanDto[]`    |
+| POST   | `/admin/plans`               | `CreatePlatformPlanBody`   | `PlatformPlanDto`      |
+| PATCH  | `/admin/plans/:id`           | `UpdatePlatformPlanBody`   | `PlatformPlanDto`      |
+| GET    | `/admin/invites`             |                            | `OperatorInviteDto[]`  |
+| POST   | `/admin/invites`             | `CreateOperatorInviteBody` | `OperatorInviteDto`    |
+| POST   | `/admin/invites/:id/revoke`  |                            | `OperatorInviteDto`    |
+
+A suspended operator gets 403 on every operator and affiliate route, and 404 on its public pages.
+Stripe Billing (`BILLING_PROVIDER=stripe`) posts subscription events to
+`POST /webhooks/stripe/billing`, signed with `STRIPE_BILLING_WEBHOOK_SECRET`.

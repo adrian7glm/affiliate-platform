@@ -57,8 +57,11 @@ export interface MembershipDto {
   tenantName: string;
   role: Role;
   affiliateId: string | null;
-  /** A suspended operator's console and booking pages are closed. */
-  tenantStatus: 'active' | 'suspended';
+  /**
+   * A suspended operator's console and booking pages are closed. Always sent by the API;
+   * missing from profiles the app cached before the field existed.
+   */
+  tenantStatus?: 'active' | 'suspended';
 }
 
 export interface MeDto {

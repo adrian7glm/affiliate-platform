@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
-import { Button } from '@/components/Button';
+import { Button, ButtonLink } from '@/components/Button';
 import { ChoiceGroup, Field } from '@/components/Field';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import { isApiError } from '@/lib/api';
@@ -137,9 +137,20 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
 
   function routeAfterLogin(session: MeDto) {
     const memberships = session.memberships;
-    // Invite links work before the person has any membership.
-    if (nextPath?.startsWith('/join/')) {
+    // Invite links and operator signup work before the person has any membership.
+    if (
+      nextPath?.startsWith('/join/') ||
+      nextPath === '/start' ||
+      nextPath?.startsWith('/start/')
+    ) {
       router.replace(nextPath);
+      return;
+    }
+    if (
+      session.user.isPlatformAdmin &&
+      (memberships.length === 0 || nextPath?.startsWith('/admin'))
+    ) {
+      router.replace(nextPath?.startsWith('/admin') ? nextPath : '/admin');
       return;
     }
     if (memberships.length === 0) {
@@ -380,7 +391,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
             <p className="mt-2 text-muted">
               {me.memberships.length > 0
                 ? 'Lucrezi cu mai mulți operatori. Alege cu care continui; poți schimba oricând.'
-                : 'Contul tău nu este încă legat de niciun operator. Deschide linkul de invitație primit de la operator.'}
+                : 'Contul tău nu este încă legat de niciun operator. Dacă ești afiliat, deschide linkul de invitație primit de la operator.'}
             </p>
           </div>
           {me.memberships.length > 0 ? (
@@ -406,6 +417,14 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
                 </li>
               ))}
             </ul>
+          ) : null}
+          {me.user.isPlatformAdmin ? (
+            <ButtonLink href="/admin" variant="secondary">
+              Administrare platformă
+            </ButtonLink>
+          ) : null}
+          {me.memberships.length === 0 ? (
+            <ButtonLink href="/start">Deschide un cont de operator</ButtonLink>
           ) : null}
           <Button variant="secondary" onClick={() => void useAnotherAccount()}>
             Folosește alt cont
