@@ -228,7 +228,7 @@ export function ScanScreen() {
           className={
             showVideo && !outcome && !checking
               ? 'relative aspect-square overflow-hidden rounded-3xl bg-black'
-              : 'pointer-events-none h-0 overflow-hidden'
+              : 'pointer-events-none relative h-0 overflow-hidden'
           }
         >
           <video

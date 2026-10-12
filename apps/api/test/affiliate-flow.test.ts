@@ -1,12 +1,14 @@
 import type {
   AffiliateDto,
   AffiliateHomeDto,
+  AffiliateWithStatsDto,
   BookingDto,
   CheckInResultDto,
   CheckoutResultDto,
   ClosePeriodResultDto,
   CommissionReportDto,
   EarningsDto,
+  LinkDto,
   ProductDto,
   SlotDto,
   TicketDto,
@@ -254,6 +256,16 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       salesToNextTier: 7,
     });
     expect(home.earnings).toMatchObject({ pendingMinor: 8_000, monthTotalMinor: 8_000 });
+
+    // The operator's list and the affiliate's links show the same month.
+    const listed = (await asOwner('get', '/operator/affiliates').expect(200))
+      .body as AffiliateWithStatsDto[];
+    expect(listed.find((a) => a.id === affiliate.id)?.month).toMatchObject({
+      paidSales: 4,
+      earnedMinor: 8_000,
+    });
+    const links = (await asAffiliate('get', '/affiliate/links').expect(200)).body as LinkDto[];
+    expect(links.find((l) => l.code === linkCode)).toMatchObject({ clicks: 1, sales: 1 });
   });
 
   it('never sells more seats than the boat has', async () => {

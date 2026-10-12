@@ -89,7 +89,7 @@ export function Dashboard() {
               <p className="text-muted">Încă nu sunt vânzări prin afiliați luna aceasta.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[22rem] border-collapse text-left">
+                <table className="w-full border-collapse text-left">
                   <thead>
                     <tr className="border-b border-line text-sm text-muted">
                       <th scope="col" className="py-2 pr-3 font-semibold">
@@ -110,7 +110,7 @@ export function Dashboard() {
                           {a.name}
                         </th>
                         <td className="py-3 pr-3 text-right tabular-nums">{a.paidSales}</td>
-                        <td className="py-3 text-right">
+                        <td className="whitespace-nowrap py-3 text-right">
                           <MoneyText amountMinor={a.salesMinor} currency={tenant.currency} />
                         </td>
                       </tr>

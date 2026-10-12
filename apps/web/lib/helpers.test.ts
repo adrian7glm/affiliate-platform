@@ -39,6 +39,9 @@ describe('booking math', () => {
     expect(maxQuantityFor(prices[2]!, prices, { adult: 4 }, 4)).toBe(50);
     expect(defaultQuantities(prices, 0)).toEqual({});
     expect(defaultQuantities(prices, 5)).toEqual({ adult: 1 });
+    // Cheapest first, no `adult` code: still defaults to the full-price ticket.
+    const reordered = [...prices].reverse().map((p) => ({ ...p, code: `x-${p.code}` }));
+    expect(defaultQuantities(reordered, 5)).toEqual({ adult: 1 });
   });
 
   it('groups departures by local day and hides past ones', () => {

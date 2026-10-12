@@ -7,7 +7,7 @@ import type {
   SlotDto,
 } from '@ap/contracts';
 import { type Database, productPrices, products, slots } from '@ap/db';
-import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lt } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { DomainError, NotFound } from '../common/errors';
 import { TenantsService } from '../common/tenants';
@@ -49,7 +49,7 @@ export class CatalogService {
               eq(productPrices.active, true),
             ),
           )
-          .orderBy(asc(productPrices.amountMinor))
+          .orderBy(desc(productPrices.amountMinor), asc(productPrices.code))
       : [];
     return rows.map((p) =>
       toProductDto(

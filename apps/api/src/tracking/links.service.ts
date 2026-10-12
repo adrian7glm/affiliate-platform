@@ -15,6 +15,7 @@ import { Clock } from '../common/clock';
 import { hashIp, randomCode } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
 import { DB, type DbOrTx } from '../database/database.module';
+import { col } from '../common/sql';
 
 /** Repeat clicks from the same visitor on the same link within this window count once. */
 const DEDUPE_MS = 30 * 60_000;
@@ -94,8 +95,8 @@ export class LinksService {
         productId: affiliateLinks.productId,
         productName: products.name,
         active: affiliateLinks.active,
-        clicks: sql<number>`(select count(*)::int from ${clicks} where ${clicks.linkId} = ${affiliateLinks.id} and ${clicks.counted})`,
-        sales: sql<number>`(select count(*)::int from ${bookings} where ${bookings.linkId} = ${affiliateLinks.id} and ${bookings.status} = 'confirmed')`,
+        clicks: sql<number>`(select count(*)::int from ${clicks} where ${col(clicks.linkId)} = ${col(affiliateLinks.id)} and ${col(clicks.counted)})`,
+        sales: sql<number>`(select count(*)::int from ${bookings} where ${col(bookings.linkId)} = ${col(affiliateLinks.id)} and ${col(bookings.status)} = 'confirmed')`,
       })
       .from(affiliateLinks)
       .leftJoin(products, eq(products.id, affiliateLinks.productId))

@@ -28,6 +28,7 @@ import { DB } from '../database/database.module';
 import { CommissionsService } from '../commissions/commissions.service';
 import { IdentityService } from '../identity/identity.service';
 import { LinksService } from '../tracking/links.service';
+import { col } from '../common/sql';
 
 const INVITE_TTL_MS = 14 * 24 * 3_600_000;
 type AffiliateRow = typeof affiliates.$inferSelect;
@@ -67,10 +68,10 @@ export class AffiliatesService {
     const rows = await this.db
       .select({
         affiliate: affiliates,
-        paidSales: sql<number>`(select count(*)::int from ${bookings} where ${bookings.affiliateId} = ${affiliates.id}
-          and ${bookings.status} = 'confirmed' and ${bookings.paidAt} >= ${start} and ${bookings.paidAt} < ${end})`,
-        earnedMinor: sql<number>`(select coalesce(sum(${commissionEntries.amountMinor}), 0)::int from ${commissionEntries}
-          where ${commissionEntries.affiliateId} = ${affiliates.id} and ${commissionEntries.periodKey} = ${periodKey})`,
+        paidSales: sql<number>`(select count(*)::int from ${bookings} where ${col(bookings.affiliateId)} = ${col(affiliates.id)}
+          and ${col(bookings.status)} = 'confirmed' and ${col(bookings.paidAt)} >= ${start} and ${col(bookings.paidAt)} < ${end})`,
+        earnedMinor: sql<number>`(select coalesce(sum(${col(commissionEntries.amountMinor)}), 0)::int from ${commissionEntries}
+          where ${col(commissionEntries.affiliateId)} = ${col(affiliates.id)} and ${col(commissionEntries.periodKey)} = ${periodKey})`,
       })
       .from(affiliates)
       .where(eq(affiliates.tenantId, tenantId))

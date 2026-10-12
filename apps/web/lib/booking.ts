@@ -53,9 +53,15 @@ export function maxQuantityFor(
   return Math.max(current, Math.min(50, room));
 }
 
-/** Default selection: one ticket of the first price type, if it fits. */
+/**
+ * Default selection: one standard ticket, if it fits. That is the `adult` price when there is
+ * one, otherwise the most expensive ticket that takes a seat (never a child or infant ticket).
+ */
 export function defaultQuantities(prices: PriceDto[], available: number): Quantities {
-  const first = prices[0];
-  if (!first || (first.seats > 0 && first.seats > available)) return {};
-  return { [first.id]: 1 };
+  const seated = prices.filter((p) => p.seats > 0);
+  const standard =
+    seated.find((p) => p.code === 'adult') ??
+    [...seated].sort((a, b) => b.amountMinor - a.amountMinor)[0];
+  if (!standard || standard.seats > available) return {};
+  return { [standard.id]: 1 };
 }

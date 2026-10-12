@@ -212,14 +212,18 @@ function ConnectForm({ onConnected }: { onConnected: (source: SourceDto) => void
       });
       onConnected(source);
       setDone(
-        `„${source.name}” a fost conectat. Apasă „Sincronizează acum” ca să aduci excursiile.`,
+        source.productCount === 1
+          ? `„${source.name}” a fost conectat. Am adus o excursie cu plecările ei.`
+          : `„${source.name}” a fost conectat. Am adus ${source.productCount} excursii cu plecările lor.`,
       );
       setName('');
       setBaseUrl('');
       setToken('');
     } catch (err) {
       if (isApiError(err) && err.status === 400) {
-        setError(err.message || 'Nu am putut contacta sistemul tău. Verifică adresa și tokenul.');
+        setError(
+          'Sistemul tău nu a răspuns cu această adresă și acest token. Verifică-le și încearcă din nou.',
+        );
       } else if (isApiError(err) && err.status === 403) {
         setError('Doar proprietarul contului poate conecta un sistem de rezervări.');
       } else {

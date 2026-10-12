@@ -26,7 +26,9 @@ export function AffiliateHome() {
   const { me, membership, memberships, switchTenant, logout } = useSession();
   const home = useAffiliateHome();
   const data = home.data;
-  const firstName = (data?.affiliate.displayName ?? me.user.name ?? '').split(' ')[0];
+  const firstName = (data?.affiliate.displayName ?? me.user.name ?? '')
+    .trim()
+    .split(/[\s,(·-]+/)[0];
 
   return (
     <div className="page-x mx-auto flex max-w-xl flex-col gap-4">
