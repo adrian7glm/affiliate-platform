@@ -26,6 +26,7 @@ import type {
   InvitePreviewDto,
   LinkDto,
   MeDto,
+  OperatorAnalyticsDto,
   OperatorDashboardDto,
   PayoutDto,
   ProductDto,
@@ -83,6 +84,8 @@ export const affiliateApi = {
 
 export const operatorApi = {
   dashboard: (o?: Opts) => apiFetch<OperatorDashboardDto>('/operator/dashboard', o),
+  analytics: (period: string, o?: Opts) =>
+    apiFetch<OperatorAnalyticsDto>('/operator/analytics', { ...o, query: { period } }),
   affiliates: (o?: Opts) => apiFetch<AffiliateWithStatsDto[]>('/operator/affiliates', o),
   inviteAffiliate: (body: InviteAffiliateBody, o?: Opts) =>
     apiFetch<AffiliateDto>('/operator/affiliates', { ...o, method: 'POST', body }),

@@ -37,6 +37,7 @@ Errors: `{ statusCode, error, message, details? }`.
 | Method | Path                              | Body / query          | Response                          |
 | ------ | --------------------------------- | --------------------- | --------------------------------- |
 | GET    | `/operator/dashboard`             |                       | `OperatorDashboardDto`            |
+| GET    | `/operator/analytics`             | `?period=YYYY-MM`     | `OperatorAnalyticsDto`            |
 | GET    | `/operator/affiliates`            |                       | `AffiliateWithStatsDto[]`         |
 | POST   | `/operator/affiliates`            | `InviteAffiliateBody` | `AffiliateDto` (with `inviteUrl`) |
 | PATCH  | `/operator/affiliates/:id`        | `UpdateAffiliateBody` | `AffiliateDto`                    |

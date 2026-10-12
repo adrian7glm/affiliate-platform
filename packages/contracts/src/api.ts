@@ -540,6 +540,58 @@ export interface OperatorDashboardDto {
   topAffiliates: { affiliateId: string; name: string; paidSales: number; salesMinor: number }[];
 }
 
+/**
+ * One month of the operator's sales, for the dashboard charts. A sale is a paid, confirmed
+ * booking counted on the day it was paid, in the operator's timezone (same rule as the tiers).
+ */
+export interface OperatorAnalyticsDto {
+  periodKey: string;
+  currency: string;
+  timezone: string;
+  /** The last day of the month that has already started (today, for the current month). */
+  throughDate: string;
+  totals: {
+    bookings: number;
+    revenueMinor: number;
+    seats: number;
+    affiliateBookings: number;
+    affiliateRevenueMinor: number;
+    /** Counted clicks and QR scans on affiliate links. */
+    clicks: number;
+  };
+  /** The previous month, cut at the same day of the month so the comparison is fair. */
+  previous: { periodKey: string; throughDay: number; bookings: number; revenueMinor: number };
+  /** Every day of the month, including days without sales and days still to come. */
+  daily: { date: string; bookings: number; revenueMinor: number; affiliateRevenueMinor: number }[];
+  /** Every channel, including the ones without sales, in a fixed order. */
+  channels: { channel: BookingChannel; bookings: number; revenueMinor: number }[];
+  commissions: {
+    /** Earned this month, waiting for the trip to happen. */
+    pendingMinor: number;
+    /** Earned this month and approved for payout. */
+    approvedMinor: number;
+    /** Earned this month and already paid out. */
+    paidMinor: number;
+    totalMinor: number;
+    /** Approved and not yet paid, across all months: what the operator owes right now. */
+    payableMinor: number;
+  };
+  /** Active and suspended affiliates (and anyone who sold this month), best sellers first. */
+  affiliates: {
+    affiliateId: string;
+    name: string;
+    status: 'invited' | 'active' | 'suspended';
+    paidSales: number;
+    salesMinor: number;
+    clicks: number;
+    commissionMinor: number;
+    payableMinor: number;
+    /** Where the affiliate stands in their plan after this month's sales. */
+    progress: TierProgressDto;
+    planKind: 'fixed' | 'tiered' | null;
+  }[];
+}
+
 // ---------------------------------------------------------------------------------------------
 // Public pages
 // ---------------------------------------------------------------------------------------------
