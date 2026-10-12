@@ -284,7 +284,10 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
     expect(ticket.status).toBe('valid');
     const scan = () =>
       asOwner('post', '/operator/tickets/check-in').send({ token: ticket.qrToken });
-    expect(((await scan().expect(200)).body as CheckInResultDto).result).toBe('checked_in');
+    expect((await scan().expect(200)).body).toMatchObject({
+      result: 'checked_in',
+      collectMinor: 0,
+    });
     expect(((await scan().expect(200)).body as CheckInResultDto).result).toBe('already_checked_in');
     const forged = await asOwner('post', '/operator/tickets/check-in').send({
       token: `${ticket.qrToken!.slice(0, -4)}AAAA`,
@@ -349,9 +352,12 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
     const ticket = (
       await h.http.get(`/public/tickets/${result.booking.id}?k=${keyOf(result)}`).expect(200)
     ).body as TicketDto;
-    expect(ticket.amountDueOnSiteMinor).toBe(20_000);
+    expect(ticket).toMatchObject({ amountDueOnSiteMinor: 20_000, timezone: 'Europe/Bucharest' });
     h.clock.set('2026-10-06T14:50:00Z');
-    await asOwner('post', '/operator/tickets/check-in').send({ token: ticket.qrToken }).expect(200);
+    const boarding = await asOwner('post', '/operator/tickets/check-in')
+      .send({ token: ticket.qrToken })
+      .expect(200);
+    expect(boarding.body).toMatchObject({ result: 'checked_in', collectMinor: 20_000 });
     await h.outbox.drain();
     const after = (await asAffiliate('get', '/affiliate/earnings?period=2026-10').expect(200))
       .body as EarningsDto;

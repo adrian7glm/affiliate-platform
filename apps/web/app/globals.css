@@ -1,0 +1,299 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Utilities reference the runtime custom properties (`@theme inline`), so a
+ * subtree can re-brand itself (public tenant pages) just by overriding --brand / --on-brand.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-on-brand: var(--on-brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-fg: var(--brand-soft-fg);
+  --color-success: var(--success);
+  --color-on-success: var(--on-success);
+  --color-success-soft: var(--success-soft);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-on-warning: var(--on-warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-fg: var(--danger-fg);
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+}
+
+:root {
+  /* MANDATORY: let the browser theme scrollbars, form controls and the canvas. */
+  color-scheme: light dark;
+
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #eaeef3;
+  --fg: #0b1726;
+  --muted: #4a5565;
+  --line: #dde3ea;
+  --line-strong: #8391a3;
+  --brand: #0369a1;
+  --brand-strong: #075985;
+  --on-brand: #ffffff;
+  --brand-soft: #e0f2fe;
+  --brand-soft-fg: #075985;
+  --success: #15803d;
+  --on-success: #ffffff;
+  --success-soft: #dcfce7;
+  --success-fg: #166534;
+  --warning: #b45309;
+  --on-warning: #ffffff;
+  --warning-soft: #fef3c7;
+  --warning-fg: #92400e;
+  --danger: #b91c1c;
+  --on-danger: #ffffff;
+  --danger-soft: #fee2e2;
+  --danger-fg: #991b1b;
+  --focus: #0369a1;
+
+  --nav-h: 4.25rem;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --surface: #131c2e;
+    --surface-2: #1c2740;
+    --fg: #e8eef6;
+    --muted: #a3b1c4;
+    --line: #26334d;
+    --line-strong: #5b6b85;
+    --brand: #38bdf8;
+    --brand-strong: #7dd3fc;
+    --on-brand: #04223a;
+    --brand-soft: #0c2a43;
+    --brand-soft-fg: #bae6fd;
+    --success: #4ade80;
+    --on-success: #052e16;
+    --success-soft: #0f2e1d;
+    --success-fg: #86efac;
+    --warning: #fbbf24;
+    --on-warning: #3a2a07;
+    --warning-soft: #3a2a07;
+    --warning-fg: #fcd34d;
+    --danger: #f87171;
+    --on-danger: #3b0d0d;
+    --danger-soft: #3b1212;
+    --danger-fg: #fca5a5;
+    --focus: #7dd3fc;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    accent-color: var(--brand);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    min-block-size: 100dvh;
+    overflow-wrap: break-word;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    line-height: 1.2;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Inputs at 16px+ so iOS does not zoom in on focus. */
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  dialog {
+    color: var(--fg);
+    background: var(--surface);
+  }
+
+  dialog::backdrop {
+    background: rgb(5 12 24 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Page gutter that respects notches / rounded corners. */
+  .page-x {
+    padding-inline-start: max(1rem, var(--safe-left));
+    padding-inline-end: max(1rem, var(--safe-right));
+  }
+
+  .visually-hidden:where(:not(:focus-within, :active)) {
+    position: absolute !important;
+    clip-path: inset(50%) !important;
+    overflow: hidden !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .skip-link {
+    position: fixed;
+    inset-block-start: calc(0.5rem + var(--safe-top));
+    inset-inline-start: 0.5rem;
+    z-index: 100;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: var(--brand);
+    color: var(--on-brand);
+    font-weight: 600;
+  }
+
+  /* Native <progress> styled as a calm bar. */
+  .progress-bar {
+    appearance: none;
+    display: block;
+    inline-size: 100%;
+    block-size: 0.75rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--brand);
+    overflow: clip;
+  }
+  .progress-bar::-webkit-progress-bar {
+    background: var(--surface-2);
+    border-radius: 999px;
+  }
+  .progress-bar::-webkit-progress-value {
+    background: var(--brand);
+    border-radius: 999px;
+  }
+  .progress-bar::-moz-progress-bar {
+    background: var(--brand);
+    border-radius: 999px;
+  }
+
+  /* Choice chips built on visually hidden native radios / checkboxes. */
+  .choice {
+    position: relative;
+  }
+  .choice > input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .choice > input:disabled {
+    cursor: not-allowed;
+  }
+  .choice > .choice-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-block-size: 3rem;
+    border: 2px solid var(--line-strong);
+    border-radius: 0.875rem;
+    background: var(--surface);
+    padding: 0.5rem 0.75rem;
+    transition:
+      border-color 120ms,
+      background-color 120ms;
+  }
+  .choice > input:checked + .choice-body {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-soft-fg);
+    box-shadow: inset 0 0 0 1px var(--brand);
+  }
+  .choice > input:focus-visible + .choice-body {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .choice > input:disabled + .choice-body {
+    opacity: 0.5;
+    border-style: dashed;
+  }
+
+  /* Validation styling only after the person interacted with the field. */
+  .field-input:user-invalid {
+    border-color: var(--danger);
+  }
+
+  .qr-surface {
+    /* QR codes stay dark-on-white in every theme so any camera can read them. */
+    color-scheme: light;
+    background: #ffffff;
+    color: #000000;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .progress-bar {
+    border: 1px solid CanvasText;
+  }
+  .choice > input:checked + .choice-body {
+    outline: 3px solid Highlight;
+  }
+}

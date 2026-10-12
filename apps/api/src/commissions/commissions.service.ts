@@ -449,6 +449,7 @@ export class CommissionsService implements OnModuleInit {
         slug: tenant.slug,
         name: tenant.name,
         currency: tenant.currency,
+        timezone: tenant.timezone,
         allowPayOnSite: tenant.allowPayOnSite,
       },
       periodKey,

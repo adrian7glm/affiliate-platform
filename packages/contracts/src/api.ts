@@ -405,6 +405,8 @@ export interface TicketDto {
   paymentMode: 'online' | 'on_site';
   amountDueOnSiteMinor: number;
   currency: string;
+  /** The operator's timezone: departure times are shown in it. */
+  timezone: string;
 }
 
 export const checkInBody = z.object({ token: z.string().min(16).max(2000) });
@@ -414,6 +416,8 @@ export interface CheckInResultDto {
   result: 'checked_in' | 'already_checked_in' | 'not_valid';
   message: string;
   ticket: TicketDto | null;
+  /** Money to take from the customer now: a pay-at-boarding booking checked in by this scan. */
+  collectMinor: number;
 }
 
 export const cancelBookingBody = z.object({ reason: z.string().trim().min(1).max(400) });
@@ -435,7 +439,14 @@ export interface TierProgressDto {
 
 export interface AffiliateHomeDto {
   affiliate: { id: string; displayName: string; status: string };
-  tenant: { id: string; slug: string; name: string; currency: string; allowPayOnSite: boolean };
+  tenant: {
+    id: string;
+    slug: string;
+    name: string;
+    currency: string;
+    timezone: string;
+    allowPayOnSite: boolean;
+  };
   periodKey: string;
   earnings: {
     /** Earned this month, still waiting for the trip to happen. */

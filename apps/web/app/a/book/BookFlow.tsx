@@ -1,0 +1,539 @@
+'use client';
+
+import type { CheckoutResultDto, Locale, ProductDto, SlotDto } from '@ap/contracts';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Alert } from '@/components/Alert';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ChoiceGroup, Field } from '@/components/Field';
+import { MoneyText } from '@/components/MoneyText';
+import { SlotPicker } from '@/components/booking/SlotPicker';
+import { TicketQuantities } from '@/components/booking/TicketQuantities';
+import { LoadingBlock } from '@/components/Spinner';
+import { StickyActions } from '@/components/StickyActions';
+import { isApiError } from '@/lib/api';
+import {
+  defaultQuantities,
+  groupSlotsByDay,
+  seatsNeeded,
+  ticketCount,
+  toItems,
+  totalMinor,
+  upcomingSlots,
+  type Quantities,
+} from '@/lib/booking';
+import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/lib/contact';
+import { DEFAULT_TIMEZONE, dateKeyInTz, formatDayLong, formatTime, nextDays } from '@/lib/dates';
+import { affiliateApi } from '@/lib/endpoints';
+import { formatMoney } from '@/lib/format';
+import { formatDuration, getT } from '@/lib/i18n';
+import { LOCALE_LABELS } from '@/lib/labels';
+import { useAffiliateHome } from '@/lib/useAffiliateHome';
+import { errorMessageRo, useApi } from '@/lib/useApi';
+import { BookingResult } from './BookingResult';
+
+const t = getT('ro');
+const TZ = DEFAULT_TIMEZONE;
+const STEP_TITLES = ['Excursie și oră', 'Bilete', 'Datele clientului'] as const;
+type Step = 1 | 2 | 3;
+type Payment = 'link' | 'on_site';
+
+interface CustomerErrors {
+  name?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+}
+
+export function BookFlow() {
+  const searchParams = useSearchParams();
+  const urlStep = Math.min(3, Math.max(1, Number(searchParams.get('step')) || 1)) as Step;
+  const home = useAffiliateHome();
+  const allowPayOnSite = home.data?.tenant.allowPayOnSite ?? false;
+
+  const products = useApi('affiliate-products', (signal) => affiliateApi.products({ signal }));
+  const [productId, setProductId] = useState<string | null>(null);
+  const product: ProductDto | null = products.data?.find((p) => p.id === productId) ?? null;
+
+  const days = useMemo(() => nextDays(14, TZ), []);
+  const slots = useApi(product ? `affiliate-slots:${product.id}` : null, (signal) =>
+    affiliateApi.slots(product!.id, { from: days[0], to: days[days.length - 1] }, { signal }),
+  );
+  const upcoming = useMemo(() => upcomingSlots(slots.data ?? []), [slots.data]);
+
+  const [date, setDate] = useState<string | null>(null);
+  const [slotId, setSlotId] = useState<string | null>(null);
+  const slot: SlotDto | null = upcoming.find((s) => s.id === slotId) ?? null;
+  const [quantities, setQuantities] = useState<Quantities>({});
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [room, setRoom] = useState('');
+  const [locale, setLocale] = useState<Locale>('en');
+  const [payment, setPayment] = useState<Payment>('link');
+
+  const [stepError, setStepError] = useState<string | null>(null);
+  const [customerErrors, setCustomerErrors] = useState<CustomerErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<CheckoutResultDto | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // One product: select it straight away.
+  useEffect(() => {
+    if (!productId && products.data?.length === 1) setProductId(products.data[0]!.id);
+  }, [products.data, productId]);
+
+  // When departures load, preselect the first day that still has seats.
+  useEffect(() => {
+    if (!slots.data) return;
+    const byDay = groupSlotsByDay(upcoming, TZ);
+    const first = days.find((d) => (byDay.get(d) ?? []).some((s) => s.available > 0));
+    setDate((current) => current ?? first ?? days[0] ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slots.data]);
+
+  // The step in the URL (so the phone's back gesture goes to the previous step), guarded by
+  // what has actually been filled in.
+  const step: Step =
+    urlStep >= 3 && slot && ticketCount(quantities) > 0 ? 3 : urlStep >= 2 && slot ? 2 : 1;
+
+  useEffect(() => {
+    if (!result && urlStep !== step)
+      window.history.replaceState(null, '', step === 1 ? '/a/book' : `/a/book?step=${step}`);
+  }, [urlStep, step, result]);
+
+  const previousStep = useRef(step);
+  useEffect(() => {
+    if (previousStep.current !== step) {
+      headingRef.current?.focus();
+      previousStep.current = step;
+    }
+  }, [step]);
+
+  function goTo(next: Step) {
+    setStepError(null);
+    window.history.pushState(null, '', next === 1 ? '/a/book' : `/a/book?step=${next}`);
+    window.scrollTo({ top: 0 });
+  }
+
+  function continueFromStep1() {
+    if (!product) return setStepError('Alege excursia.');
+    if (!slot) return setStepError('Alege ora plecării.');
+    if (ticketCount(quantities) === 0)
+      setQuantities(defaultQuantities(product.prices, slot.available));
+    goTo(2);
+  }
+
+  function continueFromStep2() {
+    if (!product || !slot) return;
+    if (ticketCount(quantities) === 0) return setStepError(t.t('selectTickets'));
+    if (seatsNeeded(product.prices, quantities) > slot.available)
+      return setStepError(t.tp('notEnoughSeats', slot.available));
+    goTo(3);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!product || !slot) return;
+    const errors: CustomerErrors = {};
+    const cleanPhone = phone.trim() ? normalizePhone(phone) : '';
+    const cleanEmail = email.trim() ? normalizeEmail(email) : '';
+    if (!name.trim()) errors.name = 'Scrie numele clientului.';
+    if (cleanPhone && !isValidPhone(cleanPhone))
+      errors.phone = 'Scrie numărul cu prefixul țării, ex. +44 7700 900123.';
+    if (cleanEmail && !isValidEmail(cleanEmail)) errors.email = 'Adresa de email nu pare corectă.';
+    if (!cleanPhone && !cleanEmail)
+      errors.contact = 'Completează telefonul sau emailul clientului.';
+    setCustomerErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setBusy(true);
+    setSubmitError(null);
+    try {
+      const created = await affiliateApi.createBooking({
+        slotId: slot.id,
+        items: toItems(quantities),
+        customer: {
+          name: name.trim(),
+          phone: cleanPhone || undefined,
+          email: cleanEmail || undefined,
+          locale,
+          hotelRoom: room.trim() || undefined,
+        },
+        payment: allowPayOnSite ? payment : 'link',
+      });
+      setResult(created);
+      window.history.replaceState(null, '', '/a/book?step=3');
+      window.scrollTo({ top: 0 });
+      home.reload();
+    } catch (err) {
+      if (isApiError(err) && err.status === 409) {
+        setSubmitError(
+          'Nu mai sunt destule locuri la această plecare. Alege altă oră sau mai puține bilete.',
+        );
+        slots.reload();
+      } else if (isApiError(err) && err.status === 403) {
+        setSubmitError('Contul tău de afiliat nu este activ. Vorbește cu operatorul.');
+      } else if (isApiError(err) && err.status === 422 && payment === 'on_site') {
+        setSubmitError('Operatorul nu acceptă plata la îmbarcare. Alege plata online.');
+      } else if (isApiError(err) && err.status === 502) {
+        setSubmitError('Plățile nu sunt disponibile momentan. Încearcă din nou într-un minut.');
+      } else {
+        setSubmitError(errorMessageRo(err));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startOver() {
+    setResult(null);
+    setSlotId(null);
+    setQuantities({});
+    setName('');
+    setPhone('');
+    setEmail('');
+    setRoom('');
+    setLocale('en');
+    setPayment('link');
+    setCustomerErrors({});
+    setSubmitError(null);
+    slots.reload();
+    window.history.replaceState(null, '', '/a/book');
+    window.scrollTo({ top: 0 });
+  }
+
+  if (result && product) {
+    return (
+      <div className="page-x mx-auto max-w-xl">
+        <BookingResult
+          result={result}
+          productName={product.name}
+          customerPhone={normalizePhone(phone) || null}
+          customerName={name.trim()}
+          locale={locale}
+          onNewBooking={startOver}
+        />
+      </div>
+    );
+  }
+
+  const currency = product?.currency ?? home.data?.tenant.currency ?? 'RON';
+  const total = product ? totalMinor(product.prices, quantities) : 0;
+
+  return (
+    <div className="page-x mx-auto flex max-w-xl flex-col gap-4">
+      <header className="pt-4">
+        <p className="font-semibold text-muted">
+          Rezervare nouă · {t.t('stepOf', { step, total: 3 })}
+        </p>
+        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold outline-none">
+          {STEP_TITLES[step - 1]}
+        </h1>
+        <ol className="mt-3 grid grid-cols-3 gap-1.5" aria-label="Pași">
+          {STEP_TITLES.map((title, i) => (
+            <li
+              key={title}
+              aria-current={i + 1 === step ? 'step' : undefined}
+              className={`h-1.5 rounded-full ${i + 1 <= step ? 'bg-brand' : 'bg-surface-2'}`}
+            >
+              <span className="visually-hidden">
+                {title}
+                {i + 1 < step ? ' (gata)' : ''}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </header>
+
+      {step === 1 ? (
+        <>
+          {products.loading && !products.data ? <LoadingBlock /> : null}
+          {products.error ? (
+            <Alert
+              tone="error"
+              action={
+                <Button variant="secondary" onClick={products.reload}>
+                  Încearcă din nou
+                </Button>
+              }
+            >
+              {errorMessageRo(products.error)}
+            </Alert>
+          ) : null}
+          {products.data && products.data.length === 0 ? (
+            <Alert tone="info">Operatorul nu are încă excursii disponibile.</Alert>
+          ) : null}
+
+          {products.data && products.data.length > 1 ? (
+            <ChoiceGroup
+              legend="Excursia"
+              name="product"
+              value={productId}
+              onChange={(id) => {
+                setProductId(id);
+                setDate(null);
+                setSlotId(null);
+                setQuantities({});
+                setStepError(null);
+              }}
+              options={products.data.map((p) => ({
+                value: p.id,
+                label: p.name,
+                description: `${formatDuration(p.durationMinutes)} · de la ${formatMoney(p.fromMinor, p.currency)}`,
+              }))}
+            />
+          ) : null}
+
+          {product && products.data?.length === 1 ? (
+            <p className="rounded-2xl bg-surface-2 p-4">
+              <span className="block font-semibold">{product.name}</span>
+              <span className="text-sm text-muted">
+                {formatDuration(product.durationMinutes)} · de la{' '}
+                {formatMoney(product.fromMinor, product.currency)}
+              </span>
+            </p>
+          ) : null}
+
+          {product ? (
+            slots.loading && !slots.data ? (
+              <LoadingBlock label="Căutăm plecările…" />
+            ) : slots.error ? (
+              <Alert
+                tone="error"
+                action={
+                  <Button variant="secondary" onClick={slots.reload}>
+                    Încearcă din nou
+                  </Button>
+                }
+              >
+                {errorMessageRo(slots.error)}
+              </Alert>
+            ) : upcoming.length === 0 ? (
+              <Alert tone="info">{t.t('noDepartures')}</Alert>
+            ) : (
+              <SlotPicker
+                days={days}
+                slots={upcoming}
+                timezone={TZ}
+                t={t}
+                date={date}
+                onDateChange={(d) => {
+                  setDate(d);
+                  setSlotId(null);
+                  setStepError(null);
+                }}
+                slotId={slotId}
+                onSlotChange={(s) => {
+                  setSlotId(s.id);
+                  setStepError(null);
+                }}
+                error={stepError}
+              />
+            )
+          ) : stepError ? (
+            <p role="alert" className="font-medium text-danger-fg">
+              {stepError}
+            </p>
+          ) : null}
+
+          <StickyActions aboveNav>
+            <Button size="lg" block onClick={continueFromStep1}>
+              Continuă
+            </Button>
+          </StickyActions>
+        </>
+      ) : null}
+
+      {step === 2 && product && slot ? (
+        <>
+          <SlotSummary product={product} slot={slot} onChange={() => goTo(1)} />
+          <Card>
+            <TicketQuantities
+              prices={product.prices}
+              currency={currency}
+              quantities={quantities}
+              onChange={(q) => {
+                setQuantities(q);
+                setStepError(null);
+              }}
+              available={slot.available}
+              t={t}
+              error={stepError}
+            />
+          </Card>
+          <StickyActions aboveNav>
+            <Button size="lg" block onClick={continueFromStep2}>
+              Continuă · {formatMoney(total, currency)}
+            </Button>
+          </StickyActions>
+        </>
+      ) : null}
+
+      {step === 3 && product && slot ? (
+        <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
+          <SlotSummary
+            product={product}
+            slot={slot}
+            onChange={() => goTo(1)}
+            extra={
+              <span className="flex items-center justify-between gap-2">
+                <span>
+                  {product.prices
+                    .filter((p) => (quantities[p.id] ?? 0) > 0)
+                    .map((p) => `${quantities[p.id]} × ${p.label}`)
+                    .join(', ')}
+                </span>
+                <MoneyText amountMinor={total} currency={currency} className="font-bold" />
+              </span>
+            }
+          />
+
+          <Card>
+            <div className="flex flex-col gap-4">
+              <Field
+                label="Numele clientului"
+                name="customer-name"
+                // The customer's data, not the receptionist's: do not autofill her own details.
+                autoComplete="off"
+                autoCapitalize="words"
+                enterKeyHint="next"
+                required
+                maxLength={120}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                error={customerErrors.name}
+              />
+              <p
+                className={`text-sm ${customerErrors.contact ? 'font-medium text-danger-fg' : 'text-muted'}`}
+                role={customerErrors.contact ? 'alert' : undefined}
+              >
+                {customerErrors.contact ??
+                  'Completează telefonul sau emailul: acolo primește clientul biletul.'}
+              </p>
+              <Field
+                label="Telefonul clientului"
+                hint="Cu prefixul țării, ex. +44 7700 900123"
+                name="customer-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                enterKeyHint="next"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                error={customerErrors.phone}
+                optionalText="sau email"
+              />
+              <Field
+                label="Emailul clientului"
+                name="customer-email"
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint="next"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={customerErrors.email}
+                optionalText="sau telefon"
+              />
+              <Field
+                label="Camera"
+                name="hotel-room"
+                autoComplete="off"
+                enterKeyHint="done"
+                maxLength={20}
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                optionalText="opțional"
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex flex-col gap-5">
+              <ChoiceGroup<Locale>
+                legend="Limba clientului"
+                hint="Biletul și mesajele vin în această limbă."
+                name="locale"
+                value={locale}
+                onChange={setLocale}
+                gridClassName="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3"
+                options={(Object.keys(LOCALE_LABELS) as Locale[]).map((code) => ({
+                  value: code,
+                  label: LOCALE_LABELS[code],
+                }))}
+              />
+              {allowPayOnSite ? (
+                <ChoiceGroup<Payment>
+                  legend="Plata"
+                  name="payment"
+                  value={payment}
+                  onChange={setPayment}
+                  options={[
+                    {
+                      value: 'link',
+                      label: 'Online, acum',
+                      description: 'Clientul scanează un cod sau primește linkul de plată.',
+                    },
+                    {
+                      value: 'on_site',
+                      label: 'La îmbarcare',
+                      description: 'Clientul plătește operatorului înainte de plecare.',
+                    },
+                  ]}
+                />
+              ) : (
+                <p className="text-sm text-muted">
+                  Clientul plătește online: îi arăți un cod QR sau îi trimiți linkul.
+                </p>
+              )}
+            </div>
+          </Card>
+
+          {submitError ? <Alert tone="error">{submitError}</Alert> : null}
+
+          <StickyActions aboveNav>
+            <Button type="submit" size="lg" block loading={busy} loadingText="Se rezervă…">
+              Rezervă · {formatMoney(total, currency)}
+            </Button>
+          </StickyActions>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function SlotSummary({
+  product,
+  slot,
+  onChange,
+  extra,
+}: {
+  product: ProductDto;
+  slot: SlotDto;
+  onChange: () => void;
+  extra?: ReactNode;
+}) {
+  const dayKey = dateKeyInTz(slot.startsAt, TZ);
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl bg-surface-2 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold">{product.name}</p>
+          <p className="text-muted">
+            {formatDayLong(dayKey)}, ora {formatTime(slot.startsAt, TZ)}
+          </p>
+        </div>
+        <Button variant="ghost" onClick={onChange} className="-mr-2 -mt-2 shrink-0 px-3">
+          Schimbă
+        </Button>
+      </div>
+      {extra}
+    </div>
+  );
+}

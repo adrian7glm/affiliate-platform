@@ -60,7 +60,13 @@ export class TicketsService {
 
   private async ticketDto(bookingId: string): Promise<TicketDto> {
     const [row] = await this.db
-      .select({ booking: bookings, product: products, tenantName: tenants.name, ticket: tickets })
+      .select({
+        booking: bookings,
+        product: products,
+        tenantName: tenants.name,
+        timezone: tenants.timezone,
+        ticket: tickets,
+      })
       .from(bookings)
       .innerJoin(products, eq(products.id, bookings.productId))
       .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
@@ -95,6 +101,7 @@ export class TicketsService {
       status,
       productName: row.product.name,
       tenantName: row.tenantName,
+      timezone: row.timezone,
       startsAt: booking.startsAt.toISOString(),
       meetingPoint: row.product.meetingPoint,
       seats: booking.seats,
@@ -115,6 +122,7 @@ export class TicketsService {
         result: 'not_valid',
         message: 'This QR code is not a ticket of this operator.',
         ticket: null,
+        collectMinor: 0,
       };
     }
     const now = this.clock.now();
@@ -124,23 +132,25 @@ export class TicketsService {
         .from(tickets)
         .where(and(eq(tickets.id, payload.tid), eq(tickets.tenantId, tenantId)))
         .for('update');
-      if (!ticket) return { result: 'not_valid' as const, bookingId: null };
+      if (!ticket) return { result: 'not_valid' as const, bookingId: null, collectMinor: 0 };
       const [booking] = await tx
         .select()
         .from(bookings)
         .where(eq(bookings.id, ticket.bookingId))
         .for('update');
       if (!booking || ticket.status === 'void' || booking.status !== 'confirmed') {
-        return { result: 'not_valid' as const, bookingId: ticket.bookingId };
+        return { result: 'not_valid' as const, bookingId: ticket.bookingId, collectMinor: 0 };
       }
       if (ticket.status === 'checked_in')
-        return { result: 'already_checked_in' as const, bookingId: booking.id };
+        return { result: 'already_checked_in' as const, bookingId: booking.id, collectMinor: 0 };
 
       await tx
         .update(tickets)
         .set({ status: 'checked_in', checkedInAt: now, checkedInByUserId: userId })
         .where(eq(tickets.id, ticket.id));
+      let collectMinor = 0;
       if (booking.paymentMode === 'on_site' && !booking.paidAt) {
+        collectMinor = booking.totalMinor;
         await tx.update(bookings).set({ paidAt: now }).where(eq(bookings.id, booking.id));
         await this.outbox.publish(tx, {
           type: 'booking.confirmed',
@@ -160,7 +170,7 @@ export class TicketsService {
         bookingId: booking.id,
         checkedInAt: now.toISOString(),
       });
-      return { result: 'checked_in' as const, bookingId: booking.id };
+      return { result: 'checked_in' as const, bookingId: booking.id, collectMinor };
     });
 
     const ticket = outcome.bookingId ? await this.ticketDto(outcome.bookingId) : null;
@@ -169,6 +179,11 @@ export class TicketsService {
       already_checked_in: 'This ticket was already scanned.',
       not_valid: 'This ticket is not valid (cancelled, refunded or unpaid).',
     };
-    return { result: outcome.result, message: messages[outcome.result], ticket };
+    return {
+      result: outcome.result,
+      message: messages[outcome.result],
+      ticket,
+      collectMinor: outcome.collectMinor,
+    };
   }
 }
