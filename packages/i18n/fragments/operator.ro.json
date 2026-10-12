@@ -18,12 +18,7 @@
     "area": "Administrare",
     "sections": "Secțiuni",
     "menu": "Meniu",
-    "tenant": "Operator",
-    "role": {
-      "owner": "Administrator",
-      "staff": "Personal",
-      "affiliate": "Afiliat"
-    }
+    "tenant": "Operator"
   },
   "dashboard": {
     "title": "Panou",

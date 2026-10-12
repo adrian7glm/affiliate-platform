@@ -62,7 +62,10 @@ export function PublicFrame({
   return (
     <BrandScope color={branding?.primaryColor}>
       <div lang={lang} className="flex min-h-dvh flex-col bg-bg text-fg">
-        <header className="border-b border-line bg-surface" style={{ paddingTop: 'var(--safe-top)' }}>
+        <header
+          className="border-b border-line bg-surface"
+          style={{ paddingTop: 'var(--safe-top)' }}
+        >
           <div className="page-x mx-auto flex min-h-16 max-w-3xl items-center justify-between gap-3">
             {tenantName ? (
               homeHref ? (

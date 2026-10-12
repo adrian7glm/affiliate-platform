@@ -1,4 +1,9 @@
-import { type CanActivate, HttpStatus, Injectable, type ExecutionContext } from '@nestjs/common';
+import {
+  type CanActivate,
+  type ExecutionContext,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import type { AppRequest } from '../common/auth';
 import { DomainError } from '../common/errors';
 

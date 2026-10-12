@@ -1,6 +1,11 @@
 'use client';
 
-import type { ProductDto, PublicCheckoutBody, SlotDto } from '@ap/contracts';
+import {
+  localeSchema,
+  type ProductDto,
+  type PublicCheckoutBody,
+  type SlotDto,
+} from '@ap/contracts';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
@@ -186,7 +191,8 @@ export function PublicBookingForm({
           name: name.trim(),
           email: cleanEmail || undefined,
           phone: cleanPhone || undefined,
-          locale: lang,
+          // Emails and texts go out in this language; one the API does not know gets English.
+          locale: localeSchema.catch('en').parse(lang),
         },
         ...attribution(),
       });

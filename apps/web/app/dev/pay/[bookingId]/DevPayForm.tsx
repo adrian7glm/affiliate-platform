@@ -17,13 +17,7 @@ import { useApi } from '@/lib/useApi';
  * Fake card form for local development and demos: any input "pays" through
  * POST /public/dev-payments/:bookingId/succeed, then shows the ticket.
  */
-export function DevPayForm({
-  bookingId,
-  ticketKey,
-}: {
-  bookingId: string;
-  ticketKey: string;
-}) {
+export function DevPayForm({ bookingId, ticketKey }: { bookingId: string; ticketKey: string }) {
   const t = useT();
   const { lang } = t;
   const router = useRouter();

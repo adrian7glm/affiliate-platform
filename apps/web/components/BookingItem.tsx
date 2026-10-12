@@ -33,8 +33,10 @@ export function BookingItem({
         <div className="min-w-0">
           <h3 className="font-semibold">{booking.productName}</h3>
           <p className="text-sm text-muted">
-            <time dateTime={booking.startsAt}>{formatDateTime(booking.startsAt, timezone, lang)}</time> ·{' '}
-            {t('common.seats', { count: booking.seats })}
+            <time dateTime={booking.startsAt}>
+              {formatDateTime(booking.startsAt, timezone, lang)}
+            </time>{' '}
+            · {t('common.seats', { count: booking.seats })}
           </p>
         </div>
         <MoneyText

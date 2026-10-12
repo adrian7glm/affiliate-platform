@@ -29,7 +29,9 @@ export function PeriodPicker({
         type="button"
         onClick={() => onChange(shiftPeriod(period, -1))}
         className="inline-flex size-12 items-center justify-center rounded-xl hover:bg-surface-2"
-        aria-label={t('common.previousMonth', { month: formatPeriod(shiftPeriod(period, -1), lang) })}
+        aria-label={t('common.previousMonth', {
+          month: formatPeriod(shiftPeriod(period, -1), lang),
+        })}
       >
         <IconChevronLeft />
       </button>

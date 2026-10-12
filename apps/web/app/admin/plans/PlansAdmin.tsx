@@ -61,7 +61,9 @@ export function PlansAdmin() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h2 className="text-xl font-bold">{plan.name}</h2>
-                    <p className="text-sm text-muted">{t('admin.plans.code', { code: plan.code })}</p>
+                    <p className="text-sm text-muted">
+                      {t('admin.plans.code', { code: plan.code })}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {plan.isDefault ? (
@@ -165,8 +167,7 @@ function PlanDialog({
     const feeBps = percentToBps(fee);
     const trial = Number(trialDays);
     const max = maxAffiliates.trim() ? Number(maxAffiliates) : null;
-    if (!plan && !/^[a-z0-9-]{2,32}$/.test(code.trim()))
-      next.code = t('admin.plans.codeError');
+    if (!plan && !/^[a-z0-9-]{2,32}$/.test(code.trim())) next.code = t('admin.plans.codeError');
     if (!name.trim()) next.name = t('admin.plans.nameError');
     if (priceMinor === null) next.price = t('admin.validation.price');
     if (feeBps === null || feeBps > 5_000) next.fee = t('admin.validation.percent50');
@@ -203,14 +204,15 @@ function PlanDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} title={plan ? t('admin.plans.editTitle', { name: plan.name }) : t('admin.plans.new')}
+    <Dialog
+      open
+      onClose={onClose}
+      title={plan ? t('admin.plans.editTitle', { name: plan.name }) : t('admin.plans.new')}
     >
       <form onSubmit={submit} className="flex flex-col gap-4">
         {error ? <Alert tone="error">{error}</Alert> : null}
         {plan && plan.tenantCount > 0 ? (
-          <Alert tone="info">
-            {tp('admin.plans.appliesTo', plan.tenantCount)}
-          </Alert>
+          <Alert tone="info">{tp('admin.plans.appliesTo', plan.tenantCount)}</Alert>
         ) : null}
         {!plan ? (
           <Field

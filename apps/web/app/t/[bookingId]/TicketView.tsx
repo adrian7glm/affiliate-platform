@@ -29,13 +29,7 @@ const STATUS: Record<TicketDto['status'], { label: MessageKey; text?: MessageKey
 /** Copy of the ticket kept on the phone, shown when the network is gone (at sea, in a basement). */
 const cacheKey = (bookingId: string) => `ap.ticket.${bookingId}`;
 
-export function TicketView({
-  bookingId,
-  ticketKey,
-}: {
-  bookingId: string;
-  ticketKey: string;
-}) {
+export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticketKey: string }) {
   const t = useT();
   const { lang } = t;
   const [ticket, setTicket] = useState<TicketDto | null>(null);
@@ -162,7 +156,9 @@ export function TicketView({
                 />
               </div>
               <p className="text-lg font-semibold">
-                {ticket.status === 'valid' ? t.t('ticket.showAtBoarding') : t.t('ticket.checkedInText')}
+                {ticket.status === 'valid'
+                  ? t.t('ticket.showAtBoarding')
+                  : t.t('ticket.checkedInText')}
               </p>
             </>
           ) : status.text ? (
@@ -302,7 +298,9 @@ function AddToHome() {
           {t.t('ticket.install')}
         </Button>
       ) : (
-        <p className="text-muted">{mode === 'ios' ? t.t('ticket.addToHomeIos') : t.t('ticket.addToHomeOther')}</p>
+        <p className="text-muted">
+          {mode === 'ios' ? t.t('ticket.addToHomeIos') : t.t('ticket.addToHomeOther')}
+        </p>
       )}
     </section>
   );

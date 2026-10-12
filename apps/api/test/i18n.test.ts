@@ -79,8 +79,9 @@ describe.skipIf(!databaseUrl)('translations (needs TEST_DATABASE_URL)', () => {
     const book = texts.entries.find((e) => e.key === 'public.book')!;
     expect(book).toMatchObject({ reference: 'Book', file: 'Rezervă', override: 'Cumpără bilet' });
     // Romanian plural keys get Romanian forms.
-    expect(texts.entries.filter((e) => e.key.startsWith('public.seatsLeft_')).map((e) => e.key))
-      .toEqual(['public.seatsLeft_one', 'public.seatsLeft_few', 'public.seatsLeft_other']);
+    expect(
+      texts.entries.filter((e) => e.key.startsWith('public.seatsLeft_')).map((e) => e.key),
+    ).toEqual(['public.seatsLeft_one', 'public.seatsLeft_few', 'public.seatsLeft_other']);
     expect(h.app.get(I18nService).translator('ro').t('public.book')).toBe('Cumpără bilet');
 
     // Saving the file's text (or nothing) removes the change.

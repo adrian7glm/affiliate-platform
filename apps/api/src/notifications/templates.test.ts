@@ -1,5 +1,9 @@
+import { createTranslator } from '@ap/i18n';
 import { describe, expect, it } from 'vitest';
-import { type TemplateParams, messageLang, render, toGsm } from './templates';
+import { type TemplateParams, render, toGsm } from './templates';
+
+const ro = createTranslator('ro');
+const en = createTranslator('en');
 
 const ticket: TemplateParams['ticket'] = {
   tenantName: 'Delta Boats',
@@ -17,15 +21,21 @@ const ticket: TemplateParams['ticket'] = {
 };
 
 describe('message templates', () => {
-  it('speaks Romanian to Romanian speakers and English to everyone else', () => {
-    expect(messageLang('ro')).toBe('ro');
-    expect(messageLang('ro-RO')).toBe('ro');
-    expect(messageLang('de')).toBe('en');
-    expect(messageLang(undefined)).toBe('en');
+  it('renders in the language of the translator, falling back to English', () => {
+    expect(render('login_code', createTranslator('de'), { code: '1', webHost: 'h' }).subject).toBe(
+      'Your sign-in code: 1',
+    );
+    expect(render('ticket', ro, ticket).html).toContain('<html lang="ro">');
+  });
+
+  it('uses the plural forms of the language in SMS', () => {
+    expect(render('ticket', ro, { ...ticket, seats: 1 }).sms).toContain(', 1 loc, ');
+    expect(render('ticket', ro, { ...ticket, seats: 20 }).sms).toContain(', 20 de locuri, ');
+    expect(render('ticket', en, { ...ticket, seats: 1 }).sms).toContain(', 1 seat, ');
   });
 
   it('renders a Romanian ticket with the departure in the operator time zone', () => {
-    const m = render('ticket', 'ro', ticket);
+    const m = render('ticket', ro, ticket);
     expect(m.subject).toBe('Biletul tău: Plimbare pe Dunăre, 6 oct 10:00');
     expect(m.text).toContain('marți, 6 octombrie 2026, ora 10:00');
     expect(m.text.replace(/\s/g, ' ')).toContain('De plată la îmbarcare: 200,00 RON');
@@ -37,7 +47,7 @@ describe('message templates', () => {
   });
 
   it('renders an English ticket without a QR code when there is none', () => {
-    const m = render('ticket', 'en', { ...ticket, qrToken: null, amountDueOnSiteMinor: 0 });
+    const m = render('ticket', en, { ...ticket, qrToken: null, amountDueOnSiteMinor: 0 });
     expect(m.subject).toBe('Your ticket: Plimbare pe Dunăre, 6 Oct 10:00');
     expect(m.text).toContain('Tuesday 6 October 2026, 10:00');
     expect(m.text).not.toContain('To pay at boarding');
@@ -46,22 +56,22 @@ describe('message templates', () => {
   });
 
   it('escapes what customers typed and links URLs in the HTML', () => {
-    const { html } = render('ticket', 'en', ticket);
+    const { html } = render('ticket', en, ticket);
     expect(html).toContain('Hello Ion &lt;script&gt;,');
     expect(html).not.toContain('<script>');
     expect(html).toContain('href="https://app.test/t/b1?k=key&amp;lang=ro"');
   });
 
   it('puts the login code in the WebOTP format so phones can fill it in', () => {
-    const m = render('login_code', 'ro', { code: '123456', webHost: 'app.test' });
+    const m = render('login_code', ro, { code: '123456', webHost: 'app.test' });
     expect(m.subject).toBe('Codul tău de conectare: 123456');
     expect(m.sms.split('\n').at(-1)).toBe('@app.test #123456');
   });
 
   it('says when a cancelled booking is refunded', () => {
     const base = { ...ticket, refunded: true };
-    expect(render('booking_cancelled', 'en', base).text).toContain('being refunded');
-    expect(render('booking_cancelled', 'ro', { ...base, refunded: false }).sms).not.toContain(
+    expect(render('booking_cancelled', en, base).text).toContain('being refunded');
+    expect(render('booking_cancelled', ro, { ...base, refunded: false }).sms).not.toContain(
       'returnati',
     );
   });
@@ -71,7 +81,7 @@ describe('message templates', () => {
       'Soseaua "Stefan" - tara, inapoi... aa',
     );
     for (const template of ['payment_link', 'ticket', 'booking_cancelled'] as const) {
-      const m = render(template, 'ro', { ...ticket, totalMinor: 1, refunded: true });
+      const m = render(template, ro, { ...ticket, totalMinor: 1, refunded: true });
       expect(m.sms).toMatch(/^[\x20-\x7e\n]*$/);
     }
   });

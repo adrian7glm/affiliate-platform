@@ -94,7 +94,13 @@ export function LinksScreen() {
           {created ? (
             <Alert tone="success">{t('affiliate.links.created', { name: created })}</Alert>
           ) : null}
-          <Button type="submit" size="lg" block loading={busy} loadingText={t('affiliate.links.creating')}>
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={busy}
+            loadingText={t('affiliate.links.creating')}
+          >
             {t('affiliate.links.create')}
           </Button>
         </form>
@@ -131,7 +137,9 @@ export function LinksScreen() {
                           {link.productName ?? t('affiliate.links.allProducts')}
                         </p>
                       </div>
-                      {link.active ? null : <StatusChip tone="neutral">{t('affiliate.links.inactive')}</StatusChip>}
+                      {link.active ? null : (
+                        <StatusChip tone="neutral">{t('affiliate.links.inactive')}</StatusChip>
+                      )}
                     </div>
                     <p className="break-all rounded-xl bg-surface-2 px-3 py-2 font-mono text-sm">
                       {link.url}

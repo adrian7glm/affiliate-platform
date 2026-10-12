@@ -57,7 +57,9 @@ describe('translations', () => {
     const t = getT('ro');
     expect(t.lang).toBe('ro');
     expect(t.locale).toBe('ro-RO');
-    expect(t.tk('labels.bookingStatus.confirmed')).toBe(getT('ro').t('labels.bookingStatus.confirmed'));
+    expect(t.tk('labels.bookingStatus.confirmed')).toBe(
+      getT('ro').t('labels.bookingStatus.confirmed'),
+    );
   });
 
   it("layers the admin's overrides on top of the files", () => {

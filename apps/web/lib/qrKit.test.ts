@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { getT } from './i18n';
 import {
   DEFAULT_KIT_COLOR,
   KIT_FORMATS,
   displayUrl,
   fitText,
   kitFormat,
+  kitFormatTexts,
+  kitPrintTexts,
   normalizeColor,
   textOn,
 } from './qrKit';
@@ -75,5 +78,27 @@ describe('formats', () => {
 describe('displayUrl', () => {
   it('drops the scheme', () => {
     expect(displayUrl('https://go.example.com/r/ABC1234')).toBe('go.example.com/r/ABC1234');
+  });
+});
+
+describe('kit texts', () => {
+  it('names every format in each language', () => {
+    for (const lang of ['ro', 'en']) {
+      const t = getT(lang);
+      for (const spec of KIT_FORMATS) {
+        const texts = kitFormatTexts(spec, t);
+        for (const text of Object.values(texts)) {
+          expect(text).not.toMatch(/^kit\./);
+          expect(text.length).toBeGreaterThan(0);
+        }
+      }
+    }
+    expect(kitFormatTexts(kitFormat('tent'), getT('ro')).label).toBe('Cort de masă');
+    expect(kitFormatTexts(kitFormat('tent'), getT('en')).label).toBe('Table tent');
+  });
+
+  it('prints the call to action in the chosen language', () => {
+    expect(kitPrintTexts(getT('ro')).headline).toBe('Scanează și rezervă');
+    expect(kitPrintTexts(getT('en')).headline).toBe('Scan & book');
   });
 });

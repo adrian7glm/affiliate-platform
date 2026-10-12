@@ -254,9 +254,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
       </div>
 
       {loading ? <LoadingBlock /> : null}
-      {home.error && !data ? (
-        <Alert tone="error">{errorMessage(home.error, i18n)}</Alert>
-      ) : null}
+      {home.error && !data ? <Alert tone="error">{errorMessage(home.error, i18n)}</Alert> : null}
 
       <div className="no-print flex flex-col gap-4">
         <Card title={t('kit.stepProduct')}>
@@ -293,8 +291,7 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
           ) : null}
           {link ? (
             <p className="mt-3 text-sm text-muted">
-              {t('kit.linkUsed')}{' '}
-              <strong className="text-fg">{linkTitle(link, i18n)}</strong>{' '}
+              {t('kit.linkUsed')} <strong className="text-fg">{linkTitle(link, i18n)}</strong>{' '}
               {t('kit.linkStats', { clicks: link.clicks, sales: link.sales })}
             </p>
           ) : null}
@@ -316,20 +313,20 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
             {KIT_FORMATS.map((f) => {
               const texts = kitFormatTexts(f, i18n);
               return (
-              <label key={f.id} className="choice">
-                <input
-                  type="radio"
-                  name="kit-format"
-                  value={f.id}
-                  checked={spec.id === f.id}
-                  onChange={() => setSpec(f)}
-                />
-                <span className="choice-body h-full items-start! gap-2 py-3!">
-                  <FormatThumb id={f.id} />
-                  <span className="font-semibold leading-tight">{texts.label}</span>
-                  <span className="text-xs leading-snug opacity-80">{texts.description}</span>
-                </span>
-              </label>
+                <label key={f.id} className="choice">
+                  <input
+                    type="radio"
+                    name="kit-format"
+                    value={f.id}
+                    checked={spec.id === f.id}
+                    onChange={() => setSpec(f)}
+                  />
+                  <span className="choice-body h-full items-start! gap-2 py-3!">
+                    <FormatThumb id={f.id} />
+                    <span className="font-semibold leading-tight">{texts.label}</span>
+                    <span className="text-xs leading-snug opacity-80">{texts.description}</span>
+                  </span>
+                </label>
               );
             })}
           </fieldset>
@@ -376,15 +373,9 @@ export function KitScreen({ linkId, format }: { linkId?: string; format?: string
             )}
           </div>
           <p className="text-sm text-muted">{specTexts.howTo}</p>
-          {logoState === 'failed' ? (
-            <Alert tone="warning">
-              {t('kit.logoFailed')}
-            </Alert>
-          ) : null}
+          {logoState === 'failed' ? <Alert tone="warning">{t('kit.logoFailed')}</Alert> : null}
           {!branding?.logoUrl && data ? (
-            <p className="text-sm text-muted">
-              {t('kit.logoMissing')}
-            </p>
+            <p className="text-sm text-muted">{t('kit.logoMissing')}</p>
           ) : null}
         </section>
 

@@ -6,6 +6,7 @@ import { Alert } from '@/components/Alert';
 import { useSession } from '@/components/AuthGate';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { useT } from '@/components/I18nProvider';
 import { IconCheck, IconExternal } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
@@ -13,13 +14,15 @@ import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip } from '@/components/StatusChip';
 import { formatDate } from '@/lib/dates';
 import { formatBps } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
 import { operatorPlatformApi } from '@/lib/platform-endpoints';
-import { SUBSCRIPTION_STATUS, daysUntil } from '@/lib/platform-labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { daysUntil, subscriptionStatus } from '@/lib/platform-labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
+import { Rich, slots } from '../Rich';
 
 export function BillingScreen() {
+  const tr = useT();
+  const { t } = tr;
   const { tenant } = useOperator();
   const { membership } = useSession();
   const billing = useApi(`operator-billing:${tenant.id}`, (signal) =>
@@ -29,16 +32,17 @@ export function BillingScreen() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('subscribed') === '1') setNotice('Mulțumim! Abonamentul este activ.');
-    if (params.get('chosen') === '1')
-      setNotice('Planul a fost schimbat. Primești factura pe email la începutul lunii.');
+    if (params.get('subscribed') === '1') setNotice(t('operator.billing.subscribed'));
+    if (params.get('chosen') === '1') setNotice(t('operator.billing.planChanged'));
+    // Only on arrival; a language switch later does not need to replay it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Abonament"
-        description="Ce plătești pentru platformă: abonamentul lunar și un mic procent din rezervările plătite."
+        title={t('operator.billing.title')}
+        description={t('operator.billing.description')}
       />
       {notice ? <Alert tone="success">{notice}</Alert> : null}
       {billing.error ? (
@@ -46,11 +50,11 @@ export function BillingScreen() {
           tone="error"
           action={
             <Button variant="secondary" onClick={billing.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(billing.error)}
+          {errorMessage(billing.error, tr)}
         </Alert>
       ) : null}
       {billing.loading && !billing.data ? <LoadingBlock /> : null}
@@ -80,6 +84,8 @@ function BillingContent({
   timezone: string;
   onChanged: (message: string) => void;
 }) {
+  const tr = useT();
+  const { t, tp, lang } = tr;
   const sub = data.subscription;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,9 +99,9 @@ function BillingContent({
         window.location.assign(url);
         return;
       }
-      onChanged('Planul a fost schimbat. Primești factura pe email la începutul lunii.');
+      onChanged(t('operator.billing.planChanged'));
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, tr));
     } finally {
       setBusy(null);
     }
@@ -108,18 +114,22 @@ function BillingContent({
       const { url } = await operatorPlatformApi.portal();
       window.location.assign(url);
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, tr));
       setBusy(null);
     }
   }
 
-  const status = sub ? SUBSCRIPTION_STATUS[sub.status] : null;
+  const status = sub ? subscriptionStatus(tr, sub.status) : null;
   return (
     <>
       {error ? <Alert tone="error">{error}</Alert> : null}
       <div className="grid gap-5 lg:grid-cols-2">
         <Card
-          title={sub ? `Planul ${sub.planName}` : 'Niciun plan încă'}
+          title={
+            sub
+              ? t('operator.billing.planTitle', { name: sub.planName })
+              : t('operator.billing.noPlan')
+          }
           action={status ? <StatusChip tone={status.tone}>{status.label}</StatusChip> : null}
         >
           {sub ? (
@@ -130,38 +140,50 @@ function BillingContent({
                   currency={sub.currency}
                   className="text-3xl font-bold"
                 />
-                <span className="text-muted"> / lună</span>
+                <span className="text-muted"> {t('operator.billing.perMonth')}</span>
               </p>
               <p>
-                <span className="font-semibold">{formatBps(sub.platformFeeBps)}</span> din fiecare
-                rezervare plătită
-                {sub.feeBpsOverride !== null ? ' (tarif negociat)' : ''}
+                <Rich
+                  text={t(
+                    sub.feeBpsOverride !== null
+                      ? 'operator.billing.feeLineNegotiated'
+                      : 'operator.billing.feeLine',
+                    slots('fee'),
+                  )}
+                  parts={{
+                    fee: (
+                      <span className="font-semibold">{formatBps(sub.platformFeeBps, lang)}</span>
+                    ),
+                  }}
+                />
               </p>
               <p className="text-muted">
                 {sub.maxAffiliates === null
-                  ? 'Afiliați nelimitați'
-                  : `Până la ${sub.maxAffiliates} afiliați activi`}
+                  ? t('operator.billing.unlimited')
+                  : tp('operator.billing.upToActive', sub.maxAffiliates)}
               </p>
               {sub.status === 'trialing' && sub.trialEndsAt ? (
                 <Alert tone="info">
-                  Perioada de probă gratuită mai are{' '}
-                  {pluralRo(daysUntil(sub.trialEndsAt), 'zi', 'zile')} (până pe{' '}
-                  {formatDate(sub.trialEndsAt, timezone)}).
+                  {tp('operator.billing.trialLeft', daysUntil(sub.trialEndsAt), {
+                    date: formatDate(sub.trialEndsAt, timezone, lang),
+                  })}
                 </Alert>
               ) : null}
               {sub.status === 'past_due' ? (
                 <Alert tone="warning">
                   {sub.currentPeriodEnd
-                    ? 'Plata abonamentului a eșuat sau nu a fost primită.'
-                    : 'Perioada de probă s-a încheiat.'}{' '}
+                    ? t('operator.billing.paymentFailed')
+                    : t('operator.billing.trialEnded')}{' '}
                   {data.provider === 'stripe'
-                    ? 'Adaugă un card ca să continui fără întreruperi.'
-                    : 'Te contactăm pentru factură.'}
+                    ? t('operator.billing.addCardToContinue')
+                    : t('operator.billing.invoiceContact')}
                 </Alert>
               ) : null}
               {sub.currentPeriodEnd && sub.status === 'active' ? (
                 <p className="text-muted">
-                  Plătit până pe {formatDate(sub.currentPeriodEnd, timezone)}.
+                  {t('operator.billing.paidUntil', {
+                    date: formatDate(sub.currentPeriodEnd, timezone, lang),
+                  })}
                 </p>
               ) : null}
               {isOwner && data.provider === 'stripe' && sub.billedByStripe ? (
@@ -171,19 +193,22 @@ function BillingContent({
                   loading={busy === 'portal'}
                   onClick={() => void openPortal()}
                 >
-                  Card, facturi și anulare
+                  {t('operator.billing.portal')}
                 </Button>
               ) : null}
               {isOwner && data.provider === 'stripe' && !sub.billedByStripe ? (
                 <Button loading={busy === sub.planId} onClick={() => void choose(sub.planId)}>
-                  Adaugă cardul
+                  {t('operator.billing.addCard')}
                 </Button>
               ) : null}
             </div>
           ) : null}
         </Card>
 
-        <Card title="Luna aceasta" description="Comisionul platformei pe rezervările plătite">
+        <Card
+          title={t('operator.billing.thisMonth')}
+          description={t('operator.billing.thisMonthDescription')}
+        >
           <p>
             <MoneyText
               amountMinor={data.feesThisMonth.amountMinor}
@@ -192,18 +217,16 @@ function BillingContent({
             />
           </p>
           <p className="mt-1 text-muted">
-            din {pluralRo(data.feesThisMonth.bookings, 'rezervare', 'rezervări')}
+            {tp('operator.billing.fromBookings', data.feesThisMonth.bookings)}
           </p>
-          <p className="mt-3 text-sm text-muted">
-            Rezervările anulate și rambursate nu se taxează.
-          </p>
+          <p className="mt-3 text-sm text-muted">{t('operator.billing.notCharged')}</p>
         </Card>
       </div>
 
       {data.plans.length > 1 || !sub ? (
         <section aria-labelledby="plans-title" className="flex flex-col gap-3">
           <h2 id="plans-title" className="text-xl font-bold">
-            Planuri
+            {t('operator.billing.plans')}
           </h2>
           <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {data.plans.map((plan) => {
@@ -214,7 +237,9 @@ function BillingContent({
                     <div className="flex h-full flex-col gap-2">
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="text-lg font-bold">{plan.name}</h3>
-                        {current ? <StatusChip tone="brand">Planul tău</StatusChip> : null}
+                        {current ? (
+                          <StatusChip tone="brand">{t('operator.billing.yourPlan')}</StatusChip>
+                        ) : null}
                       </div>
                       {plan.description ? (
                         <p className="text-sm text-muted">{plan.description}</p>
@@ -227,14 +252,16 @@ function BillingContent({
                         />
                         <span className="text-muted">
                           {' '}
-                          / lună + {formatBps(plan.platformFeeBps)} / rezervare
+                          {t('operator.billing.planPrice', {
+                            fee: formatBps(plan.platformFeeBps, lang),
+                          })}
                         </span>
                       </p>
                       <p className="flex items-center gap-1.5 text-sm">
                         <IconCheck size={16} className="text-success" />
                         {plan.maxAffiliates === null
-                          ? 'Afiliați nelimitați'
-                          : `Până la ${plan.maxAffiliates} afiliați`}
+                          ? t('operator.billing.unlimited')
+                          : tp('operator.billing.upTo', plan.maxAffiliates)}
                       </p>
                       {isOwner && !current ? (
                         <Button
@@ -244,7 +271,7 @@ function BillingContent({
                           disabled={busy !== null}
                           onClick={() => void choose(plan.id)}
                         >
-                          Alege {plan.name}
+                          {t('operator.billing.choose', { name: plan.name })}
                         </Button>
                       ) : null}
                     </div>
@@ -254,9 +281,7 @@ function BillingContent({
             })}
           </ul>
           {!isOwner ? (
-            <p className="text-sm text-muted">
-              Doar administratorul contului poate schimba planul.
-            </p>
+            <p className="text-sm text-muted">{t('operator.billing.ownerOnly')}</p>
           ) : null}
         </section>
       ) : null}

@@ -22,13 +22,7 @@ export function isActivePath(
 }
 
 /** Fixed tab bar for the phone app, sized for thumbs and respecting the home indicator. */
-export function BottomNav({
-  items,
-  label,
-}: {
-  items: BottomNavItem[];
-  label?: string;
-}) {
+export function BottomNav({ items, label }: { items: BottomNavItem[]; label?: string }) {
   const pathname = usePathname() ?? '';
   const { t } = useT();
   return (

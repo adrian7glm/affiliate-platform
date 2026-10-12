@@ -161,7 +161,10 @@ export function TranslationEditor({ code }: { code: string }) {
               variant="secondary"
               icon={<IconDownload />}
               onClick={() =>
-                downloadFile(`${language.code}.json`, languageFile(language, mergedEntries(data, drafts)))
+                downloadFile(
+                  `${language.code}.json`,
+                  languageFile(language, mergedEntries(data, drafts)),
+                )
               }
             >
               {t('translations.download')}
@@ -179,9 +182,7 @@ export function TranslationEditor({ code }: { code: string }) {
           </>
         }
       />
-      {!language.enabled ? (
-        <Alert tone="warning">{t('translations.hiddenNotice')}</Alert>
-      ) : null}
+      {!language.enabled ? <Alert tone="warning">{t('translations.hiddenNotice')}</Alert> : null}
       {notice ? <Alert tone="info">{notice}</Alert> : null}
       {error ? (
         <Alert tone="error">
@@ -272,7 +273,9 @@ export function TranslationEditor({ code }: { code: string }) {
         <StickyActions>
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={save} disabled={saving}>
-              {saving ? t('translations.saving') : t('translations.saveChanges', { count: changes })}
+              {saving
+                ? t('translations.saving')
+                : t('translations.saveChanges', { count: changes })}
             </Button>
             <Button variant="ghost" disabled={saving} onClick={() => setDrafts({})}>
               {t('translations.discard')}
@@ -308,7 +311,10 @@ function EntryRow({
   const value = draft ?? entry.override ?? entry.file ?? '';
   const issue = value ? checkTranslation(entry.key, value) : null;
   const variables = placeholders(entry.reference);
-  const rows = Math.min(8, Math.max(2, Math.ceil(Math.max(value.length, entry.reference.length) / 60)));
+  const rows = Math.min(
+    8,
+    Math.max(2, Math.ceil(Math.max(value.length, entry.reference.length) / 60)),
+  );
   const id = `text-${entry.key}`;
 
   return (
@@ -364,7 +370,9 @@ function EntryRow({
           {issue ? (
             <p
               className={
-                issue.problem === 'missing_placeholder' ? 'text-sm text-warning-fg' : 'text-sm text-danger-fg'
+                issue.problem === 'missing_placeholder'
+                  ? 'text-sm text-warning-fg'
+                  : 'text-sm text-danger-fg'
               }
             >
               {tk(`translations.problem.${issue.problem}`, {

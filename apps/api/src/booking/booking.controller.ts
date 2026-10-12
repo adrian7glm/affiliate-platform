@@ -1,13 +1,14 @@
 import {
-  Param,
-  ParseUUIDPipe,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Inject,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -27,6 +28,7 @@ import {
   checkInBody,
   publicCheckoutBody,
 } from '@ap/contracts';
+import type { Request } from 'express';
 import {
   type AuthUser,
   AuthGuard,
@@ -45,6 +47,7 @@ import { parseDateParam } from '../common/period';
 import { TenantsService } from '../common/tenants';
 import { ZodBody } from '../common/validation';
 import { APP_CONFIG, type AppConfig } from '../config';
+import { I18nService } from '../i18n/i18n.service';
 import { Outbox } from '../outbox/outbox';
 import { BookingService } from './booking.service';
 import { TicketsService } from './tickets.service';
@@ -181,6 +184,7 @@ export class OperatorBookingController {
     private readonly tickets: TicketsService,
     private readonly outbox: Outbox,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly i18n: I18nService,
   ) {}
 
   @Get('bookings')
@@ -215,8 +219,14 @@ export class OperatorBookingController {
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthUser,
     @ZodBody(checkInBody) body: CheckInBody,
+    @Req() request: Request,
   ): Promise<CheckInResultDto> {
-    const result = await this.tickets.checkIn(tenant.tenantId, body.token, user.id);
+    const result = await this.tickets.checkIn(
+      tenant.tenantId,
+      body.token,
+      user.id,
+      this.i18n.langOf(request),
+    );
     if (this.config.WORKER_ENABLED) void this.outbox.drain();
     return result;
   }

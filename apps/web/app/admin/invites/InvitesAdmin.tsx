@@ -30,10 +30,7 @@ export function InvitesAdmin() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader
-        title={t('admin.invites.title')}
-        description={t('admin.invites.description')}
-      />
+      <PageHeader title={t('admin.invites.title')} description={t('admin.invites.description')} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
         <div className="flex flex-col gap-4">
           {created ? (
@@ -68,9 +65,7 @@ export function InvitesAdmin() {
         </div>
 
         <Card title={t('admin.invites.listTitle')}>
-          {invites.error ? (
-            <Alert tone="error">{errorMessage(invites.error, i18n)}</Alert>
-          ) : null}
+          {invites.error ? <Alert tone="error">{errorMessage(invites.error, i18n)}</Alert> : null}
           {invites.loading && !invites.data ? <LoadingBlock /> : null}
           {invites.data && invites.data.length === 0 ? (
             <p className="text-muted">{t('admin.invites.empty')}</p>
@@ -226,7 +221,11 @@ function InviteForm({
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
         />
-        <SelectField label={t('admin.invites.plan')} value={planId} onChange={(e) => setPlanId(e.target.value)}>
+        <SelectField
+          label={t('admin.invites.plan')}
+          value={planId}
+          onChange={(e) => setPlanId(e.target.value)}
+        >
           <option value="">
             {defaultPlan
               ? t('admin.invites.defaultPlanNamed', { name: defaultPlan.name })
@@ -253,9 +252,7 @@ function InviteForm({
           />
           <Field
             label={t('admin.invites.trialDaysLabel')}
-            hint={
-              plan ? t('admin.validation.emptyMeans', { value: plan.trialDays }) : undefined
-            }
+            hint={plan ? t('admin.validation.emptyMeans', { value: plan.trialDays }) : undefined}
             inputMode="numeric"
             value={trialDays}
             onChange={(e) => setTrialDays(e.target.value)}

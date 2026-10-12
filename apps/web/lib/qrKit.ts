@@ -436,14 +436,7 @@ function drawLandscape(ctx: Ctx, c: KitContent, w: number, h: number) {
   const titleLines = title
     ? fitText(measurer(ctx, 800), title, colW, titleSize, titleSize * 0.6, 2)
     : null;
-  const headLines = fitText(
-    measurer(ctx, 800),
-    c.headline,
-    colW,
-    headline,
-    headline * 0.6,
-    2,
-  );
+  const headLines = fitText(measurer(ctx, 800), c.headline, colW, headline, headline * 0.6, 2);
   const blockH =
     (titleLines ? titleLines.lines.length * titleLines.size * 1.15 + h * 0.015 : 0) +
     (c.priceText ? sub * 1.15 + h * 0.04 : h * 0.03) +

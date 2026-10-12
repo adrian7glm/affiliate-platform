@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import {
   type MeDto,
   type RequestOtpBody,
@@ -7,18 +7,28 @@ import {
   requestOtpBody,
   verifyOtpBody,
 } from '@ap/contracts';
+import type { Request } from 'express';
 import { type AuthUser, AuthGuard, CurrentUser } from '../common/auth';
 import { ZodBody } from '../common/validation';
+import { I18nService } from '../i18n/i18n.service';
 import { IdentityService } from './identity.service';
 
 @Controller()
 export class IdentityController {
-  constructor(private readonly identity: IdentityService) {}
+  constructor(
+    private readonly identity: IdentityService,
+    private readonly i18n: I18nService,
+  ) {}
 
   @Post('auth/otp/request')
   @HttpCode(204)
-  async requestOtp(@ZodBody(requestOtpBody) body: RequestOtpBody): Promise<void> {
-    await this.identity.requestOtp(body.destination);
+  async requestOtp(
+    @ZodBody(requestOtpBody) body: RequestOtpBody,
+    @Req() request: Request,
+  ): Promise<void> {
+    // The language of the login screen, else the browser's.
+    const locale = this.i18n.pick(body.locale, this.i18n.langOf(request));
+    await this.identity.requestOtp(body.destination, locale);
   }
 
   @Post('auth/otp/verify')

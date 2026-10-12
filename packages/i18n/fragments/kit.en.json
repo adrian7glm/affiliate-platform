@@ -1,0 +1,54 @@
+{
+  "meta": { "title": "Printable QR kit" },
+  "title": "Printable QR kit",
+  "description": "Ready-to-print materials with your QR code. Every scan and booking earns you commission.",
+  "stepProduct": "1. Trip",
+  "productLegend": "Trip on the poster",
+  "allProducts": "All trips",
+  "fromPrice": "from {price}",
+  "linkUsed": "Link used:",
+  "linkStats": "· {clicks} visits · {sales} sales",
+  "creatingLink": "Preparing a link for this trip…",
+  "stepFormat": "2. Format",
+  "formatLegend": "Material format",
+  "languageLabel": "Language of the materials",
+  "languageHint": "The texts printed on the poster, table tent and cards appear in this language.",
+  "stepPreview": "3. Preview",
+  "previewAlt": "{format}: {product}, with the QR code",
+  "previewFailed": "The preview couldn't be drawn on this phone.",
+  "exportFailed": "The file couldn't be created. Try again.",
+  "logoFailed": "The operator's logo couldn't be loaded, so their name is shown instead.",
+  "logoMissing": "When the operator adds their logo, it appears on the materials automatically.",
+  "pdfPreparing": "Preparing the PDF…",
+  "downloadPdf": "Download PDF",
+  "png": "PNG image",
+  "printButton": "Print",
+  "sharePdf": "Send the PDF (WhatsApp, email, print shop)",
+  "format": {
+    "posterA4": {
+      "label": "A4 poster",
+      "description": "On a wall or at the entrance",
+      "howTo": "Print on A4, borderless if your printer can."
+    },
+    "posterA5": {
+      "label": "A5 poster",
+      "description": "On the counter, in a frame or stand",
+      "howTo": "Print on A5, or on A4 with “Fit to page”."
+    },
+    "tent": {
+      "label": "Table tent",
+      "description": "Stands on its own at reception, visible from both sides",
+      "howTo": "Print on A4 (card is best), fold along the dotted line and stand it on the counter."
+    },
+    "cards": {
+      "label": "Cards",
+      "description": "8 on an A4 sheet, to hand to tourists",
+      "howTo": "Print on A4 and cut along the grey lines. Give one to each interested tourist."
+    }
+  },
+  "print": {
+    "headline": "Scan & book",
+    "subline": "Book your trip online in a minute",
+    "fromPrice": "from {price}"
+  }
+}

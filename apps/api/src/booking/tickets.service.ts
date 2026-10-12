@@ -187,12 +187,17 @@ export class TicketsService {
   }
 
   /** Boarding scan. Also the moment a pay-on-site booking counts as paid. */
-  async checkIn(tenantId: string, token: string, userId: string): Promise<CheckInResultDto> {
+  async checkIn(
+    tenantId: string,
+    token: string,
+    userId: string,
+    lang = 'en',
+  ): Promise<CheckInResultDto> {
     const payload = this.signer.verify(token);
     if (!payload || payload.ten !== tenantId) {
       return {
         result: 'not_valid',
-        message: 'This QR code is not a ticket of this operator.',
+        message: this.i18n.translate(lang, 'errors.checkIn.otherOperator'),
         ticket: null,
         collectMinor: 0,
       };
@@ -247,13 +252,13 @@ export class TicketsService {
 
     const ticket = outcome.bookingId ? await this.ticketDto(outcome.bookingId) : null;
     const messages = {
-      checked_in: 'Welcome aboard.',
-      already_checked_in: 'This ticket was already scanned.',
-      not_valid: 'This ticket is not valid (cancelled, refunded or unpaid).',
+      checked_in: 'errors.checkIn.checkedIn',
+      already_checked_in: 'errors.checkIn.alreadyCheckedIn',
+      not_valid: 'errors.checkIn.notValid',
     };
     return {
       result: outcome.result,
-      message: messages[outcome.result],
+      message: this.i18n.translate(lang, messages[outcome.result]),
       ticket,
       collectMinor: outcome.collectMinor,
     };

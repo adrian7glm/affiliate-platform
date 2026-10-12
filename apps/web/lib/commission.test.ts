@@ -47,7 +47,9 @@ describe('tierProgressSentence', () => {
 
   it('speaks English too', () => {
     expect(
-      plain(tierProgressSentence(progress({ paidSales: 3, salesToNextTier: 3 }), 'tiered', getT('en'))),
+      plain(
+        tierProgressSentence(progress({ paidSales: 3, salesToNextTier: 3 }), 'tiered', getT('en')),
+      ),
     ).toBe('3 more sales to reach 15%');
   });
 
@@ -100,10 +102,13 @@ describe('tierRows', () => {
     ]);
     expect(tierRows([{ fromSale: 1, rateBps: 1000 }], ro)[0]?.label).toBe('Toate vânzările');
     expect(
-      tierRows([
-        { fromSale: 1, rateBps: 1000 },
-        { fromSale: 2, rateBps: 2000 },
-      ], ro)[0]?.label,
+      tierRows(
+        [
+          { fromSale: 1, rateBps: 1000 },
+          { fromSale: 2, rateBps: 2000 },
+        ],
+        ro,
+      )[0]?.label,
     ).toBe('Vânzarea 1');
   });
 });

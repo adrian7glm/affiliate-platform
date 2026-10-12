@@ -107,9 +107,7 @@ export function JoinFlow({ token }: { token: string }) {
             <h1 className="mt-1 text-3xl font-bold">
               {t('auth.join.title', { tenant: preview.data.tenantName })}
             </h1>
-            <p className="mt-2 text-muted">
-              {t('auth.join.intro')}
-            </p>
+            <p className="mt-2 text-muted">{t('auth.join.intro')}</p>
           </div>
 
           {preview.data.expired ? (
@@ -130,7 +128,13 @@ export function JoinFlow({ token }: { token: string }) {
                   maxLength={120}
                 />
                 {error ? <Alert tone="error">{error}</Alert> : null}
-                <Button type="submit" size="lg" block loading={busy} loadingText={t('auth.join.accepting')}>
+                <Button
+                  type="submit"
+                  size="lg"
+                  block
+                  loading={busy}
+                  loadingText={t('auth.join.accepting')}
+                >
                   {t('auth.join.accept')}
                 </Button>
                 {me ? (

@@ -49,7 +49,12 @@ export function SlotPicker({
           {days.map((day, index) => {
             const label = formatDayLabel(day, t.lang);
             const hasSeats = (byDay.get(day) ?? []).some((s) => s.available > 0);
-            const top = index === 0 ? t.t('public.today') : index === 1 ? t.t('public.tomorrow') : label.weekday;
+            const top =
+              index === 0
+                ? t.t('public.today')
+                : index === 1
+                  ? t.t('public.tomorrow')
+                  : label.weekday;
             return (
               <label key={day} className="choice">
                 <input
@@ -81,7 +86,9 @@ export function SlotPicker({
         <fieldset className="min-w-0" aria-describedby={error ? 'slot-error' : undefined}>
           <legend className="mb-2 text-lg font-semibold">{t.t('public.chooseTime')}</legend>
           {daySlots.length === 0 ? (
-            <p className="rounded-2xl bg-surface-2 p-4 text-muted">{t.t('public.noDeparturesOnDay')}</p>
+            <p className="rounded-2xl bg-surface-2 p-4 text-muted">
+              {t.t('public.noDeparturesOnDay')}
+            </p>
           ) : (
             <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3">
               {daySlots.map((slot) => {

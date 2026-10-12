@@ -105,13 +105,13 @@ export function AffiliateHome() {
           className="flex min-h-28 flex-col justify-between rounded-3xl border-2 border-line-strong bg-surface p-4 hover:bg-surface-2"
         >
           <IconQr size={32} />
-          <span className="text-left text-lg font-bold leading-tight">{t('affiliate.home.showQr')}</span>
+          <span className="text-left text-lg font-bold leading-tight">
+            {t('affiliate.home.showQr')}
+          </span>
         </Link>
       </nav>
 
-      {home.stale ? (
-        <Alert tone="warning">{t('affiliate.offlineStale')}</Alert>
-      ) : null}
+      {home.stale ? <Alert tone="warning">{t('affiliate.offlineStale')}</Alert> : null}
       {home.error && !data ? (
         <Alert
           tone="error"
@@ -215,7 +215,11 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
           <div className="rounded-2xl bg-surface-2 p-3">
             <dt className="text-muted">{t('affiliate.home.approved')}</dt>
             <dd className="text-base font-semibold">
-              <MoneyText amountMinor={data.earnings.approvedMinor} currency={currency} lang={lang} />
+              <MoneyText
+                amountMinor={data.earnings.approvedMinor}
+                currency={currency}
+                lang={lang}
+              />
             </dd>
             <dd className="text-xs text-muted">{t('affiliate.home.approvedHint')}</dd>
           </div>
@@ -287,9 +291,7 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
                 );
               })}
             </ol>
-            <p className="mt-3 text-sm text-muted">
-              {t('affiliate.home.tierResets')}
-            </p>
+            <p className="mt-3 text-sm text-muted">{t('affiliate.home.tierResets')}</p>
           </>
         ) : null}
       </Card>
@@ -336,9 +338,7 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
         }
       >
         {data.recentBookings.length === 0 ? (
-          <p className="text-muted">
-            {t('affiliate.home.noBookings')}
-          </p>
+          <p className="text-muted">{t('affiliate.home.noBookings')}</p>
         ) : (
           <ul className="divide-y divide-line">
             {data.recentBookings.slice(0, showAll ? undefined : 5).map((booking) => (
@@ -359,11 +359,7 @@ function Dashboard({ data }: { data: AffiliateHomeDto }) {
 }
 
 /** "1–3", "4–10", "11+" for the tier ladder. */
-function tierShortLabel(
-  tiers: { fromSale: number }[],
-  index: number,
-  { t }: Translator,
-): string {
+function tierShortLabel(tiers: { fromSale: number }[], index: number, { t }: Translator): string {
   const sorted = [...tiers].sort((a, b) => a.fromSale - b.fromSale);
   const tier = sorted[index]!;
   const next = sorted[index + 1];

@@ -518,7 +518,6 @@ function Preview({ draft, currency }: { draft: Draft; currency: string }) {
             <p className="mt-2">
               {t('catalog.settings.sampleFromBefore')}{' '}
               <strong>{formatMoney(12000, currency, lang)}</strong>
-              {t('catalog.settings.sampleFromAfter')}
             </p>
             <p className="mt-1 text-sm font-semibold text-brand-strong underline">
               {t('catalog.settings.sampleDetails')}

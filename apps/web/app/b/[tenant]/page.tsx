@@ -38,7 +38,9 @@ export default async function TenantPage({ params, searchParams }: Props) {
   if (!tenant.ok) {
     return (
       <PublicShell lang={lang} path={path}>
-        <PublicMessage title={tenant.notFound ? t('public.tenantNotFound') : t('common.errorGeneric')}>
+        <PublicMessage
+          title={tenant.notFound ? t('public.tenantNotFound') : t('common.errorGeneric')}
+        >
           {!tenant.notFound ? (
             <a href={withLang(path, lang)} className={buttonClasses('secondary')}>
               {t('common.retry')}

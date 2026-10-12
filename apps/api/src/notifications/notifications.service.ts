@@ -112,9 +112,14 @@ export class NotificationsService {
         .insert(notifications)
         .values({ ...base, status: 'failed', lastError: failure.message });
       throw failure.permanent
-        ? new DomainError('errors.notifications.invalidRecipient', HttpStatus.BAD_REQUEST, undefined, {
-            to: message.to,
-          })
+        ? new DomainError(
+            'errors.notifications.invalidRecipient',
+            HttpStatus.BAD_REQUEST,
+            undefined,
+            {
+              to: message.to,
+            },
+          )
         : new DomainError('errors.notifications.unavailable', HttpStatus.SERVICE_UNAVAILABLE);
     }
   }

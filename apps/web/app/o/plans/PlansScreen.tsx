@@ -7,26 +7,30 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
 import { ChoiceGroup, Field, INPUT_CLASSES } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconPlus, IconX } from '@/components/icons';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip } from '@/components/StatusChip';
-import { PLAN_MODE_EXPLANATION, tierRows } from '@/lib/commission';
+import { planModeExplanation, tierRows } from '@/lib/commission';
 import { operatorApi } from '@/lib/endpoints';
 import { bpsToPercentInput, formatBps, percentToBps } from '@/lib/format';
 import { newTierRow, validateTiers, type TierDraft } from '@/lib/plans';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import type { MessageKey } from '@/lib/i18n';
+import { errorMessage, useApi } from '@/lib/useApi';
 
 type Kind = 'fixed' | 'tiered';
 type Mode = 'marginal' | 'retroactive';
 type Basis = 'gross' | 'net_of_tax';
 
-const BASIS_LABEL: Record<Basis, string> = {
-  gross: 'din prețul plătit (cu TVA)',
-  net_of_tax: 'din prețul fără TVA',
+const BASIS_LABEL: Record<Basis, MessageKey> = {
+  gross: 'operator.plans.basisGrossShort',
+  net_of_tax: 'operator.plans.basisNetShort',
 };
 
 export function PlansScreen() {
+  const tr = useT();
+  const { t, tp } = tr;
   const plans = useApi('operator-plans', (signal) => operatorApi.plans({ signal }));
   const [editing, setEditing] = useState<CommissionPlanDto | null>(null);
   const [archiving, setArchiving] = useState<CommissionPlanDto | null>(null);
@@ -46,7 +50,7 @@ export function PlansScreen() {
   async function makeDefault(plan: CommissionPlanDto) {
     try {
       upsert(await operatorApi.makeDefaultPlan(plan.id));
-      setNotice(`„${plan.name}” este acum planul implicit.`);
+      setNotice(t('operator.plans.madeDefault', { name: plan.name }));
     } catch (err) {
       setNotice(null);
       throw err;
@@ -55,21 +59,18 @@ export function PlansScreen() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader
-        title="Planuri de comision"
-        description="Cât primesc afiliații din fiecare rezervare plătită. Planul implicit se aplică tuturor afiliaților fără alt plan."
-      />
+      <PageHeader title={t('operator.plans.title')} description={t('operator.plans.description')} />
 
       {notice ? <Alert tone="success">{notice}</Alert> : null}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Card title="Plan nou" className="order-2 xl:order-1">
+        <Card title={t('operator.plans.newPlan')} className="order-2 xl:order-1">
           <PlanForm onSaved={(plan) => upsert(plan)} />
         </Card>
 
         <section aria-labelledby="plans-title" className="order-1 flex flex-col gap-3 xl:order-2">
           <h2 id="plans-title" className="text-xl font-semibold">
-            Planurile tale
+            {t('operator.plans.yourPlans')}
           </h2>
           {plans.loading && !plans.data ? <LoadingBlock /> : null}
           {plans.error ? (
@@ -77,15 +78,15 @@ export function PlansScreen() {
               tone="error"
               action={
                 <Button variant="secondary" onClick={plans.reload}>
-                  Încearcă din nou
+                  {t('common.retry')}
                 </Button>
               }
             >
-              {errorMessageRo(plans.error)}
+              {errorMessage(plans.error, tr)}
             </Alert>
           ) : null}
           {plans.data?.length === 0 ? (
-            <p className="text-muted">Nu ai încă niciun plan. Creează primul plan.</p>
+            <p className="text-muted">{t('operator.plans.empty')}</p>
           ) : null}
           <ul className="flex flex-col gap-3">
             {(plans.data ?? []).map((plan) => (
@@ -105,8 +106,8 @@ export function PlansScreen() {
       <Dialog
         open={!!editing}
         onClose={() => setEditing(null)}
-        title={editing ? `Editează: ${editing.name}` : ''}
-        description="Comisioanele deja calculate nu se schimbă. Luna în curs se închide cu regulile cu care a început fiecare afiliat; noile reguli se văd complet de luna viitoare."
+        title={editing ? t('operator.plans.editTitle', { name: editing.name }) : ''}
+        description={t('operator.plans.editDescription')}
       >
         {editing ? (
           <PlanForm
@@ -114,7 +115,7 @@ export function PlansScreen() {
             plan={editing}
             onSaved={(plan) => {
               upsert(plan, editing.id);
-              setNotice(`Planul „${plan.name}” a fost actualizat.`);
+              setNotice(t('operator.plans.updated', { name: plan.name }));
               setEditing(null);
             }}
           />
@@ -124,12 +125,16 @@ export function PlansScreen() {
       <Dialog
         open={!!archiving}
         onClose={() => setArchiving(null)}
-        title={archiving ? `Retragi planul „${archiving.name}”?` : ''}
+        title={archiving ? t('operator.plans.archiveTitle', { name: archiving.name }) : ''}
         description={
           archiving
             ? archiving.affiliateCount > 0
-              ? `${affiliatesText(archiving.affiliateCount)} vor trece pe planul implicit${defaultPlan ? ` („${defaultPlan.name}”)` : ''}. Comisioanele deja câștigate rămân neschimbate.`
-              : 'Nu îl mai poți alege pentru afiliați. Comisioanele deja câștigate rămân neschimbate.'
+              ? defaultPlan
+                ? tp('operator.plans.archiveMovesTo', archiving.affiliateCount, {
+                    plan: defaultPlan.name,
+                  })
+                : tp('operator.plans.archiveMoves', archiving.affiliateCount)
+              : t('operator.plans.archiveUnused')
             : undefined
         }
       >
@@ -141,8 +146,8 @@ export function PlansScreen() {
               plans.setData((prev) => (prev ?? []).filter((p) => p.id !== archiving.id));
               setNotice(
                 moved > 0
-                  ? `Planul „${archiving.name}” a fost retras; ${affiliatesText(moved)} au trecut pe planul implicit.`
-                  : `Planul „${archiving.name}” a fost retras.`,
+                  ? tp('operator.plans.archivedMoved', moved, { name: archiving.name })
+                  : t('operator.plans.archived', { name: archiving.name }),
               );
               setArchiving(null);
             }}
@@ -151,10 +156,6 @@ export function PlansScreen() {
       </Dialog>
     </div>
   );
-}
-
-function affiliatesText(n: number): string {
-  return n === 1 ? '1 afiliat' : `${n} afiliați`;
 }
 
 function ArchiveConfirm({
@@ -166,6 +167,8 @@ function ArchiveConfirm({
   onCancel: () => void;
   onArchived: (moved: number) => void;
 }) {
+  const tr = useT();
+  const { t } = tr;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -173,12 +176,12 @@ function ArchiveConfirm({
       {error ? <Alert tone="error">{error}</Alert> : null}
       <div className="grid gap-2 sm:grid-cols-2">
         <Button variant="secondary" onClick={onCancel}>
-          Renunță
+          {t('common.cancel')}
         </Button>
         <Button
           variant="danger"
           loading={busy}
-          loadingText="Se retrage…"
+          loadingText={t('operator.plans.archiving')}
           onClick={async () => {
             setBusy(true);
             setError(null);
@@ -186,12 +189,12 @@ function ArchiveConfirm({
               const result = await operatorApi.archivePlan(plan.id);
               onArchived(result.affiliatesMoved);
             } catch (err) {
-              setError(errorMessageRo(err));
+              setError(errorMessage(err, tr));
               setBusy(false);
             }
           }}
         >
-          Retrage planul
+          {t('operator.plans.archiveConfirm')}
         </Button>
       </div>
     </div>
@@ -209,6 +212,8 @@ function PlanCard({
   onMakeDefault: () => Promise<void>;
   onArchive: () => void;
 }) {
+  const tr = useT();
+  const { t, tp, lang } = tr;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -219,26 +224,32 @@ function PlanCard({
             <h3 className="text-lg font-semibold">{plan.name}</h3>
             <p className="text-sm text-muted">
               {plan.kind === 'fixed'
-                ? 'Procent fix'
-                : `Progresiv, ${plan.mode === 'retroactive' ? 'retroactiv' : 'pe niveluri'}`}{' '}
-              · {BASIS_LABEL[plan.basis]}
+                ? t('operator.plans.kindFixed')
+                : plan.mode === 'retroactive'
+                  ? t('operator.plans.kindRetroactive')
+                  : t('operator.plans.kindMarginal')}{' '}
+              · {t(BASIS_LABEL[plan.basis])}
             </p>
           </div>
-          {plan.isDefault ? <StatusChip tone="brand">Implicit</StatusChip> : null}
+          {plan.isDefault ? (
+            <StatusChip tone="brand">{t('operator.plans.default')}</StatusChip>
+          ) : null}
         </div>
         {plan.kind === 'fixed' ? (
-          <p className="text-2xl font-bold">{formatBps(plan.rateBps ?? 0)}</p>
+          <p className="text-2xl font-bold">{formatBps(plan.rateBps ?? 0, lang)}</p>
         ) : (
           <table className="w-full border-collapse text-left text-sm">
-            <caption className="visually-hidden">Nivelurile planului {plan.name}</caption>
+            <caption className="visually-hidden">
+              {t('operator.plans.tiersCaption', { name: plan.name })}
+            </caption>
             <tbody>
-              {tierRows(plan.tiers ?? []).map((row) => (
+              {tierRows(plan.tiers ?? [], tr).map((row) => (
                 <tr key={row.label} className="border-b border-line last:border-0">
                   <th scope="row" className="py-1.5 font-normal">
                     {row.label}
                   </th>
                   <td className="py-1.5 text-right font-semibold tabular-nums">
-                    {formatBps(row.rateBps)}
+                    {formatBps(row.rateBps, lang)}
                   </td>
                 </tr>
               ))}
@@ -247,42 +258,44 @@ function PlanCard({
         )}
         <p className="text-sm text-muted">
           {plan.isDefault
-            ? `Se aplică afiliaților fără alt plan${plan.affiliateCount > 0 ? ` și încă ${affiliatesText(plan.affiliateCount)}` : ''}.`
+            ? plan.affiliateCount > 0
+              ? tp('operator.plans.appliesDefaultPlus', plan.affiliateCount)
+              : t('operator.plans.appliesDefault')
             : plan.affiliateCount > 0
-              ? `Folosit de ${affiliatesText(plan.affiliateCount)}.`
-              : 'Nu e folosit încă de niciun afiliat.'}
+              ? tp('operator.plans.usedBy', plan.affiliateCount)
+              : t('operator.plans.unused')}
         </p>
         {error ? <Alert tone="error">{error}</Alert> : null}
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={onEdit}>
-            Editează
+            {t('common.edit')}
           </Button>
           {plan.isDefault ? null : (
             <>
               <Button
                 variant="secondary"
                 loading={busy}
-                loadingText="Se salvează…"
+                loadingText={t('common.saving')}
                 onClick={async () => {
                   setBusy(true);
                   setError(null);
                   try {
                     await onMakeDefault();
                   } catch (err) {
-                    setError(errorMessageRo(err));
+                    setError(errorMessage(err, tr));
                   } finally {
                     setBusy(false);
                   }
                 }}
               >
-                Fă-l implicit
+                {t('operator.plans.makeDefault')}
               </Button>
               <Button
                 variant="ghost"
                 className="text-danger-fg hover:bg-danger-soft"
                 onClick={onArchive}
               >
-                Retrage
+                {t('operator.plans.archive')}
               </Button>
             </>
           )}
@@ -300,6 +313,8 @@ function PlanForm({
   plan?: CommissionPlanDto;
   onSaved: (plan: CommissionPlanDto) => void;
 }) {
+  const tr = useT();
+  const { t } = tr;
   const editing = !!plan;
   const [name, setName] = useState(plan?.name ?? '');
   const [kind, setKind] = useState<Kind>(plan?.kind ?? 'tiered');
@@ -333,14 +348,14 @@ function PlanForm({
     setError(null);
     setSuccess(null);
     const next: Record<string, string> = {};
-    if (!name.trim()) next.name = 'Dă un nume planului, ex. „Recepții 2026”.';
+    if (!name.trim()) next.name = t('operator.plans.nameRequired');
     let body: CreatePlanBody | null = null;
     if (kind === 'fixed') {
       const rateBps = percentToBps(rate);
-      if (rateBps === null) next.rate = 'Scrie un procent între 0 și 100, ex. 12,5.';
+      if (rateBps === null) next.rate = t('operator.plans.percentInvalid');
       else body = { kind: 'fixed', name: name.trim(), rateBps, basis, isDefault };
     } else {
-      const result = validateTiers(rows);
+      const result = validateTiers(rows, tr);
       Object.assign(next, result.errors);
       if (result.general) next.tiers = result.general;
       if (result.tiers)
@@ -356,12 +371,12 @@ function PlanForm({
       } else {
         const created = await operatorApi.createPlan(body);
         onSaved(created);
-        setSuccess(`Planul „${created.name}” a fost creat.`);
+        setSuccess(t('operator.plans.created', { name: created.name }));
         setName('');
         setIsDefault(false);
       }
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, tr));
     } finally {
       setBusy(false);
     }
@@ -370,7 +385,7 @@ function PlanForm({
   return (
     <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-5">
       <Field
-        label="Numele planului"
+        label={t('operator.plans.name')}
         name="name"
         autoComplete="off"
         required
@@ -381,7 +396,7 @@ function PlanForm({
       />
 
       <ChoiceGroup<Kind>
-        legend="Tip"
+        legend={t('operator.plans.type')}
         name="kind"
         value={kind}
         onChange={setKind}
@@ -389,20 +404,20 @@ function PlanForm({
         options={[
           {
             value: 'fixed',
-            label: 'Procent fix',
-            description: 'Același procent la fiecare vânzare.',
+            label: t('operator.plans.fixed'),
+            description: t('operator.plans.fixedDescription'),
           },
           {
             value: 'tiered',
-            label: 'Progresiv',
-            description: 'Procentul crește cu vânzările din lună.',
+            label: t('operator.plans.tiered'),
+            description: t('operator.plans.tieredDescription'),
           },
         ]}
       />
 
       {kind === 'fixed' ? (
         <Field
-          label="Procent"
+          label={t('operator.plans.percent')}
           name="rate"
           inputMode="decimal"
           autoComplete="off"
@@ -410,22 +425,19 @@ function PlanForm({
           value={rate}
           onChange={(e) => setRate(e.target.value)}
           error={errors.rate}
-          hint="Ex. 10 înseamnă 10% din fiecare rezervare."
+          hint={t('operator.plans.percentHint')}
         />
       ) : (
         <>
           <fieldset className="min-w-0">
-            <legend className="mb-1.5 font-semibold">Niveluri</legend>
-            <p className="mb-3 text-sm text-muted">
-              Numărul vânzării plătite din lună de la care se aplică procentul. Primul nivel începe
-              de la vânzarea 1.
-            </p>
+            <legend className="mb-1.5 font-semibold">{t('operator.plans.tiers')}</legend>
+            <p className="mb-3 text-sm text-muted">{t('operator.plans.tiersHelp')}</p>
             <ol className="flex flex-col gap-3">
               {rows.map((row, index) => (
                 <li key={row.key} className="rounded-2xl border border-line p-3">
                   <div className="flex items-end gap-2">
                     <label className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="text-sm font-semibold">De la vânzarea nr.</span>
+                      <span className="text-sm font-semibold">{t('operator.plans.fromSale')}</span>
                       <input
                         className={INPUT_CLASSES}
                         inputMode="numeric"
@@ -440,7 +452,9 @@ function PlanForm({
                       />
                     </label>
                     <label className="flex w-28 flex-col gap-1">
-                      <span className="text-sm font-semibold">Procent (%)</span>
+                      <span className="text-sm font-semibold">
+                        {t('operator.plans.percentColumn')}
+                      </span>
                       <input
                         className={INPUT_CLASSES}
                         inputMode="decimal"
@@ -456,7 +470,7 @@ function PlanForm({
                       className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl text-muted hover:bg-surface-2 disabled:invisible"
                       onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
                       disabled={index === 0}
-                      aria-label={`Șterge nivelul ${index + 1}`}
+                      aria-label={t('operator.plans.removeTier', { number: index + 1 })}
                     >
                       <IconX />
                     </button>
@@ -482,25 +496,25 @@ function PlanForm({
               className="mt-2"
               disabled={rows.length >= 20}
             >
-              Adaugă nivel
+              {t('operator.plans.addTier')}
             </Button>
           </fieldset>
 
           <ChoiceGroup<Mode>
-            legend="Cum se aplică"
+            legend={t('operator.plans.mode')}
             name="mode"
             value={mode}
             onChange={setMode}
             options={[
               {
                 value: 'marginal',
-                label: 'Pe niveluri',
-                description: PLAN_MODE_EXPLANATION.marginal,
+                label: t('operator.plans.marginal'),
+                description: planModeExplanation(tr, 'marginal'),
               },
               {
                 value: 'retroactive',
-                label: 'Retroactiv',
-                description: PLAN_MODE_EXPLANATION.retroactive,
+                label: t('operator.plans.retroactive'),
+                description: planModeExplanation(tr, 'retroactive'),
               },
             ]}
           />
@@ -508,17 +522,21 @@ function PlanForm({
       )}
 
       <ChoiceGroup<Basis>
-        legend="Se calculează"
+        legend={t('operator.plans.basis')}
         name="basis"
         value={basis}
         onChange={setBasis}
         gridClassName="grid gap-2 sm:grid-cols-2"
         options={[
-          { value: 'gross', label: 'Din prețul plătit', description: 'Inclusiv TVA' },
+          {
+            value: 'gross',
+            label: t('operator.plans.basisGross'),
+            description: t('operator.plans.basisGrossDescription'),
+          },
           {
             value: 'net_of_tax',
-            label: 'Din prețul fără TVA',
-            description: 'TVA-ul se scade întâi',
+            label: t('operator.plans.basisNet'),
+            description: t('operator.plans.basisNetDescription'),
           },
         ]}
       />
@@ -531,14 +549,14 @@ function PlanForm({
             checked={isDefault}
             onChange={(e) => setIsDefault(e.target.checked)}
           />
-          <span>Plan implicit pentru afiliații fără alt plan</span>
+          <span>{t('operator.plans.isDefault')}</span>
         </label>
       )}
 
       {error ? <Alert tone="error">{error}</Alert> : null}
       {success ? <Alert tone="success">{success}</Alert> : null}
-      <Button type="submit" size="lg" loading={busy} loadingText="Se salvează…">
-        {editing ? 'Salvează noile reguli' : 'Creează planul'}
+      <Button type="submit" size="lg" loading={busy} loadingText={t('common.saving')}>
+        {editing ? t('operator.plans.saveRules') : t('operator.plans.create')}
       </Button>
     </form>
   );

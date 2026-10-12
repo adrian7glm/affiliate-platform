@@ -9,11 +9,17 @@ import { isActivePath } from '@/components/BottomNav';
 import { Button, ButtonLink } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { useT } from '@/components/I18nProvider';
-import { IconGauge, IconGlobe, IconLink, IconLogout, IconMenu, IconPercent } from '@/components/icons';
+import {
+  IconGauge,
+  IconGlobe,
+  IconLink,
+  IconLogout,
+  IconMenu,
+  IconPercent,
+} from '@/components/icons';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LoadingBlock } from '@/components/Spinner';
 import { isApiError } from '@/lib/api';
-import { APP_NAME } from '@/lib/brand';
 import { authApi } from '@/lib/endpoints';
 import { clearSession, getCachedMe, getToken, setCachedMe } from '@/lib/session';
 import type { MessageKey } from '@/lib/i18n';
@@ -202,7 +208,7 @@ function AdminFrame({
           <div className="sticky top-0 flex max-h-dvh flex-col gap-5 overflow-y-auto p-4">
             <div>
               <p className="text-sm text-muted">{t('admin.shell.area')}</p>
-              <p className="text-lg font-bold">{APP_NAME}</p>
+              <p className="text-lg font-bold">{t('common.appName')}</p>
             </div>
             <nav aria-label={t('admin.shell.sections')}>
               <NavList />

@@ -25,7 +25,7 @@ export class IdentityService {
     private readonly clock: Clock,
   ) {}
 
-  async requestOtp(destination: string): Promise<void> {
+  async requestOtp(destination: string, locale = 'en'): Promise<void> {
     const now = this.clock.now();
     const [recent] = await this.db
       .select({ count: sql<number>`count(*)::int` })
@@ -45,11 +45,10 @@ export class IdentityService {
       codeHash: hashOtp(this.config.APP_SECRET, destination, code),
       expiresAt: new Date(now.getTime() + OTP_TTL_MS),
     });
-    // Operator and affiliate screens are in Romanian, so their login codes are too.
     await this.notifications.sendNow({
       to: destination,
       template: 'login_code',
-      locale: 'ro',
+      locale,
       params: { code, webHost: new URL(this.config.WEB_URL).hostname },
     });
   }

@@ -89,10 +89,3 @@ export function safeNextPath(next: string | null | undefined): string | null {
 
 /** "Administrator" / "Staff" / "Affiliate" in the page language. */
 export const roleLabel = (t: Translator, role: Role): string => t.tk(`auth.role.${role}`);
-
-/** @deprecated Romanian only; use `roleLabel(t, role)`. Kept until every caller has moved. */
-export const ROLE_LABELS_RO: Record<Role, string> = {
-  owner: 'Administrator',
-  staff: 'Personal',
-  affiliate: 'Afiliat',
-};

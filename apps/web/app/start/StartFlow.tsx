@@ -14,7 +14,6 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { MoneyText } from '@/components/MoneyText';
 import { LoadingBlock } from '@/components/Spinner';
 import { isApiError } from '@/lib/api';
-import { APP_NAME } from '@/lib/brand';
 import { authApi } from '@/lib/endpoints';
 import { formatBps, formatMoney, slugify } from '@/lib/format';
 import { signupApi } from '@/lib/platform-endpoints';
@@ -39,7 +38,11 @@ type Plan = SignupOptionsDto['plans'][number];
 const SLOT = '\u0000';
 
 /** Puts `node` where the `{name}` variable sits in an already translated sentence. */
-function withNode(translate: (vars: Record<string, string>) => string, name: string, node: ReactNode) {
+function withNode(
+  translate: (vars: Record<string, string>) => string,
+  name: string,
+  node: ReactNode,
+) {
   const parts = translate({ [name]: SLOT }).split(SLOT);
   return parts.map((part, i) => (
     <Fragment key={i}>
@@ -152,7 +155,7 @@ export function StartFlow({ token }: { token: string | null }) {
       <div className="flex items-center justify-between gap-2">
         <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
           <img src="/icons/icon.svg" alt="" width={32} height={32} className="rounded-xl" />
-          {APP_NAME}
+          {t('common.appName')}
         </Link>
         <LanguageSwitcher />
       </div>
@@ -510,8 +513,7 @@ function BusinessForm({
           }))}
         />
       ) : null}
-      <Button type="submit" size="lg" block loading={busy} loadingText={t('signup.form.creating')}
-      >
+      <Button type="submit" size="lg" block loading={busy} loadingText={t('signup.form.creating')}>
         {t('signup.form.submit')}
       </Button>
       <p className="text-center text-sm text-muted">

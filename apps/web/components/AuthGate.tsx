@@ -199,7 +199,10 @@ function SuspendedNotice({ session }: { session: SessionValue }) {
   );
   return (
     <main className="page-x mx-auto flex max-w-xl flex-col gap-4 py-10">
-      <Alert tone="error" title={t('common.session.suspendedTitle', { name: session.membership.tenantName })}>
+      <Alert
+        tone="error"
+        title={t('common.session.suspendedTitle', { name: session.membership.tenantName })}
+      >
         {session.membership.role === 'affiliate'
           ? t('common.session.suspendedAffiliate')
           : t('common.session.suspendedOperator')}

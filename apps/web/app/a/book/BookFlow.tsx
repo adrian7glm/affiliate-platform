@@ -1,6 +1,12 @@
 'use client';
 
-import { localeSchema, type CheckoutResultDto, type Locale, type ProductDto, type SlotDto } from '@ap/contracts';
+import {
+  localeSchema,
+  type CheckoutResultDto,
+  type Locale,
+  type ProductDto,
+  type SlotDto,
+} from '@ap/contracts';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Alert } from '@/components/Alert';
@@ -157,8 +163,7 @@ export function BookFlow() {
     const cleanPhone = phone.trim() ? normalizePhone(phone) : '';
     const cleanEmail = email.trim() ? normalizeEmail(email) : '';
     if (!name.trim()) errors.name = t('affiliate.book.nameRequired');
-    if (cleanPhone && !isValidPhone(cleanPhone))
-      errors.phone = t('affiliate.book.phoneInvalid');
+    if (cleanPhone && !isValidPhone(cleanPhone)) errors.phone = t('affiliate.book.phoneInvalid');
     if (cleanEmail && !isValidEmail(cleanEmail)) errors.email = t('affiliate.book.emailInvalid');
     if (!cleanPhone && !cleanEmail) errors.contact = t('affiliate.book.contactRequired');
     setCustomerErrors(errors);
@@ -239,9 +244,7 @@ export function BookFlow() {
   return (
     <div className="page-x mx-auto flex max-w-xl flex-col gap-4">
       <header className="pt-4">
-        <p className="font-semibold text-muted">
-          {t('affiliate.book.header', { step, total: 3 })}
-        </p>
+        <p className="font-semibold text-muted">{t('affiliate.book.header', { step, total: 3 })}</p>
         <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold outline-none">
           {t(STEP_KEYS[step - 1]!)}
         </h1>
@@ -253,9 +256,7 @@ export function BookFlow() {
               className={`h-1.5 rounded-full ${i + 1 <= step ? 'bg-brand' : 'bg-surface-2'}`}
             >
               <span className="visually-hidden">
-                {i + 1 < step
-                  ? t('affiliate.book.stepDone', { step: t(key) })
-                  : t(key)}
+                {i + 1 < step ? t('affiliate.book.stepDone', { step: t(key) }) : t(key)}
               </span>
             </li>
           ))}
@@ -405,7 +406,12 @@ export function BookFlow() {
                     .map((p) => `${quantities[p.id]} × ${p.label}`)
                     .join(', ')}
                 </span>
-                <MoneyText amountMinor={total} currency={currency} lang={lang} className="font-bold" />
+                <MoneyText
+                  amountMinor={total}
+                  currency={currency}
+                  lang={lang}
+                  className="font-bold"
+                />
               </span>
             }
           />
@@ -505,9 +511,7 @@ export function BookFlow() {
                   ]}
                 />
               ) : (
-                <p className="text-sm text-muted">
-                  {t('affiliate.book.payOnlineOnly')}
-                </p>
+                <p className="text-sm text-muted">{t('affiliate.book.payOnlineOnly')}</p>
               )}
             </div>
           </Card>
@@ -515,7 +519,13 @@ export function BookFlow() {
           {submitError ? <Alert tone="error">{submitError}</Alert> : null}
 
           <StickyActions aboveNav>
-            <Button type="submit" size="lg" block loading={busy} loadingText={t('affiliate.book.booking')}>
+            <Button
+              type="submit"
+              size="lg"
+              block
+              loading={busy}
+              loadingText={t('affiliate.book.booking')}
+            >
               {t('affiliate.book.submit', { total: formatMoney(total, currency, lang) })}
             </Button>
           </StickyActions>

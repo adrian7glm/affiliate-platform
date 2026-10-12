@@ -125,7 +125,9 @@ export function SetupChecklist() {
                         className={`block font-semibold ${step.done ? 'text-muted line-through' : ''}`}
                       >
                         {info.label}
-                        <span className="visually-hidden">{step.done ? ` ${t('operator.setup.stepDone')}` : ''}</span>
+                        <span className="visually-hidden">
+                          {step.done ? ` ${t('operator.setup.stepDone')}` : ''}
+                        </span>
                       </span>
                       {isNext ? (
                         <>

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import {
   type AdminOverviewDto,
   type AdminOverviewQuery,
@@ -18,8 +18,10 @@ import {
   updateTenantBillingBody,
   updateTenantStatusBody,
 } from '@ap/contracts';
+import type { Request } from 'express';
 import { type AuthUser, AuthGuard, CurrentUser } from '../common/auth';
 import { ZodBody, ZodQuery } from '../common/validation';
+import { I18nService } from '../i18n/i18n.service';
 import { AdminService } from './admin.service';
 import { OnboardingService } from './onboarding.service';
 import { PlatformAdminGuard } from './platform-admin.guard';
@@ -33,6 +35,7 @@ export class AdminController {
     private readonly admin: AdminService,
     private readonly subscriptions: SubscriptionsService,
     private readonly onboarding: OnboardingService,
+    private readonly i18n: I18nService,
   ) {}
 
   @Get('overview')
@@ -94,8 +97,10 @@ export class AdminController {
   invite(
     @CurrentUser() user: AuthUser,
     @ZodBody(createOperatorInviteBody) body: CreateOperatorInviteBody,
+    @Req() request: Request,
   ): Promise<OperatorInviteDto> {
-    return this.onboarding.createInvite(body, user.id);
+    // The invitation is written in the language the admin is using.
+    return this.onboarding.createInvite(body, user.id, this.i18n.langOf(request));
   }
 
   @Post('invites/:id/revoke')

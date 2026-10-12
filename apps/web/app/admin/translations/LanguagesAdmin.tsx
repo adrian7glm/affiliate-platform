@@ -138,7 +138,10 @@ export function LanguagesAdmin() {
                       aria-valuenow={percent}
                       aria-label={t('translations.progressLabel')}
                     >
-                      <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
+                      <div
+                        className="h-full rounded-full bg-brand"
+                        style={{ width: `${percent}%` }}
+                      />
                     </div>
                     {language.overrides ? (
                       <p className="mt-1 text-sm text-muted">
@@ -152,7 +155,9 @@ export function LanguagesAdmin() {
                     </ButtonLink>
                     <Button
                       variant="secondary"
-                      disabled={busy === language.code || (language.code === 'en' && language.enabled)}
+                      disabled={
+                        busy === language.code || (language.code === 'en' && language.enabled)
+                      }
                       onClick={() => toggle(language)}
                     >
                       {language.enabled ? t('translations.hide') : t('translations.show')}

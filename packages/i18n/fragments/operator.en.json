@@ -18,12 +18,7 @@
     "area": "Management",
     "sections": "Sections",
     "menu": "Menu",
-    "tenant": "Operator",
-    "role": {
-      "owner": "Administrator",
-      "staff": "Staff",
-      "affiliate": "Affiliate"
-    }
+    "tenant": "Operator"
   },
   "dashboard": {
     "title": "Dashboard",

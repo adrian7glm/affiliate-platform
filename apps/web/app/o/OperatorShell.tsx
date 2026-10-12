@@ -26,6 +26,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { DEFAULT_TIMEZONE } from '@/lib/dates';
 import type { MessageKey } from '@/lib/i18n';
 import { operatorApi } from '@/lib/endpoints';
+import { roleLabel } from '@/lib/session';
 import { useApi } from '@/lib/useApi';
 import { OperatorContext, type OperatorContextValue } from './OperatorContext';
 
@@ -40,7 +41,12 @@ const NAV = [
   { href: '/o/sources', label: 'operator.nav.sources', icon: <IconRefresh /> },
   { href: '/o/settings', label: 'operator.nav.settings', icon: <IconSettings /> },
   { href: '/o/billing', label: 'operator.nav.billing', icon: <IconWallet /> },
-] as const satisfies readonly { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }[];
+] as const satisfies readonly {
+  href: string;
+  label: MessageKey;
+  icon: ReactNode;
+  exact?: boolean;
+}[];
 
 export function OperatorShell({ children }: { children: ReactNode }) {
   return (
@@ -101,7 +107,8 @@ function TenantSwitcher() {
 
 function OperatorFrame({ children }: { children: ReactNode }) {
   const { me, membership, logout } = useSession();
-  const { t, tk } = useT();
+  const i18n = useT();
+  const { t } = i18n;
   const [menuOpen, setMenuOpen] = useState(false);
   const dashboard = useApi(`operator-dashboard:${membership.tenantId}`, (signal) =>
     operatorApi.dashboard({ signal }),
@@ -122,7 +129,7 @@ function OperatorFrame({ children }: { children: ReactNode }) {
   }, [dashboard, membership]);
 
   const who = me.user.name ?? me.user.email ?? me.user.phone ?? '';
-  const role = tk(`operator.nav.role.${membership.role}`);
+  const role = roleLabel(i18n, membership.role);
 
   return (
     <OperatorContext.Provider value={value}>

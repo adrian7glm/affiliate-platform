@@ -76,9 +76,7 @@ export function I18nProvider({
   children: ReactNode;
 }) {
   const [chosen, setChosen] = useState<Lang>(fixedLang ?? fallback);
-  const [languages, setLanguages] = useState<LanguageInfo[]>(
-    initialLanguages ?? BUNDLED_LANGUAGES,
-  );
+  const [languages, setLanguages] = useState<LanguageInfo[]>(initialLanguages ?? BUNDLED_LANGUAGES);
   const [overrides, setOverrides] = useState<Record<Lang, Messages>>(
     fixedLang && initialOverrides ? { [fixedLang]: initialOverrides } : {},
   );

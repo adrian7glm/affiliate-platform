@@ -101,9 +101,7 @@ export function BookingResult({
       <Card>
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-xl font-bold">
-            {payOnline
-              ? t('affiliate.result.scanToPay')
-              : t('affiliate.result.scanToSave')}
+            {payOnline ? t('affiliate.result.scanToPay') : t('affiliate.result.scanToSave')}
           </p>
           <QrCode
             value={shareUrl}
@@ -133,11 +131,7 @@ export function BookingResult({
               />
             </p>
           )}
-          {payOnline ? (
-            <p className="text-sm text-muted">
-              {t('affiliate.result.held')}
-            </p>
-          ) : null}
+          {payOnline ? <p className="text-sm text-muted">{t('affiliate.result.held')}</p> : null}
         </div>
       </Card>
 

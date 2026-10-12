@@ -306,7 +306,13 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
 
           {error ? <Alert tone="error">{error}</Alert> : null}
 
-          <Button type="submit" size="lg" block loading={busy} loadingText={t('auth.login.sending')}>
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={busy}
+            loadingText={t('auth.login.sending')}
+          >
             {t('auth.login.sendCode')}
           </Button>
         </form>
@@ -356,7 +362,13 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
 
           {error ? <Alert tone="error">{error}</Alert> : null}
 
-          <Button type="submit" size="lg" block loading={busy} loadingText={t('auth.login.verifying')}>
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={busy}
+            loadingText={t('auth.login.verifying')}
+          >
             {t('auth.login.submit')}
           </Button>
 

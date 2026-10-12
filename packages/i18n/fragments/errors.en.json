@@ -113,5 +113,11 @@
     "languageExists": "the language {code} already exists",
     "referenceRequired": "English is the reference language and cannot be hidden",
     "bundledLanguage": "this language ships with the platform and cannot be deleted; hide it instead"
+  },
+  "checkIn": {
+    "checkedIn": "Welcome aboard.",
+    "alreadyCheckedIn": "This ticket was already scanned.",
+    "notValid": "This ticket is not valid (cancelled, refunded or unpaid).",
+    "otherOperator": "This QR code is not a ticket of this operator."
   }
 }

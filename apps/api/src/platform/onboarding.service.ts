@@ -116,6 +116,7 @@ export class OnboardingService {
   async createInvite(
     body: CreateOperatorInviteBody,
     actorUserId: string,
+    locale = 'ro',
   ): Promise<OperatorInviteDto> {
     const plan = body.planId ? await this.subscriptions.plan(body.planId) : null;
     if (plan && !plan.isActive) throw new DomainError('errors.platform.planRetired');
@@ -150,7 +151,7 @@ export class OnboardingService {
       await this.notifications.enqueue(tx, {
         to: body.email,
         template: 'operator_invite',
-        locale: 'ro',
+        locale,
         params: { businessName: body.businessName, url: this.inviteUrl(token) },
       });
       return created;
@@ -332,6 +333,7 @@ export class OnboardingService {
       await this.notifications.enqueue(this.db, {
         to: admin,
         template: 'new_operator',
+        // The platform's own language: the admins' area has no per-person language yet.
         locale: 'ro',
         params: {
           name: body.name,

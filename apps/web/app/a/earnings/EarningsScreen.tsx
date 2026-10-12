@@ -128,10 +128,7 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
             <p>
               {t('affiliate.earnings.fixedBefore')}
               <strong>
-                {formatBps(
-                  home.data?.progress.currentRateBps ?? plan.tiers[0]?.rateBps ?? 0,
-                  lang,
-                )}
+                {formatBps(home.data?.progress.currentRateBps ?? plan.tiers[0]?.rateBps ?? 0, lang)}
               </strong>
               {t('affiliate.earnings.fixedAfter')}
             </p>
@@ -163,7 +160,9 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
                           <span className="ml-2 text-sm">{t('affiliate.earnings.now')}</span>
                         ) : null}
                       </th>
-                      <td className="py-2.5 text-right tabular-nums">{formatBps(row.rateBps, lang)}</td>
+                      <td className="py-2.5 text-right tabular-nums">
+                        {formatBps(row.rateBps, lang)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -184,9 +183,7 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
                 {commissionStatus(i18n, 'pending').label}
               </StatusChip>
             </dt>
-            <dd className="mt-1 text-sm text-muted">
-              {t('affiliate.earnings.pendingHelp')}
-            </dd>
+            <dd className="mt-1 text-sm text-muted">{t('affiliate.earnings.pendingHelp')}</dd>
           </div>
           <div>
             <dt>
@@ -194,9 +191,7 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
                 {commissionStatus(i18n, 'approved').label}
               </StatusChip>
             </dt>
-            <dd className="mt-1 text-sm text-muted">
-              {t('affiliate.earnings.approvedHelp')}
-            </dd>
+            <dd className="mt-1 text-sm text-muted">{t('affiliate.earnings.approvedHelp')}</dd>
           </div>
           <div>
             <dt>
@@ -207,9 +202,7 @@ export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
             <dd className="mt-1 text-sm text-muted">{t('affiliate.earnings.paidHelp')}</dd>
           </div>
         </dl>
-        <p className="mt-3 text-sm text-muted">
-          {t('affiliate.earnings.refundNote')}
-        </p>
+        <p className="mt-3 text-sm text-muted">{t('affiliate.earnings.refundNote')}</p>
       </Card>
     </div>
   );

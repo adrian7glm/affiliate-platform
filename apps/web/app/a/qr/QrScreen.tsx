@@ -70,11 +70,7 @@ export function QrScreen() {
             <p className="text-xl font-bold">{tenantName}</p>
           </section>
 
-          {home.stale ? (
-            <p className="text-sm text-muted">
-              {t('affiliate.qr.offline')}
-            </p>
-          ) : null}
+          {home.stale ? <p className="text-sm text-muted">{t('affiliate.qr.offline')}</p> : null}
 
           <div className="w-full">
             <ShareActions
@@ -87,9 +83,7 @@ export function QrScreen() {
           {wake.supported ? (
             <p className="flex items-center gap-2 text-sm text-muted" role="status">
               <IconSun size={18} />
-              {wake.active
-                ? t('affiliate.qr.wakeOn')
-                : t('affiliate.qr.wakeOff')}
+              {wake.active ? t('affiliate.qr.wakeOn') : t('affiliate.qr.wakeOff')}
             </p>
           ) : null}
         </>

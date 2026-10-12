@@ -65,18 +65,14 @@ function LandingContent({ t, appName }: { t: Translator['t']; appName: string })
 
       <main id="content">
         <section className="page-x mx-auto max-w-5xl py-10 sm:py-16" aria-labelledby="hero-title">
-          <p className="mb-3 font-semibold text-brand">
-            {t('public.landing.tagline')}
-          </p>
+          <p className="mb-3 font-semibold text-brand">{t('public.landing.tagline')}</p>
           <h1
             id="hero-title"
             className="max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl"
           >
             {t('public.landing.title')}
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted">
-            {t('public.landing.intro')}
-          </p>
+          <p className="mt-4 max-w-2xl text-lg text-muted">{t('public.landing.intro')}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/start" size="lg">
               {t('public.landing.startFree')}

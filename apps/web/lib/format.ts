@@ -35,7 +35,11 @@ export { intlLocale };
  * Formats integer minor units, e.g. `formatMoney(12050, 'RON', 'ro')` → "120,50 RON".
  * Whole amounts drop the decimals ("120 RON") where the browser supports it.
  */
-export function formatMoney(amountMinor: number, currency: string, lang: Lang = DEFAULT_LANG): string {
+export function formatMoney(
+  amountMinor: number,
+  currency: string,
+  lang: Lang = DEFAULT_LANG,
+): string {
   const code = (currency || 'RON').toUpperCase();
   const value = minorToMajor(amountMinor, code);
   try {

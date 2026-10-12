@@ -272,7 +272,11 @@ export function DailySalesChart({
                     </th>
                     <td className="py-2 pr-3 text-right tabular-nums">{d.bookings}</td>
                     <td className="py-2 pr-3 text-right">
-                      <MoneyText amountMinor={d.affiliateRevenueMinor} currency={currency} lang={lang} />
+                      <MoneyText
+                        amountMinor={d.affiliateRevenueMinor}
+                        currency={currency}
+                        lang={lang}
+                      />
                     </td>
                     <td className="py-2 text-right font-semibold">
                       <MoneyText amountMinor={d.revenueMinor} currency={currency} lang={lang} />

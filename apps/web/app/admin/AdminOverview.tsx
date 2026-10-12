@@ -184,7 +184,10 @@ function Kpis({ data }: { data: AdminOverviewDto }) {
   const { t, tp } = useT();
   const { operators } = data;
   return (
-    <section aria-label={t('admin.overview.kpisLabel')} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section
+      aria-label={t('admin.overview.kpisLabel')}
+      className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+    >
       <Kpi
         label={t('admin.overview.mrr')}
         value={<MoneyList items={data.mrr} />}

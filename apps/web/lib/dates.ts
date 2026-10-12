@@ -55,7 +55,10 @@ export function isoWeekday(dateKey: string): number {
 }
 
 /** Short label of a calendar day: "mie. 14 oct." / "Wed 14 Oct". */
-export function formatDayLabel(dateKey: string, lang: Lang = DEFAULT_LANG): { weekday: string; day: string } {
+export function formatDayLabel(
+  dateKey: string,
+  lang: Lang = DEFAULT_LANG,
+): { weekday: string; day: string } {
   const [y, m, d] = dateKey.split('-').map(Number) as [number, number, number];
   const date = new Date(Date.UTC(y, m - 1, d, 12));
   const locale = intlLocale(lang);

@@ -115,5 +115,11 @@
     "languageExists": "limba {code} există deja",
     "referenceRequired": "engleza este limba de referință și nu poate fi ascunsă",
     "bundledLanguage": "această limbă vine cu platforma și nu poate fi ștearsă; ascunde-o în schimb"
+  },
+  "checkIn": {
+    "checkedIn": "Bine ai venit la bord.",
+    "alreadyCheckedIn": "Acest bilet a fost deja scanat.",
+    "notValid": "Acest bilet nu este valabil (anulat, rambursat sau neplătit).",
+    "otherOperator": "Acest cod QR nu este un bilet al acestui operator."
   }
 }

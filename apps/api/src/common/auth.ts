@@ -1,11 +1,11 @@
 import {
   type CanActivate,
   createParamDecorator,
+  type ExecutionContext,
   HttpStatus,
   Inject,
   Injectable,
   SetMetadata,
-  type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Role } from '@ap/contracts';

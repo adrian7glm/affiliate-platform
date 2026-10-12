@@ -1,0 +1,54 @@
+{
+  "meta": { "title": "Kit QR de tipărit" },
+  "title": "Kit QR de tipărit",
+  "description": "Materiale gata de tipărit cu codul tău QR. Fiecare scanare și rezervare îți aduce comision.",
+  "stepProduct": "1. Excursia",
+  "productLegend": "Excursia de pe afiș",
+  "allProducts": "Toate excursiile",
+  "fromPrice": "de la {price}",
+  "linkUsed": "Link folosit:",
+  "linkStats": "· {clicks} accesări · {sales} vânzări",
+  "creatingLink": "Pregătim un link pentru această excursie…",
+  "stepFormat": "2. Formatul",
+  "formatLegend": "Formatul materialului",
+  "languageLabel": "Limba materialelor",
+  "languageHint": "Textele tipărite pe afiș, cort și cartonașe apar în această limbă.",
+  "stepPreview": "3. Previzualizare",
+  "previewAlt": "{format}: {product}, cu codul QR",
+  "previewFailed": "Previzualizarea nu a putut fi desenată pe acest telefon.",
+  "exportFailed": "Fișierul nu a putut fi generat. Încearcă din nou.",
+  "logoFailed": "Logo-ul operatorului nu a putut fi încărcat, așa că apare numele lui.",
+  "logoMissing": "Când operatorul își adaugă logo-ul, acesta apare automat pe materiale.",
+  "pdfPreparing": "Se pregătește PDF-ul…",
+  "downloadPdf": "Descarcă PDF",
+  "png": "Imagine PNG",
+  "printButton": "Tipărește",
+  "sharePdf": "Trimite PDF-ul (WhatsApp, e-mail, tipografie)",
+  "format": {
+    "posterA4": {
+      "label": "Afiș A4",
+      "description": "Pe perete sau la intrare",
+      "howTo": "Tipărește pe A4, fără margini dacă imprimanta poate."
+    },
+    "posterA5": {
+      "label": "Afiș A5",
+      "description": "Pe tejghea, în ramă sau suport",
+      "howTo": "Tipărește pe A5, sau pe A4 cu „Potrivește în pagină”."
+    },
+    "tent": {
+      "label": "Cort de masă",
+      "description": "Stă singur pe recepție, se vede din ambele părți",
+      "howTo": "Tipărește pe A4 (ideal carton), pliază pe linia punctată și așază-l pe tejghea."
+    },
+    "cards": {
+      "label": "Cartonașe",
+      "description": "8 pe o foaie A4, de dat turiștilor",
+      "howTo": "Tipărește pe A4 și taie pe liniile gri. Dă câte unul turiștilor interesați."
+    }
+  },
+  "print": {
+    "headline": "Scanează și rezervă",
+    "subline": "Scan & book online",
+    "fromPrice": "de la / from {price}"
+  }
+}

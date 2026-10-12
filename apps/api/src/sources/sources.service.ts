@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   type AvailabilityProvider,
   HoldExpiredError,
+  ProviderError,
   type ProviderProduct,
   RestProvider,
   SoldOutError,
@@ -48,6 +49,26 @@ function slugify(name: string): string {
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** Why the trips of a newly connected system could not be read, in the user's language. */
+function connectError(url: string, error: unknown): DomainError {
+  const details = { reason: message(error) };
+  const status = error instanceof ProviderError ? error.status : undefined;
+  if (error instanceof ProviderError && status === undefined) {
+    return new DomainError('errors.sources.connectUnreachable', HttpStatus.BAD_REQUEST, details, {
+      url,
+    });
+  }
+  if (status !== undefined && (status < 200 || status >= 300)) {
+    return new DomainError('errors.sources.connectStatus', HttpStatus.BAD_REQUEST, details, {
+      url,
+      status,
+    });
+  }
+  return new DomainError('errors.sources.connectInvalid', HttpStatus.BAD_REQUEST, details, {
+    url,
+  });
 }
 
 /**

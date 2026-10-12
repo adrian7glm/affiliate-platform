@@ -155,7 +155,11 @@ export function OperatorDetail({ id }: { id: string }) {
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <SubscriptionCard detail={tenant} plans={plans.data ?? []} onSaved={() => detail.reload()} />
+        <SubscriptionCard
+          detail={tenant}
+          plans={plans.data ?? []}
+          onSaved={() => detail.reload()}
+        />
         <MonthsCard detail={tenant} />
       </div>
 
@@ -303,9 +307,7 @@ function MonthsCard({ detail }: { detail: AdminTenantDetailDto }) {
                 lang={lang}
                 className="font-semibold"
               />
-              <span className="block text-muted">
-                {tp('admin.count.bookings', m.bookings)}
-              </span>
+              <span className="block text-muted">{tp('admin.count.bookings', m.bookings)}</span>
             </span>
           </li>
         ))}
@@ -443,10 +445,7 @@ function SubscriptionCard({
         submitLabel={t('admin.operators.subscription.markPaid')}
         onClose={() => setPaymentOpen(false)}
         onSave={(day) =>
-          void save(
-            { paidUntil: endOfDay(day) },
-            t('admin.operators.subscription.paymentRecorded'),
-          )
+          void save({ paidUntil: endOfDay(day) }, t('admin.operators.subscription.paymentRecorded'))
         }
         extra={
           sub && sub.status !== 'canceled' ? (
@@ -454,9 +453,7 @@ function SubscriptionCard({
               variant="ghost"
               icon={<IconX />}
               disabled={busy}
-              onClick={() =>
-                void save({ cancel: true }, t('admin.operators.subscription.stopped'))
-              }
+              onClick={() => void save({ cancel: true }, t('admin.operators.subscription.stopped'))}
             >
               {t('admin.operators.subscription.stop')}
             </Button>
@@ -474,10 +471,7 @@ function SubscriptionCard({
         submitLabel={t('admin.operators.subscription.save')}
         onClose={() => setTrialOpen(false)}
         onSave={(day) =>
-          void save(
-            { trialEndsAt: endOfDay(day) },
-            t('admin.operators.subscription.trialExtended'),
-          )
+          void save({ trialEndsAt: endOfDay(day) }, t('admin.operators.subscription.trialExtended'))
         }
       />
     </Card>
@@ -602,9 +596,7 @@ function TariffDialog({
           onChange={(e) => setPrice(e.target.value)}
           error={fieldError ?? undefined}
         />
-        <p className="text-sm text-muted">
-          {t('admin.operators.tariff.note')}
-        </p>
+        <p className="text-sm text-muted">{t('admin.operators.tariff.note')}</p>
         <Button type="submit" loading={busy} size="lg">
           {t('admin.operators.tariff.save')}
         </Button>

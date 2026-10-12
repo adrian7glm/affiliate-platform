@@ -27,7 +27,11 @@ export function share(part: number, total: number): number {
 }
 
 /** Short money for axis ticks: "0", "850", "2.500", "15 K" in the currency's major units. */
-export function compactMoney(amountMinor: number, currency: string, lang: Lang = DEFAULT_LANG): string {
+export function compactMoney(
+  amountMinor: number,
+  currency: string,
+  lang: Lang = DEFAULT_LANG,
+): string {
   const value = amountMinor / 10 ** currencyDigits(currency);
   return new Intl.NumberFormat(intlLocale(lang), {
     // Below 10 000 the whole number is short enough ("2.500") and reads better than "2,5 K".

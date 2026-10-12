@@ -233,11 +233,9 @@ function Kpis({ data }: { data: Analytics }) {
         label={t('operator.dashboard.payable')}
         value={<MoneyText amountMinor={commissions.payableMinor} currency={currency} />}
         hint={
-          commissions.pendingMinor > 0 ? (
-            t('operator.dashboard.pendingAfterTrips', { amount: money(commissions.pendingMinor) })
-          ) : (
-            t('operator.dashboard.approvedUnpaid')
-          )
+          commissions.pendingMinor > 0
+            ? t('operator.dashboard.pendingAfterTrips', { amount: money(commissions.pendingMinor) })
+            : t('operator.dashboard.approvedUnpaid')
         }
       />
     </dl>
@@ -263,7 +261,11 @@ function CommissionsCard({ data }: { data: Analytics }) {
       amount: commissions.approvedMinor,
       hint: t('operator.dashboard.approvedHint'),
     },
-    { status: 'paid' as const, amount: commissions.paidMinor, hint: t('operator.dashboard.paidHint') },
+    {
+      status: 'paid' as const,
+      amount: commissions.paidMinor,
+      hint: t('operator.dashboard.paidHint'),
+    },
   ];
   return (
     <Card
@@ -290,9 +292,7 @@ function CommissionsCard({ data }: { data: Analytics }) {
       </ul>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-2 p-3">
         <div>
-          <p className="text-sm font-semibold text-muted">
-            {t('operator.dashboard.payableNow')}
-          </p>
+          <p className="text-sm font-semibold text-muted">{t('operator.dashboard.payableNow')}</p>
           <p className="text-xl font-bold">
             <MoneyText amountMinor={commissions.payableMinor} currency={currency} />
           </p>

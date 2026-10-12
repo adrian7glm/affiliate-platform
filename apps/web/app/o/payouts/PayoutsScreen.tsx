@@ -6,6 +6,7 @@ import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
+import { useT } from '@/components/I18nProvider';
 import { IconCheck, IconDownload } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
@@ -16,13 +17,16 @@ import { isApiError } from '@/lib/api';
 import { downloadCsv, minorToCsvAmount, toCsv } from '@/lib/csv';
 import { currentPeriod, formatDate, formatPeriod, shiftPeriod } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
-import { currencyDigits } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
-import { PAYOUT_METHOD, PAYOUT_STATUS } from '@/lib/labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { currencyDigits, formatMoney } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
+import { payoutMethod, payoutStatus } from '@/lib/labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
+import { Rich, slots } from '../Rich';
 
 export function PayoutsScreen() {
+  const tr = useT();
+  const { t, tp, lang } = tr;
   const { tenant } = useOperator();
   const thisMonth = currentPeriod(tenant.timezone);
   const [period, setPeriod] = useState(() => shiftPeriod(thisMonth, -1));
@@ -48,8 +52,8 @@ export function PayoutsScreen() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Comisioane și plăți"
-        description="Comisioanele afiliaților pe lună. La sfârșitul lunii închizi perioada: comisioanele pentru excursiile făcute se aprobă și se calculează suma de plată pentru fiecare afiliat."
+        title={t('operator.payouts.title')}
+        description={t('operator.payouts.description')}
       />
 
       <div className="max-w-md">
@@ -65,21 +69,23 @@ export function PayoutsScreen() {
       />
 
       <Card
-        title={`Plăți pentru ${formatPeriod(period)}`}
+        title={t('operator.payouts.payoutsTitle', { period: formatPeriod(period, lang) })}
         description={
-          monthOver
-            ? 'Închiderea se poate repeta: dacă au apărut anulări sau vânzări noi, sumele se recalculează.'
-            : 'Perioada se poate închide după ce se termină luna.'
+          monthOver ? t('operator.payouts.closeAgain') : t('operator.payouts.closeLater')
         }
         action={
-          monthOver ? <Button onClick={() => setConfirmClose(true)}>Închide perioada</Button> : null
+          monthOver ? (
+            <Button onClick={() => setConfirmClose(true)}>{t('operator.payouts.close')}</Button>
+          ) : null
         }
       >
         {closeResult ? (
-          <Alert tone="success" title="Perioada a fost închisă" className="mb-3">
-            {pluralRo(closeResult.entriesApproved, 'comision aprobat', 'comisioane aprobate')},{' '}
-            {pluralRo(closeResult.adjustmentsCreated, 'ajustare', 'ajustări')},{' '}
-            {pluralRo(closeResult.payouts.length, 'plată de făcut', 'plăți de făcut')}.
+          <Alert tone="success" title={t('operator.payouts.closedTitle')} className="mb-3">
+            {t('operator.payouts.closedSummary', {
+              approved: tp('operator.payouts.approvedCount', closeResult.entriesApproved),
+              adjustments: tp('operator.payouts.adjustmentsCount', closeResult.adjustmentsCreated),
+              payouts: tp('operator.payouts.payoutsCount', closeResult.payouts.length),
+            })}
           </Alert>
         ) : null}
         {payouts.loading && !payouts.data ? <LoadingBlock /> : null}
@@ -88,18 +94,16 @@ export function PayoutsScreen() {
             tone="error"
             action={
               <Button variant="secondary" onClick={payouts.reload}>
-                Încearcă din nou
+                {t('common.retry')}
               </Button>
             }
           >
-            {errorMessageRo(payouts.error)}
+            {errorMessage(payouts.error, tr)}
           </Alert>
         ) : null}
         {payouts.data && payouts.data.length === 0 ? (
           <p className="text-muted">
-            {monthOver
-              ? 'Nicio plată încă. Închide perioada ca să le calculezi.'
-              : 'Nicio plată pentru această lună.'}
+            {monthOver ? t('operator.payouts.emptyClosable') : t('operator.payouts.emptyOpen')}
           </p>
         ) : null}
         {payouts.data && payouts.data.length > 0 ? (
@@ -113,9 +117,11 @@ export function PayoutsScreen() {
                   <div className="min-w-0">
                     <p className="font-semibold">{payout.affiliateName}</p>
                     <p className="text-sm text-muted">
-                      {PAYOUT_METHOD[payout.method]}
+                      {payoutMethod(tr, payout.method)}
                       {payout.paidAt
-                        ? ` · plătit pe ${formatDate(payout.paidAt, tenant.timezone)}`
+                        ? ` · ${t('operator.payouts.paidOn', {
+                            date: formatDate(payout.paidAt, tenant.timezone, lang),
+                          })}`
                         : ''}
                     </p>
                   </div>
@@ -125,8 +131,8 @@ export function PayoutsScreen() {
                       currency={payout.currency}
                       className="text-lg font-semibold"
                     />
-                    <StatusChip tone={PAYOUT_STATUS[payout.status].tone}>
-                      {PAYOUT_STATUS[payout.status].label}
+                    <StatusChip tone={payoutStatus(tr, payout.status).tone}>
+                      {payoutStatus(tr, payout.status).label}
                     </StatusChip>
                     {payout.status !== 'paid' ? (
                       <Button
@@ -134,7 +140,7 @@ export function PayoutsScreen() {
                         icon={<IconCheck />}
                         onClick={() => setPaying(payout)}
                       >
-                        Marchează plătit
+                        {t('operator.payouts.markPaid')}
                       </Button>
                     ) : null}
                   </div>
@@ -143,7 +149,7 @@ export function PayoutsScreen() {
             </ul>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
               <p className="text-muted">
-                De plătit:{' '}
+                {t('operator.payouts.toPay')}{' '}
                 <MoneyText
                   amountMinor={unpaid.reduce((sum, p) => sum + p.amountMinor, 0)}
                   currency={tenant.currency}
@@ -153,9 +159,9 @@ export function PayoutsScreen() {
               <Button
                 variant="ghost"
                 icon={<IconDownload />}
-                onClick={() => exportPayouts(payouts.data ?? [], period, tenant.timezone)}
+                onClick={() => exportPayouts(payouts.data ?? [], period, tenant.timezone, tr)}
               >
-                Descarcă CSV
+                {t('operator.payouts.downloadCsv')}
               </Button>
             </div>
           </>
@@ -165,8 +171,8 @@ export function PayoutsScreen() {
       <Dialog
         open={confirmClose}
         onClose={() => setConfirmClose(false)}
-        title={`Închizi ${formatPeriod(period)}?`}
-        description="Comisioanele pentru excursiile care au avut loc se aprobă, iar pentru fiecare afiliat se calculează o plată. Banii nu se trimit automat: după ce plătești, apasă „Marchează plătit”."
+        title={t('operator.payouts.confirmCloseTitle', { period: formatPeriod(period, lang) })}
+        description={t('operator.payouts.confirmCloseDescription')}
       >
         <ClosePeriodForm
           period={period}
@@ -180,7 +186,11 @@ export function PayoutsScreen() {
         />
       </Dialog>
 
-      <Dialog open={paying !== null} onClose={() => setPaying(null)} title="Ai plătit afiliatul?">
+      <Dialog
+        open={paying !== null}
+        onClose={() => setPaying(null)}
+        title={t('operator.payouts.paidTitle')}
+      >
         {paying ? (
           <MarkPaidForm
             key={paying.id}
@@ -200,35 +210,41 @@ export function PayoutsScreen() {
   );
 }
 
-function exportPayouts(list: PayoutDto[], period: string, timezone: string) {
+function exportPayouts(list: PayoutDto[], period: string, timezone: string, tr: Translator) {
+  const { t, lang } = tr;
   const csv = toCsv(
-    ['Afiliat', 'Perioada', 'Suma', 'Moneda', 'Status', 'Metoda', 'Plătit la'],
+    [
+      t('operator.payouts.csvAffiliate'),
+      t('operator.payouts.csvPeriod'),
+      t('operator.payouts.csvAmount'),
+      t('operator.payouts.csvCurrency'),
+      t('operator.payouts.csvStatus'),
+      t('operator.payouts.csvMethod'),
+      t('operator.payouts.csvPaidAt'),
+    ],
     list.map((p) => [
       p.affiliateName,
       p.periodKey,
       minorToCsvAmount(p.amountMinor, currencyDigits(p.currency)),
       p.currency,
-      PAYOUT_STATUS[p.status].label,
-      PAYOUT_METHOD[p.method],
-      p.paidAt ? formatDate(p.paidAt, timezone) : '',
+      payoutStatus(tr, p.status).label,
+      payoutMethod(tr, p.method),
+      p.paidAt ? formatDate(p.paidAt, timezone, lang) : '',
     ]),
   );
-  downloadCsv(`plati-afiliati-${period}.csv`, csv);
+  downloadCsv(t('operator.payouts.csvPayoutsFile', { period }), csv);
 }
 
-function exportReport(report: CommissionReportDto) {
+function exportReport(report: CommissionReportDto, tr: Translator) {
+  const { t } = tr;
   const digits = currencyDigits(report.currency);
   const money = (minor: number) => minorToCsvAmount(minor, digits);
   const csv = toCsv(
     [
-      'Afiliat',
-      'Vânzări plătite',
-      'Valoare vânzări',
-      'În așteptare',
-      'Aprobat',
-      'Plătit',
-      'Total comision',
-      'Moneda',
+      t('operator.payouts.csvAffiliate'),
+      t('operator.payouts.csvPaidSales'),
+      ...REPORT_COLUMNS.map((col) => t(col.label)),
+      t('operator.payouts.csvCurrency'),
     ],
     [
       ...report.rows.map((r) => [
@@ -242,7 +258,7 @@ function exportReport(report: CommissionReportDto) {
         report.currency,
       ]),
       [
-        'Total',
+        t('common.total'),
         report.totals.paidSales,
         money(report.totals.salesMinor),
         money(report.totals.pendingMinor),
@@ -253,15 +269,15 @@ function exportReport(report: CommissionReportDto) {
       ],
     ],
   );
-  downloadCsv(`comisioane-${report.periodKey}.csv`, csv);
+  downloadCsv(t('operator.payouts.csvReportFile', { period: report.periodKey }), csv);
 }
 
 const REPORT_COLUMNS = [
-  { key: 'salesMinor', label: 'Valoare vânzări' },
-  { key: 'pendingMinor', label: 'În așteptare' },
-  { key: 'approvedMinor', label: 'Aprobat' },
-  { key: 'paidMinor', label: 'Plătit' },
-  { key: 'totalMinor', label: 'Total comision' },
+  { key: 'salesMinor', label: 'operator.payouts.colSales' },
+  { key: 'pendingMinor', label: 'operator.payouts.colPending' },
+  { key: 'approvedMinor', label: 'operator.payouts.colApproved' },
+  { key: 'paidMinor', label: 'operator.payouts.colPaid' },
+  { key: 'totalMinor', label: 'operator.payouts.colTotal' },
 ] as const;
 
 function ReportCard({
@@ -277,14 +293,18 @@ function ReportCard({
   onRetry: () => void;
   period: string;
 }) {
+  const tr = useT();
+  const { t, tp, lang } = tr;
   return (
     <Card
-      title="Raport comisioane"
-      description={`Vânzări plătite în ${formatPeriod(period)} și comisioanele lor.`}
+      title={t('operator.payouts.reportTitle')}
+      description={t('operator.payouts.reportDescription', {
+        period: formatPeriod(period, lang),
+      })}
       action={
         report && report.rows.length > 0 ? (
-          <Button variant="ghost" icon={<IconDownload />} onClick={() => exportReport(report)}>
-            Descarcă CSV
+          <Button variant="ghost" icon={<IconDownload />} onClick={() => exportReport(report, tr)}>
+            {t('operator.payouts.downloadCsv')}
           </Button>
         ) : null
       }
@@ -295,15 +315,15 @@ function ReportCard({
           tone="error"
           action={
             <Button variant="secondary" onClick={onRetry}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(error)}
+          {errorMessage(error, tr)}
         </Alert>
       ) : null}
       {report && report.rows.length === 0 ? (
-        <p className="text-muted">Nicio vânzare prin afiliați în această lună.</p>
+        <p className="text-muted">{t('operator.payouts.noSales')}</p>
       ) : null}
       {report && report.rows.length > 0 ? (
         <>
@@ -313,12 +333,12 @@ function ReportCard({
               <li key={row.affiliateId} className="rounded-2xl bg-surface-2 p-3">
                 <p className="font-semibold">{row.affiliateName}</p>
                 <p className="text-sm text-muted">
-                  {pluralRo(row.paidSales, 'vânzare plătită', 'vânzări plătite')}
+                  {tp('operator.payouts.paidSales', row.paidSales)}
                 </p>
                 <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
                   {REPORT_COLUMNS.map((col) => (
                     <div key={col.key} className="contents">
-                      <dt className="text-muted">{col.label}</dt>
+                      <dt className="text-muted">{t(col.label)}</dt>
                       <dd className="text-right font-semibold tabular-nums">
                         <MoneyText amountMinor={row[col.key]} currency={report.currency} />
                       </dd>
@@ -328,10 +348,11 @@ function ReportCard({
               </li>
             ))}
             <li className="rounded-2xl border-2 border-line p-3">
-              <p className="font-semibold">Total</p>
+              <p className="font-semibold">{t('common.total')}</p>
               <p className="text-lg font-bold">
-                <MoneyText amountMinor={report.totals.totalMinor} currency={report.currency} />{' '}
-                comision
+                {t('operator.payouts.totalCommission', {
+                  amount: formatMoney(report.totals.totalMinor, report.currency, lang),
+                })}
               </p>
             </li>
           </ul>
@@ -340,19 +361,19 @@ function ReportCard({
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left">
               <caption className="visually-hidden">
-                Comisioane pe afiliat, {formatPeriod(period)}
+                {t('operator.payouts.tableCaption', { period: formatPeriod(period, lang) })}
               </caption>
               <thead className="text-sm text-muted">
                 <tr className="border-b border-line">
                   <th scope="col" className="py-2 pr-3 font-semibold">
-                    Afiliat
+                    {t('operator.payouts.affiliate')}
                   </th>
                   <th scope="col" className="px-3 py-2 text-right font-semibold">
-                    Vânzări
+                    {t('operator.payouts.sales')}
                   </th>
                   {REPORT_COLUMNS.map((col) => (
                     <th key={col.key} scope="col" className="px-3 py-2 text-right font-semibold">
-                      {col.label}
+                      {t(col.label)}
                     </th>
                   ))}
                 </tr>
@@ -375,7 +396,7 @@ function ReportCard({
               <tfoot>
                 <tr className="font-bold">
                   <th scope="row" className="py-2.5 pr-3">
-                    Total
+                    {t('common.total')}
                   </th>
                   <td className="px-3 py-2.5 text-right tabular-nums">{report.totals.paidSales}</td>
                   {REPORT_COLUMNS.map((col) => (
@@ -402,6 +423,8 @@ function ClosePeriodForm({
   onCancel: () => void;
   onDone: (result: ClosePeriodResultDto) => void;
 }) {
+  const tr = useT();
+  const { t } = tr;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -413,8 +436,8 @@ function ClosePeriodForm({
     } catch (err) {
       setError(
         isApiError(err) && err.status === 409
-          ? 'Luna nu s-a încheiat încă. O poți închide de pe 1 a lunii următoare.'
-          : errorMessageRo(err),
+          ? t('operator.payouts.notOver')
+          : errorMessage(err, tr),
       );
       setBusy(false);
     }
@@ -425,10 +448,10 @@ function ClosePeriodForm({
       {error ? <Alert tone="error">{error}</Alert> : null}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
-          Renunță
+          {t('common.cancel')}
         </Button>
-        <Button onClick={close} loading={busy} loadingText="Se închide…">
-          Închide perioada
+        <Button onClick={close} loading={busy} loadingText={t('operator.payouts.closing')}>
+          {t('operator.payouts.close')}
         </Button>
       </div>
     </div>
@@ -444,6 +467,8 @@ function MarkPaidForm({
   onCancel: () => void;
   onDone: (payout: PayoutDto) => void;
 }) {
+  const tr = useT();
+  const { t, lang } = tr;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -453,7 +478,7 @@ function MarkPaidForm({
     try {
       onDone(await operatorApi.markPayoutPaid(payout.id));
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, tr));
       setBusy(false);
     }
   }
@@ -461,27 +486,36 @@ function MarkPaidForm({
   return (
     <div className="flex flex-col gap-4">
       <p>
-        Confirmă că i-ai plătit lui <strong>{payout.affiliateName}</strong>{' '}
-        <MoneyText
-          amountMinor={payout.amountMinor}
-          currency={payout.currency}
-          className="font-semibold"
-        />{' '}
-        pentru {formatPeriod(payout.periodKey)}. Afiliatul va vedea comisioanele ca plătite.
+        <Rich
+          text={t('operator.payouts.markPaidText', {
+            ...slots('name', 'amount'),
+            period: formatPeriod(payout.periodKey, lang),
+          })}
+          parts={{
+            name: <strong>{payout.affiliateName}</strong>,
+            amount: (
+              <MoneyText
+                amountMinor={payout.amountMinor}
+                currency={payout.currency}
+                className="font-semibold"
+              />
+            ),
+          }}
+        />
       </p>
       {error ? <Alert tone="error">{error}</Alert> : null}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
-          Renunță
+          {t('common.cancel')}
         </Button>
         <Button
           variant="success"
           icon={<IconCheck />}
           onClick={confirm}
           loading={busy}
-          loadingText="Se salvează…"
+          loadingText={t('common.saving')}
         >
-          Da, am plătit
+          {t('operator.payouts.yesPaid')}
         </Button>
       </div>
     </div>

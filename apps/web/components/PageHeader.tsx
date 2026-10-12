@@ -13,13 +13,7 @@ interface PageHeaderProps {
   actions?: ReactNode;
 }
 
-export function PageHeader({
-  title,
-  description,
-  backHref,
-  backLabel,
-  actions,
-}: PageHeaderProps) {
+export function PageHeader({ title, description, backHref, backLabel, actions }: PageHeaderProps) {
   const { t } = useT();
   return (
     <header className="flex flex-col gap-2 pb-4 pt-4">
