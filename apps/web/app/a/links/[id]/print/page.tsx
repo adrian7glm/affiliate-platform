@@ -1,9 +1,7 @@
-import type { Metadata } from 'next';
-import { PosterScreen } from './PosterScreen';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Afiș de tipărit' };
-
+/** The A5 poster now lives in the QR kit; old bookmarks land there. */
 export default async function PosterPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <PosterScreen linkId={id} />;
+  redirect(`/a/kit?link=${encodeURIComponent(id)}&format=poster-a5`);
 }

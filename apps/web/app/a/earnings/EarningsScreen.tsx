@@ -10,7 +10,13 @@ import { PeriodPicker } from '@/components/PeriodPicker';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip } from '@/components/StatusChip';
 import { PLAN_MODE_EXPLANATION, tierRows } from '@/lib/commission';
-import { DEFAULT_TIMEZONE, currentPeriod, formatDate, formatPeriod } from '@/lib/dates';
+import {
+  DEFAULT_TIMEZONE,
+  currentPeriod,
+  formatDate,
+  formatPeriod,
+  isPeriodKey,
+} from '@/lib/dates';
 import { affiliateApi } from '@/lib/endpoints';
 import { formatBps, formatMoney } from '@/lib/format';
 import { COMMISSION_KIND, COMMISSION_STATUS } from '@/lib/labels';
@@ -19,9 +25,11 @@ import { errorMessageRo, useApi } from '@/lib/useApi';
 
 const TZ = DEFAULT_TIMEZONE;
 
-export function EarningsScreen() {
+export function EarningsScreen({ initialPeriod }: { initialPeriod?: string }) {
   const thisMonth = currentPeriod(TZ);
-  const [period, setPeriod] = useState(thisMonth);
+  const [period, setPeriod] = useState(() =>
+    isPeriodKey(initialPeriod) && initialPeriod <= thisMonth ? initialPeriod : thisMonth,
+  );
   const earnings = useApi(`earnings:${period}`, (signal) =>
     affiliateApi.earnings(period, { signal }),
   );

@@ -3,6 +3,11 @@ import { EarningsScreen } from './EarningsScreen';
 
 export const metadata: Metadata = { title: 'Câștigurile mele' };
 
-export default function EarningsPage() {
-  return <EarningsScreen />;
+export default async function EarningsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period } = await searchParams;
+  return <EarningsScreen initialPeriod={period} />;
 }
