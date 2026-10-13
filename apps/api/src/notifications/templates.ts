@@ -52,7 +52,7 @@ export interface TemplateParams {
   };
   /** Sent to the account's existing phone and email when its sign-in security changes. */
   security_alert: {
-    event: 'contact_added' | 'two_factor_on' | 'two_factor_off';
+    event: 'contact_added' | 'two_factor_on' | 'two_factor_off' | 'two_factor_reset';
     /** The new phone number or email, masked (contact_added). */
     contact?: string;
     url: string;
@@ -189,6 +189,7 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
       contact_added: 'contactAdded',
       two_factor_on: 'twoFactorOn',
       two_factor_off: 'twoFactorOff',
+      two_factor_reset: 'twoFactorReset',
     }[event];
     return {
       subject: tk(`email.securityAlert.${key}Subject`),

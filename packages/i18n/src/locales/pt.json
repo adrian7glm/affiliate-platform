@@ -1228,7 +1228,8 @@
       "plans": "Planos e taxas",
       "invites": "Convites",
       "translations": "Traduções",
-      "contact": "Mensagens"
+      "contact": "Mensagens",
+      "accounts": "Contas"
     },
     "shell": {
       "loadError": "Não foi possível carregar a sua conta",
@@ -1491,6 +1492,35 @@
       "question": "Pergunta",
       "markHandled": "Marcar como respondida",
       "reopen": "Voltar a pôr por responder"
+    },
+    "accounts": {
+      "title": "Apoio às contas",
+      "description": "Encontre a conta de uma pessoa pelo número de telefone ou email com que inicia sessão. Reponha a verificação em dois passos de quem perdeu o telefone e também os códigos de recuperação, ou termine a sessão dessa pessoa em todos os dispositivos.",
+      "contactLabel": "Número de telefone ou email",
+      "contactHint": "Aquele com que a pessoa inicia sessão, por exemplo 0722 123 456 ou nome@exemplo.com.",
+      "contactInvalid": "Introduza um número de telefone ou um endereço de email.",
+      "search": "Encontrar a conta",
+      "notFound": "Nenhuma conta inicia sessão com este número de telefone ou email.",
+      "phone": "Telefone",
+      "email": "Email",
+      "since": "Conta criada",
+      "twoFactor": "Verificação em dois passos",
+      "twoFactorOnSince": "Ativada desde {date}",
+      "twoFactorOff": "Desativada",
+      "memberships": "Acesso",
+      "platformAdmin": "Administrador da plataforma",
+      "noMemberships": "Ainda não faz parte de nenhum operador.",
+      "reset": "Repor a verificação em dois passos",
+      "resetTitle": "Repor a verificação em dois passos",
+      "resetBody": "A verificação em dois passos é desativada e a sessão da pessoa é terminada em todos os dispositivos. Passa a iniciar sessão só com o código por SMS ou email e pode voltar a ativá-la na página A minha conta. Recebe uma mensagem sobre isso.",
+      "checkIdentity": "Faça isto só depois de confirmar que é mesmo essa pessoa, por exemplo ligando para o número da conta ou perguntando ao operador dela. Fingir que se perdeu o telefone é a forma habitual de roubar contas.",
+      "resetConfirm": "Repor",
+      "resetDone": "A verificação em dois passos está desativada nesta conta e a sessão foi terminada em todos os dispositivos.",
+      "signOut": "Terminar sessão em todo o lado",
+      "signOutTitle": "Terminar sessão em todos os dispositivos",
+      "signOutBody": "Todos os telefones e computadores com sessão iniciada nesta conta terão de iniciar sessão novamente com um código.",
+      "signOutConfirm": "Terminar sessão em todo o lado",
+      "signOutDone": "A sessão desta conta foi terminada em todos os dispositivos."
     }
   },
   "signup": {
@@ -1755,7 +1785,9 @@
       "twoFactorOffSubject": "A verificação em dois passos foi desativada",
       "twoFactorOff": "A verificação em dois passos foi desativada na sua conta.",
       "notYou": "Se não reconhece esta ação, abra a sua conta e termine a sessão nos outros dispositivos: {url}",
-      "action": "Abrir a minha conta"
+      "action": "Abrir a minha conta",
+      "twoFactorResetSubject": "A verificação em dois passos foi reposta",
+      "twoFactorReset": "A equipa de apoio da plataforma desativou a verificação em dois passos na sua conta e terminou a sua sessão em todos os dispositivos. Se não pediu isto, contacte-nos imediatamente."
     }
   },
   "catalog": {

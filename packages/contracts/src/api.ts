@@ -146,6 +146,26 @@ export interface NewSessionTokenDto {
   token: string;
 }
 
+/** Platform admin support: find an account by the phone number or email it signs in with. */
+export const adminAccountQuery = z.object({ contact: destinationSchema });
+export type AdminAccountQuery = z.infer<typeof adminAccountQuery>;
+
+export interface AdminAccountDto {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  isPlatformAdmin: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorEnabledAt: string | null;
+  createdAt: string;
+  memberships: { tenantId: string; tenantName: string; role: Role }[];
+}
+
+export interface AdminAccountLookupDto {
+  account: AdminAccountDto | null;
+}
+
 /** Add or change the phone number or email used to sign in: a code is sent to the new one. */
 export const contactChangeRequestBody = z.object({
   destination: destinationSchema,

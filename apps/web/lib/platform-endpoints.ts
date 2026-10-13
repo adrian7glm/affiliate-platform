@@ -1,4 +1,6 @@
 import type {
+  AdminAccountDto,
+  AdminAccountLookupDto,
   AdminOverviewDto,
   AdminTenantDetailDto,
   BillingRedirectDto,
@@ -59,6 +61,20 @@ export const adminApi = {
   invites: (o?: Opts) => apiFetch<OperatorInviteDto[]>('/admin/invites', { ...o, tenant: false }),
   createInvite: (body: CreateOperatorInviteBody, o?: Opts) =>
     apiFetch<OperatorInviteDto>('/admin/invites', { ...o, method: 'POST', body, tenant: false }),
+  findAccount: (contact: string, o?: Opts) =>
+    apiFetch<AdminAccountLookupDto>('/admin/accounts', { ...o, query: { contact }, tenant: false }),
+  resetAccountTwoFactor: (id: string, o?: Opts) =>
+    apiFetch<AdminAccountDto>(`/admin/accounts/${enc(id)}/2fa/reset`, {
+      ...o,
+      method: 'POST',
+      tenant: false,
+    }),
+  signOutAccount: (id: string, o?: Opts) =>
+    apiFetch<AdminAccountDto>(`/admin/accounts/${enc(id)}/sign-out`, {
+      ...o,
+      method: 'POST',
+      tenant: false,
+    }),
   contactRequests: (o?: Opts) =>
     apiFetch<ContactRequestDto[]>('/admin/contact-requests', { ...o, tenant: false }),
   setContactHandled: (id: string, handled: boolean, o?: Opts) =>

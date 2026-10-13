@@ -146,20 +146,26 @@ Operator (roles `owner`, `staff`; changing the plan is `owner` only):
 
 Platform admin (users with `isPlatformAdmin`, set at sign-in for `PLATFORM_ADMIN_EMAILS`):
 
-| Method | Path                                  | Body                       | Response               |
-| ------ | ------------------------------------- | -------------------------- | ---------------------- |
-| GET    | `/admin/overview`                     | `?period=YYYY-MM`          | `AdminOverviewDto`     |
-| GET    | `/admin/tenants/:id`                  |                            | `AdminTenantDetailDto` |
-| PATCH  | `/admin/tenants/:id/status`           | `UpdateTenantStatusBody`   | `AdminTenantDetailDto` |
-| PATCH  | `/admin/tenants/:id/billing`          | `UpdateTenantBillingBody`  | `SubscriptionDto`      |
-| GET    | `/admin/plans`                        |                            | `PlatformPlanDto[]`    |
-| POST   | `/admin/plans`                        | `CreatePlatformPlanBody`   | `PlatformPlanDto`      |
-| PATCH  | `/admin/plans/:id`                    | `UpdatePlatformPlanBody`   | `PlatformPlanDto`      |
-| GET    | `/admin/invites`                      |                            | `OperatorInviteDto[]`  |
-| POST   | `/admin/invites`                      | `CreateOperatorInviteBody` | `OperatorInviteDto`    |
-| POST   | `/admin/invites/:id/revoke`           |                            | `OperatorInviteDto`    |
-| GET    | `/admin/contact-requests`             |                            | `ContactRequestDto[]`  |
-| POST   | `/admin/contact-requests/:id/handled` | `SetContactHandledBody`    | `ContactRequestDto`    |
+| Method | Path                                  | Body                       | Response                |
+| ------ | ------------------------------------- | -------------------------- | ----------------------- |
+| GET    | `/admin/overview`                     | `?period=YYYY-MM`          | `AdminOverviewDto`      |
+| GET    | `/admin/tenants/:id`                  |                            | `AdminTenantDetailDto`  |
+| PATCH  | `/admin/tenants/:id/status`           | `UpdateTenantStatusBody`   | `AdminTenantDetailDto`  |
+| PATCH  | `/admin/tenants/:id/billing`          | `UpdateTenantBillingBody`  | `SubscriptionDto`       |
+| GET    | `/admin/plans`                        |                            | `PlatformPlanDto[]`     |
+| POST   | `/admin/plans`                        | `CreatePlatformPlanBody`   | `PlatformPlanDto`       |
+| PATCH  | `/admin/plans/:id`                    | `UpdatePlatformPlanBody`   | `PlatformPlanDto`       |
+| GET    | `/admin/invites`                      |                            | `OperatorInviteDto[]`   |
+| POST   | `/admin/invites`                      | `CreateOperatorInviteBody` | `OperatorInviteDto`     |
+| POST   | `/admin/invites/:id/revoke`           |                            | `OperatorInviteDto`     |
+| GET    | `/admin/contact-requests`             |                            | `ContactRequestDto[]`   |
+| POST   | `/admin/contact-requests/:id/handled` | `SetContactHandledBody`    | `ContactRequestDto`     |
+| GET    | `/admin/accounts`                     | `?contact=` phone or email | `AdminAccountLookupDto` |
+| POST   | `/admin/accounts/:id/2fa/reset`       |                            | `AdminAccountDto`       |
+| POST   | `/admin/accounts/:id/sign-out`        |                            | `AdminAccountDto`       |
+
+Resetting two-step login (for someone who lost the phone and the recovery codes) also signs the
+account out everywhere; both actions go to the audit log and the reset sends a `security_alert`.
 
 A suspended operator gets 403 on every operator and affiliate route, and 404 on its public pages.
 Stripe Billing (`BILLING_PROVIDER=stripe`) posts subscription events to

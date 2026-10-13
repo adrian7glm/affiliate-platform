@@ -1,14 +1,16 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type {
   AccountSecurityDto,
+  AdminAccountDto,
   MeDto,
   NewSessionTokenDto,
   RecoveryCodesDto,
   TwoFactorEnabledDto,
   TwoFactorSetupDto,
 } from '@ap/contracts';
-import { type Database, users } from '@ap/db';
+import { type Database, auditLog, memberships, tenants, users } from '@ap/db';
 import { and, eq, ne, sql } from 'drizzle-orm';
+import { isPlatformAdmin } from '../common/auth';
 import { Clock } from '../common/clock';
 import {
   generateRecoveryCode,
@@ -50,7 +52,7 @@ export class AccountService {
   private async alert(
     user: Pick<UserRow, 'email' | 'phone'>,
     locale: string,
-    event: 'contact_added' | 'two_factor_on' | 'two_factor_off',
+    event: 'contact_added' | 'two_factor_on' | 'two_factor_off' | 'two_factor_reset',
     contact?: string,
   ): Promise<void> {
     for (const to of [user.email, user.phone]) {
@@ -231,5 +233,110 @@ export class AccountService {
       .from(users)
       .where(and(eq(column, destination), ne(users.id, userId)));
     if (other) throw new DomainError('errors.account.contactTaken', HttpStatus.CONFLICT);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Platform admin support
+  // ---------------------------------------------------------------------------------------------
+
+  /** The account that signs in with this phone number or email, if there is one. */
+  async findForAdmin(contact: string): Promise<AdminAccountDto | null> {
+    const column = isEmail(contact) ? users.email : users.phone;
+    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(column, contact));
+    return user ? this.adminView(user.id) : null;
+  }
+
+  /**
+   * For someone who lost both the phone with the authenticator app and the recovery codes. The
+   * person is told on their phone and email, so a stranger who talked support into it is noticed.
+   */
+  async resetTwoFactorForAdmin(
+    adminId: string,
+    userId: string,
+    fallbackLocale = 'en',
+  ): Promise<AdminAccountDto> {
+    const user = await this.adminTarget(userId);
+    await this.db
+      .update(users)
+      .set({
+        totpSecret: null,
+        totpPendingSecret: null,
+        totpEnabledAt: null,
+        totpLastStep: null,
+        totpRecoveryHashes: [],
+        totpFailedAttempts: 0,
+        totpLockedUntil: null,
+        sessionVersion: sql`${users.sessionVersion} + 1`,
+      })
+      .where(eq(users.id, userId));
+    await this.audit(adminId, userId, 'two_factor_reset', { wasOn: user.totpEnabledAt !== null });
+    await this.alert(user, await this.localeOf(userId, fallbackLocale), 'two_factor_reset');
+    return this.adminView(userId);
+  }
+
+  /** Signs the account out on every device (a lost phone, a person who left). */
+  async signOutForAdmin(adminId: string, userId: string): Promise<AdminAccountDto> {
+    await this.adminTarget(userId);
+    await this.db
+      .update(users)
+      .set({ sessionVersion: sql`${users.sessionVersion} + 1` })
+      .where(eq(users.id, userId));
+    await this.audit(adminId, userId, 'signed_out_everywhere', {});
+    return this.adminView(userId);
+  }
+
+  private async adminTarget(userId: string): Promise<UserRow> {
+    const [user] = await this.db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new DomainError('errors.notFound.user', HttpStatus.NOT_FOUND);
+    return user;
+  }
+
+  private async adminView(userId: string): Promise<AdminAccountDto> {
+    const user = await this.adminTarget(userId);
+    const rows = await this.db
+      .select({ tenantId: tenants.id, tenantName: tenants.name, role: memberships.role })
+      .from(memberships)
+      .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
+      .where(eq(memberships.userId, userId))
+      .orderBy(tenants.name);
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      isPlatformAdmin: isPlatformAdmin(this.config, user),
+      twoFactorEnabled: user.totpEnabledAt !== null,
+      twoFactorEnabledAt: user.totpEnabledAt?.toISOString() ?? null,
+      createdAt: user.createdAt.toISOString(),
+      memberships: rows,
+    };
+  }
+
+  /** The language of the person's first operator, for messages sent without their request. */
+  private async localeOf(userId: string, fallback: string): Promise<string> {
+    const [row] = await this.db
+      .select({ locale: tenants.defaultLocale })
+      .from(memberships)
+      .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
+      .where(eq(memberships.userId, userId))
+      .orderBy(memberships.createdAt)
+      .limit(1);
+    return row?.locale ?? fallback;
+  }
+
+  private async audit(
+    adminId: string,
+    userId: string,
+    action: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    await this.db.insert(auditLog).values({
+      tenantId: null,
+      actorUserId: adminId,
+      action,
+      entityType: 'user',
+      entityId: userId,
+      data,
+    });
   }
 }

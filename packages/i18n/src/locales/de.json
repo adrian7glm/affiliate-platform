@@ -1190,7 +1190,8 @@
       "plans": "Pläne und Gebühren",
       "invites": "Einladungen",
       "translations": "Übersetzungen",
-      "contact": "Nachrichten"
+      "contact": "Nachrichten",
+      "accounts": "Konten"
     },
     "shell": {
       "loadError": "Wir konnten Ihr Konto nicht laden",
@@ -1440,6 +1441,35 @@
       "question": "Frage",
       "markHandled": "Als beantwortet markieren",
       "reopen": "Wieder auf „Zu beantworten“ setzen"
+    },
+    "accounts": {
+      "title": "Kontohilfe",
+      "description": "Finden Sie das Konto einer Person über die Telefonnummer oder E-Mail-Adresse, mit der sie sich anmeldet. Setzen Sie die Zwei-Faktor-Authentifizierung für jemanden zurück, der sowohl sein Handy als auch seine Wiederherstellungscodes verloren hat, oder melden Sie die Person auf allen Geräten ab.",
+      "contactLabel": "Telefonnummer oder E-Mail",
+      "contactHint": "Womit sich die Person anmeldet, zum Beispiel 0722 123 456 oder name@example.com.",
+      "contactInvalid": "Geben Sie eine Telefonnummer oder eine E-Mail-Adresse ein.",
+      "search": "Konto suchen",
+      "notFound": "Mit dieser Telefonnummer oder E-Mail-Adresse meldet sich kein Konto an.",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "since": "Konto erstellt",
+      "twoFactor": "Zwei-Faktor-Authentifizierung",
+      "twoFactorOnSince": "Aktiviert seit {date}",
+      "twoFactorOff": "Deaktiviert",
+      "memberships": "Zugriff",
+      "platformAdmin": "Plattform-Admin",
+      "noMemberships": "Gehört noch zu keinem Anbieter.",
+      "reset": "Zwei-Faktor-Authentifizierung zurücksetzen",
+      "resetTitle": "Zwei-Faktor-Authentifizierung zurücksetzen",
+      "resetBody": "Die Zwei-Faktor-Authentifizierung wird deaktiviert und die Person wird auf allen Geräten abgemeldet. Sie meldet sich dann nur noch mit dem Code per SMS oder E-Mail an und kann die Zwei-Faktor-Authentifizierung unter Mein Konto wieder aktivieren. Darüber erhält sie eine Nachricht.",
+      "checkIdentity": "Tun Sie das nur, nachdem Sie geprüft haben, dass es wirklich diese Person ist, zum Beispiel indem Sie die Nummer im Konto anrufen oder ihren Anbieter fragen. Ein angeblich verlorenes Handy ist der übliche Trick, mit dem Konten gestohlen werden.",
+      "resetConfirm": "Zurücksetzen",
+      "resetDone": "Die Zwei-Faktor-Authentifizierung ist für dieses Konto deaktiviert, und das Konto wurde auf allen Geräten abgemeldet.",
+      "signOut": "Überall abmelden",
+      "signOutTitle": "Auf allen Geräten abmelden",
+      "signOutBody": "Alle Handys und Computer, die bei diesem Konto angemeldet sind, müssen sich erneut mit einem Code anmelden.",
+      "signOutConfirm": "Überall abmelden",
+      "signOutDone": "Dieses Konto wurde auf allen Geräten abgemeldet."
     }
   },
   "signup": {
@@ -1694,7 +1724,9 @@
       "twoFactorOffSubject": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert",
       "twoFactorOff": "Die Zwei-Faktor-Authentifizierung wurde für Ihr Konto deaktiviert.",
       "notYou": "Wenn Sie das nicht waren, öffnen Sie Ihr Konto und melden Sie die anderen Geräte ab: {url}",
-      "action": "Mein Konto öffnen"
+      "action": "Mein Konto öffnen",
+      "twoFactorResetSubject": "Die Zwei-Faktor-Authentifizierung wurde zurückgesetzt",
+      "twoFactorReset": "Das Support-Team der Plattform hat die Zwei-Faktor-Authentifizierung für Ihr Konto deaktiviert und Sie auf allen Geräten abgemeldet. Wenn Sie das nicht angefordert haben, kontaktieren Sie uns sofort."
     }
   },
   "catalog": {

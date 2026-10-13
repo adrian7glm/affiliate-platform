@@ -32,6 +32,7 @@ const NAV: { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }
   { href: '/admin/plans', label: 'admin.nav.plans', icon: <IconPercent /> },
   { href: '/admin/invites', label: 'admin.nav.invites', icon: <IconLink /> },
   { href: '/admin/contact', label: 'admin.nav.contact', icon: <IconMail /> },
+  { href: '/admin/accounts', label: 'admin.nav.accounts', icon: <IconShield /> },
   { href: '/admin/translations', label: 'admin.nav.translations', icon: <IconGlobe /> },
 ];
 

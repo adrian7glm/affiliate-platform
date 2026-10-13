@@ -1,5 +1,7 @@
 import type {
   AccountSecurityDto,
+  AdminAccountDto,
+  AdminAccountLookupDto,
   CheckInResultDto,
   CheckoutResultDto,
   MeDto,
@@ -10,7 +12,8 @@ import type {
   TwoFactorEnabledDto,
   TwoFactorSetupDto,
 } from '@ap/contracts';
-import { createDb, memberships, users } from '@ap/db';
+import { auditLog, createDb, memberships, users } from '@ap/db';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { boardsAround } from '../src/booking/tickets.service';
 import { isPlatformAdmin } from '../src/common/auth';
@@ -322,6 +325,72 @@ describe.skipIf(!databaseUrl)('account security (needs TEST_DATABASE_URL)', () =
       expect(boardsAround(departure, new Date('2026-10-21T05:00:00Z'), tz)).toBe(true);
       expect(boardsAround(departure, new Date('2026-10-20T10:00:00Z'), tz)).toBe(false);
       expect(boardsAround(departure, new Date('2026-10-22T08:00:00Z'), tz)).toBe(false);
+    });
+  });
+
+  describe('platform support', () => {
+    const email = 'lost-phone@delta.test';
+    let admin: string;
+    let person: string;
+
+    beforeAll(async () => {
+      const db = createDb(databaseUrl!, { max: 1 });
+      await db.db.insert(users).values({ email: 'support@platform.test', isPlatformAdmin: true });
+      await db.close();
+      admin = await signIn(h, 'support@platform.test');
+      tick(61 * 60);
+      person = await signIn(h, email);
+      const setup = (await authed(person, 'post', '/account/2fa/setup').expect(200))
+        .body as TwoFactorSetupDto;
+      person = (
+        (
+          await authed(person, 'post', '/account/2fa/enable')
+            .send({ code: codeNow(setup.secret) })
+            .expect(200)
+        ).body as TwoFactorEnabledDto
+      ).token;
+    });
+
+    it('is only for platform admins', async () => {
+      await authed(person, 'get', `/admin/accounts?contact=${email}`).expect(403);
+    });
+
+    it('finds an account by the phone or email it signs in with', async () => {
+      const found = (await authed(admin, 'get', `/admin/accounts?contact=${email}`).expect(200))
+        .body as AdminAccountLookupDto;
+      expect(found.account).toMatchObject({ email, twoFactorEnabled: true, memberships: [] });
+      const none = (
+        await authed(admin, 'get', '/admin/accounts?contact=nobody@delta.test').expect(200)
+      ).body as AdminAccountLookupDto;
+      expect(none.account).toBeNull();
+    });
+
+    it('resets two-step login, signs the person out and tells them', async () => {
+      const found = (await authed(admin, 'get', `/admin/accounts?contact=${email}`).expect(200))
+        .body as AdminAccountLookupDto;
+      const reset = (
+        await authed(admin, 'post', `/admin/accounts/${found.account!.id}/2fa/reset`).expect(200)
+      ).body as AdminAccountDto;
+      expect(reset.twoFactorEnabled).toBe(false);
+      await authed(person, 'get', '/me').expect(401);
+      const db = createDb(databaseUrl!, { max: 1 });
+      const logged = await db.db.select().from(auditLog).where(eq(auditLog.entityId, reset.id));
+      await db.close();
+      expect(logged.map((l) => l.action)).toContain('two_factor_reset');
+      expect((await h.lastMessage(email))?.subject).toBe('Two-step login was reset');
+      // The code from the SMS/email is enough again.
+      tick(61 * 60);
+      const first = await firstStep(email);
+      expect('token' in first && first.token).toBeTruthy();
+    });
+
+    it('signs an account out on every device', async () => {
+      const token = await signIn(h, email);
+      const found = (await authed(admin, 'get', `/admin/accounts?contact=${email}`).expect(200))
+        .body as AdminAccountLookupDto;
+      await authed(admin, 'post', `/admin/accounts/${found.account!.id}/sign-out`).expect(200);
+      await authed(token, 'get', '/me').expect(401);
+      await authed(admin, 'post', `/admin/accounts/${crypto.randomUUID()}/sign-out`).expect(404);
     });
   });
 

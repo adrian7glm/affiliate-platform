@@ -1228,7 +1228,8 @@
       "plans": "Piani e tariffe",
       "invites": "Inviti",
       "translations": "Traduzioni",
-      "contact": "Messaggi"
+      "contact": "Messaggi",
+      "accounts": "Account"
     },
     "shell": {
       "loadError": "Non siamo riusciti a caricare il tuo account",
@@ -1491,6 +1492,35 @@
       "question": "Domanda",
       "markHandled": "Segna come risposto",
       "reopen": "Rimetti tra quelli da rispondere"
+    },
+    "accounts": {
+      "title": "Assistenza account",
+      "description": "Trova l'account di una persona tramite il numero di telefono o l'email con cui accede. Reimposta la verifica in due passaggi per chi ha perso sia il telefono sia i codici di recupero, oppure disconnetti la persona da tutti i dispositivi.",
+      "contactLabel": "Numero di telefono o email",
+      "contactHint": "Quello con cui la persona accede, per esempio 0722 123 456 o nome@example.com.",
+      "contactInvalid": "Inserisci un numero di telefono o un indirizzo email.",
+      "search": "Trova l'account",
+      "notFound": "Nessun account accede con questo numero di telefono o questa email.",
+      "phone": "Telefono",
+      "email": "Email",
+      "since": "Account creato",
+      "twoFactor": "Verifica in due passaggi",
+      "twoFactorOnSince": "Attiva dal {date}",
+      "twoFactorOff": "Disattivata",
+      "memberships": "Accesso",
+      "platformAdmin": "Amministratore piattaforma",
+      "noMemberships": "Non fa ancora parte di nessun operatore.",
+      "reset": "Reimposta la verifica in due passaggi",
+      "resetTitle": "Reimposta la verifica in due passaggi",
+      "resetBody": "La verifica in due passaggi viene disattivata e la persona viene disconnessa da tutti i dispositivi. Accede solo con il codice via SMS o email e può riattivarla dalla pagina Il mio account. Riceve un messaggio al riguardo.",
+      "checkIdentity": "Fallo solo dopo aver verificato che sia davvero quella persona, per esempio chiamando il numero dell'account o chiedendo al suo operatore. Fingere di aver perso il telefono è il modo più comune per rubare un account.",
+      "resetConfirm": "Reimposta",
+      "resetDone": "La verifica in due passaggi è disattivata per questo account, che è stato disconnesso da tutti i dispositivi.",
+      "signOut": "Disconnetti ovunque",
+      "signOutTitle": "Disconnetti da tutti i dispositivi",
+      "signOutBody": "Tutti i telefoni e i computer connessi a questo account dovranno accedere di nuovo con un codice.",
+      "signOutConfirm": "Disconnetti ovunque",
+      "signOutDone": "Questo account è stato disconnesso da tutti i dispositivi."
     }
   },
   "signup": {
@@ -1755,7 +1785,9 @@
       "twoFactorOffSubject": "La verifica in due passaggi è stata disattivata",
       "twoFactorOff": "La verifica in due passaggi è stata disattivata per il tuo account.",
       "notYou": "Se non sei stato tu, apri il tuo account ed esci dagli altri dispositivi: {url}",
-      "action": "Apri il mio account"
+      "action": "Apri il mio account",
+      "twoFactorResetSubject": "La verifica in due passaggi è stata reimpostata",
+      "twoFactorReset": "L'assistenza della piattaforma ha disattivato la verifica in due passaggi per il tuo account e ti ha disconnesso da tutti i dispositivi. Se non l'hai chiesto tu, contattaci subito."
     }
   },
   "catalog": {

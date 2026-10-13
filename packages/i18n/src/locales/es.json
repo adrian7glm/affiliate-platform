@@ -1228,7 +1228,8 @@
       "plans": "Planes y comisiones",
       "invites": "Invitaciones",
       "translations": "Traducciones",
-      "contact": "Mensajes"
+      "contact": "Mensajes",
+      "accounts": "Cuentas"
     },
     "shell": {
       "loadError": "No pudimos cargar tu cuenta",
@@ -1491,6 +1492,35 @@
       "question": "Pregunta",
       "markHandled": "Marcar como respondido",
       "reopen": "Volver a por responder"
+    },
+    "accounts": {
+      "title": "Ayuda con las cuentas",
+      "description": "Busca la cuenta de una persona por el número de teléfono o el correo con el que inicia sesión. Restablece la verificación en dos pasos a quien haya perdido el móvil y también sus códigos de recuperación, o cierra su sesión en todos los dispositivos.",
+      "contactLabel": "Número de teléfono o correo",
+      "contactHint": "El que usa la persona para iniciar sesión, por ejemplo 0722 123 456 o nombre@ejemplo.com.",
+      "contactInvalid": "Escribe un número de teléfono o un correo electrónico.",
+      "search": "Buscar la cuenta",
+      "notFound": "Ninguna cuenta inicia sesión con este número de teléfono o correo.",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "since": "Cuenta creada",
+      "twoFactor": "Verificación en dos pasos",
+      "twoFactorOnSince": "Activada desde el {date}",
+      "twoFactorOff": "Desactivada",
+      "memberships": "Acceso",
+      "platformAdmin": "Administrador de la plataforma",
+      "noMemberships": "Aún no forma parte de ningún operador.",
+      "reset": "Restablecer la verificación en dos pasos",
+      "resetTitle": "Restablecer la verificación en dos pasos",
+      "resetBody": "La verificación en dos pasos se desactiva y se cierra la sesión de la persona en todos los dispositivos. Pasa a iniciar sesión solo con el código por SMS o correo, y puede volver a activarla desde Mi cuenta. Recibe un mensaje sobre ello.",
+      "checkIdentity": "Hazlo solo después de comprobar que es realmente esa persona, por ejemplo llamando al número de la cuenta o preguntando a su operador. Fingir que se ha perdido el móvil es la forma habitual de robar cuentas.",
+      "resetConfirm": "Restablecer",
+      "resetDone": "La verificación en dos pasos está desactivada en esta cuenta y se ha cerrado la sesión en todos los dispositivos.",
+      "signOut": "Cerrar sesión en todas partes",
+      "signOutTitle": "Cerrar sesión en todos los dispositivos",
+      "signOutBody": "Todos los móviles y ordenadores con la sesión iniciada en esta cuenta tendrán que volver a iniciar sesión con un código.",
+      "signOutConfirm": "Cerrar sesión en todas partes",
+      "signOutDone": "Se ha cerrado la sesión de esta cuenta en todos los dispositivos."
     }
   },
   "signup": {
@@ -1755,7 +1785,9 @@
       "twoFactorOffSubject": "Se ha desactivado la verificación en dos pasos",
       "twoFactorOff": "Se ha desactivado la verificación en dos pasos en su cuenta.",
       "notYou": "Si no ha sido usted, abra su cuenta y cierre la sesión en los demás dispositivos: {url}",
-      "action": "Abrir mi cuenta"
+      "action": "Abrir mi cuenta",
+      "twoFactorResetSubject": "Se ha restablecido la verificación en dos pasos",
+      "twoFactorReset": "El equipo de soporte de la plataforma ha desactivado la verificación en dos pasos en su cuenta y ha cerrado su sesión en todos los dispositivos. Si no lo ha solicitado, contáctenos de inmediato."
     }
   },
   "catalog": {

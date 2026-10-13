@@ -1228,7 +1228,8 @@
       "plans": "Planuri și tarife",
       "invites": "Invitații",
       "translations": "Traduceri",
-      "contact": "Mesaje"
+      "contact": "Mesaje",
+      "accounts": "Conturi"
     },
     "shell": {
       "loadError": "Nu am putut încărca contul",
@@ -1491,6 +1492,35 @@
       "question": "Întrebare",
       "markHandled": "Marchează rezolvat",
       "reopen": "Mută înapoi la răspuns"
+    },
+    "accounts": {
+      "title": "Ajutor pentru conturi",
+      "description": "Găsește contul unei persoane după numărul de telefon sau emailul cu care intră. Resetează verificarea în doi pași pentru cine a pierdut și telefonul, și codurile de rezervă, sau deconectează-l de pe toate dispozitivele.",
+      "contactLabel": "Număr de telefon sau email",
+      "contactHint": "Cel cu care intră persoana, de exemplu 0722 123 456 sau nume@exemplu.ro.",
+      "contactInvalid": "Scrie un număr de telefon sau o adresă de email.",
+      "search": "Caută contul",
+      "notFound": "Niciun cont nu intră cu acest număr de telefon sau email.",
+      "phone": "Telefon",
+      "email": "Email",
+      "since": "Cont creat",
+      "twoFactor": "Verificare în doi pași",
+      "twoFactorOnSince": "Activată din {date}",
+      "twoFactorOff": "Dezactivată",
+      "memberships": "Acces",
+      "platformAdmin": "Administrator platformă",
+      "noMemberships": "Nu face parte încă din niciun operator.",
+      "reset": "Resetează verificarea în doi pași",
+      "resetTitle": "Resetează verificarea în doi pași",
+      "resetBody": "Verificarea în doi pași se dezactivează și persoana e deconectată de pe toate dispozitivele. Intră doar cu codul prin SMS sau email și o poate activa din nou din Contul meu. Primește un mesaj despre asta.",
+      "checkIdentity": "Fă asta doar după ce te-ai asigurat că e chiar persoana respectivă, de exemplu sunând la numărul din cont sau întrebând operatorul ei. „Mi-am pierdut telefonul” e metoda obișnuită prin care se fură conturi.",
+      "resetConfirm": "Resetează",
+      "resetDone": "Verificarea în doi pași e dezactivată pentru acest cont, iar contul a fost deconectat de pe toate dispozitivele.",
+      "signOut": "Deconectează de peste tot",
+      "signOutTitle": "Deconectează de pe toate dispozitivele",
+      "signOutBody": "Fiecare telefon și calculator conectat la acest cont trebuie să intre din nou cu un cod.",
+      "signOutConfirm": "Deconectează de peste tot",
+      "signOutDone": "Contul a fost deconectat de pe toate dispozitivele."
     }
   },
   "signup": {
@@ -1755,7 +1785,9 @@
       "twoFactorOffSubject": "Verificarea în doi pași a fost dezactivată",
       "twoFactorOff": "Verificarea în doi pași a fost dezactivată pentru contul tău.",
       "notYou": "Dacă nu ai fost tu, deschide contul și deconectează celelalte dispozitive: {url}",
-      "action": "Deschide contul meu"
+      "action": "Deschide contul meu",
+      "twoFactorResetSubject": "Verificarea în doi pași a fost resetată",
+      "twoFactorReset": "Echipa platformei a dezactivat verificarea în doi pași pentru contul tău și te-a deconectat de pe toate dispozitivele. Dacă nu ai cerut asta, contactează-ne imediat."
     }
   },
   "catalog": {

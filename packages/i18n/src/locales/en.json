@@ -1190,7 +1190,8 @@
       "plans": "Plans and fees",
       "invites": "Invitations",
       "translations": "Translations",
-      "contact": "Messages"
+      "contact": "Messages",
+      "accounts": "Accounts"
     },
     "shell": {
       "loadError": "We could not load your account",
@@ -1440,6 +1441,35 @@
       "question": "Question",
       "markHandled": "Mark as answered",
       "reopen": "Move back to answer"
+    },
+    "accounts": {
+      "title": "Account support",
+      "description": "Find a person's account by the phone number or email they sign in with. Reset two-step login for someone who lost both their phone and their recovery codes, or sign them out on every device.",
+      "contactLabel": "Phone number or email",
+      "contactHint": "The one the person signs in with, for example 0722 123 456 or name@example.com.",
+      "contactInvalid": "Type a phone number or an email address.",
+      "search": "Find account",
+      "notFound": "No account signs in with this phone number or email.",
+      "phone": "Phone",
+      "email": "Email",
+      "since": "Account created",
+      "twoFactor": "Two-step login",
+      "twoFactorOnSince": "On since {date}",
+      "twoFactorOff": "Off",
+      "memberships": "Access",
+      "platformAdmin": "Platform admin",
+      "noMemberships": "Not part of any operator yet.",
+      "reset": "Reset two-step login",
+      "resetTitle": "Reset two-step login",
+      "resetBody": "Two-step login is turned off and the person is signed out on every device. They sign in with the SMS or email code only, and can turn it on again from My account. They get a message about it.",
+      "checkIdentity": "Do this only after checking it is really them, for example by calling the number on the account or asking their operator. Pretending to have lost a phone is the usual way accounts get stolen.",
+      "resetConfirm": "Reset",
+      "resetDone": "Two-step login is off for this account, and it was signed out on every device.",
+      "signOut": "Sign out everywhere",
+      "signOutTitle": "Sign out on every device",
+      "signOutBody": "Every phone and computer signed in to this account has to sign in again with a code.",
+      "signOutConfirm": "Sign out everywhere",
+      "signOutDone": "This account was signed out on every device."
     }
   },
   "signup": {
@@ -1694,7 +1724,9 @@
       "twoFactorOffSubject": "Two-step login was turned off",
       "twoFactorOff": "Two-step login was turned off for your account.",
       "notYou": "If this was not you, open your account and sign out the other devices: {url}",
-      "action": "Open my account"
+      "action": "Open my account",
+      "twoFactorResetSubject": "Two-step login was reset",
+      "twoFactorReset": "Platform support turned off two-step login for your account and signed you out on every device. If you did not ask for this, contact us right away."
     }
   },
   "catalog": {

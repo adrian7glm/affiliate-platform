@@ -1228,7 +1228,8 @@
       "plans": "Formules et frais",
       "invites": "Invitations",
       "translations": "Traductions",
-      "contact": "Messages"
+      "contact": "Messages",
+      "accounts": "Comptes"
     },
     "shell": {
       "loadError": "Nous n'avons pas pu charger votre compte",
@@ -1491,6 +1492,35 @@
       "question": "Question",
       "markHandled": "Marquer comme traité",
       "reopen": "Remettre à traiter"
+    },
+    "accounts": {
+      "title": "Aide pour les comptes",
+      "description": "Trouvez le compte d'une personne grâce au numéro de téléphone ou à l'e-mail avec lequel elle se connecte. Réinitialisez la validation en deux étapes pour une personne qui a perdu à la fois son téléphone et ses codes de récupération, ou déconnectez-la de tous les appareils.",
+      "contactLabel": "Numéro de téléphone ou e-mail",
+      "contactHint": "Celui avec lequel la personne se connecte, par exemple 0722 123 456 ou nom@exemple.com.",
+      "contactInvalid": "Saisissez un numéro de téléphone ou une adresse e-mail.",
+      "search": "Trouver le compte",
+      "notFound": "Aucun compte ne se connecte avec ce numéro de téléphone ou cet e-mail.",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "since": "Compte créé",
+      "twoFactor": "Validation en deux étapes",
+      "twoFactorOnSince": "Activée depuis le {date}",
+      "twoFactorOff": "Désactivée",
+      "memberships": "Accès",
+      "platformAdmin": "Admin de la plateforme",
+      "noMemberships": "Ne fait encore partie d'aucun opérateur.",
+      "reset": "Réinitialiser la validation en deux étapes",
+      "resetTitle": "Réinitialiser la validation en deux étapes",
+      "resetBody": "La validation en deux étapes est désactivée et la personne est déconnectée de tous les appareils. Elle se connecte alors uniquement avec le code reçu par SMS ou par e-mail, et peut réactiver la validation en deux étapes depuis Mon compte. Elle reçoit un message à ce sujet.",
+      "checkIdentity": "Ne le faites qu'après avoir vérifié qu'il s'agit bien de cette personne, par exemple en appelant le numéro du compte ou en demandant à son opérateur. Prétendre avoir perdu son téléphone est la méthode habituelle pour voler des comptes.",
+      "resetConfirm": "Réinitialiser",
+      "resetDone": "La validation en deux étapes est désactivée pour ce compte, et il a été déconnecté de tous les appareils.",
+      "signOut": "Déconnecter partout",
+      "signOutTitle": "Déconnecter de tous les appareils",
+      "signOutBody": "Tous les téléphones et ordinateurs connectés à ce compte devront se reconnecter avec un code.",
+      "signOutConfirm": "Déconnecter partout",
+      "signOutDone": "Ce compte a été déconnecté de tous les appareils."
     }
   },
   "signup": {
@@ -1755,7 +1785,9 @@
       "twoFactorOffSubject": "La validation en deux étapes a été désactivée",
       "twoFactorOff": "La validation en deux étapes a été désactivée pour votre compte.",
       "notYou": "Si ce n'était pas vous, ouvrez votre compte et déconnectez les autres appareils : {url}",
-      "action": "Ouvrir mon compte"
+      "action": "Ouvrir mon compte",
+      "twoFactorResetSubject": "La validation en deux étapes a été réinitialisée",
+      "twoFactorReset": "L'assistance de la plateforme a désactivé la validation en deux étapes pour votre compte et vous a déconnecté de tous les appareils. Si vous ne l'avez pas demandé, contactez-nous immédiatement."
     }
   },
   "catalog": {
