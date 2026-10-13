@@ -22,8 +22,10 @@ type CameraState = 'idle' | 'starting' | 'on' | 'denied' | 'unavailable' | 'erro
 
 type Outcome =
   | {
-      kind: 'checked_in' | 'already_checked_in' | 'not_valid';
+      kind: 'checked_in' | 'already_checked_in' | 'not_valid' | 'wrong_day';
       ticket: TicketDto | null;
+      /** The scanned token, to board a `wrong_day` ticket anyway. */
+      token?: string;
       collectMinor: number | null;
       checkedInAt?: string | null;
       checkedInBy?: string | null;
@@ -137,7 +139,7 @@ export function ScanScreen({ tenant, showHeader = true, onScanned }: ScanScreenP
   }, []);
 
   const check = useCallback(
-    async (input: string) => {
+    async (input: string, allowOtherDay = false) => {
       setChecking(true);
       setOutcome(null);
       try {
@@ -145,10 +147,13 @@ export function ScanScreen({ tenant, showHeader = true, onScanned }: ScanScreenP
         if (!token) {
           setOutcome({ kind: 'not_valid', ticket: null, collectMinor: null });
         } else {
-          const result = await operatorApi.checkIn({ token });
+          const result = await operatorApi.checkIn(
+            allowOtherDay ? { token, allowOtherDay: true } : { token },
+          );
           const collectMinor = result.collectMinor > 0 ? result.collectMinor : null;
           setOutcome({
             kind: result.result,
+            token,
             ticket: result.ticket,
             collectMinor,
             checkedInAt: result.checkedInAt,
@@ -286,6 +291,11 @@ export function ScanScreen({ tenant, showHeader = true, onScanned }: ScanScreenP
             headingRef={resultHeadingRef}
             onNext={next}
             onRetry={outcome.kind === 'error' ? () => void check(outcome.input) : undefined}
+            onBoardAnyway={
+              outcome.kind === 'wrong_day' && outcome.token
+                ? () => void check(outcome.token!, true)
+                : undefined
+            }
           />
         ) : null}
 
@@ -363,6 +373,11 @@ const OUTCOME_STYLE = {
     box: 'bg-warning text-on-warning',
     Icon: IconAlert,
   },
+  wrong_day: {
+    title: 'boarding.scan.outcome.wrongDay',
+    box: 'bg-warning text-on-warning',
+    Icon: IconAlert,
+  },
   not_valid: {
     title: 'boarding.scan.outcome.notValid',
     box: 'bg-danger text-on-danger',
@@ -405,6 +420,7 @@ function ResultPanel({
   headingRef,
   onNext,
   onRetry,
+  onBoardAnyway,
 }: {
   outcome: Outcome;
   timezone: string;
@@ -412,6 +428,8 @@ function ResultPanel({
   headingRef: RefObject<HTMLHeadingElement | null>;
   onNext: () => void;
   onRetry?: () => void;
+  /** For a ticket of another day: board it anyway (the operator moved the customer). */
+  onBoardAnyway?: () => void;
 }) {
   const { t, lang } = useT();
   const style = OUTCOME_STYLE[outcome.kind];
@@ -441,6 +459,14 @@ function ResultPanel({
         {outcome.kind === 'not_valid' ? (
           <p className="text-lg">{notValidReason(t, ticket)}</p>
         ) : null}
+        {outcome.kind === 'wrong_day' && ticket ? (
+          <p className="rounded-2xl border-2 border-warning bg-warning-soft p-4 text-xl font-semibold text-warning-fg">
+            {t('boarding.scan.wrongDay', {
+              day: formatDayLong(dateKeyInTz(ticket.startsAt, timezone), lang),
+              time: formatTime(ticket.startsAt, timezone, lang),
+            })}
+          </p>
+        ) : null}
         {outcome.kind === 'already_checked_in' && outcome.checkedInAt ? (
           <p className="rounded-2xl border-2 border-warning bg-warning-soft p-4 text-xl font-semibold text-warning-fg">
             {usedLine(t, lang, outcome.checkedInAt, outcome.checkedInBy ?? null, timezone)}
@@ -462,7 +488,7 @@ function ResultPanel({
           </div>
         ) : null}
 
-        {otherDay && ticket ? (
+        {otherDay && ticket && outcome.kind !== 'wrong_day' ? (
           <Alert tone="warning">
             {t('boarding.scan.otherDay', {
               day: formatDayLong(dateKeyInTz(ticket.startsAt, timezone), lang),
@@ -514,6 +540,11 @@ function ResultPanel({
           {onRetry ? (
             <Button size="lg" block variant="secondary" onClick={onRetry}>
               {t('common.retry')}
+            </Button>
+          ) : null}
+          {onBoardAnyway ? (
+            <Button size="lg" block variant="secondary" onClick={onBoardAnyway}>
+              {t('boarding.scan.boardAnyway')}
             </Button>
           ) : null}
           <Button size="xl" block icon={<IconScan />} onClick={onNext}>

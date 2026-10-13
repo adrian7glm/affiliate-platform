@@ -219,7 +219,8 @@
       "notAffiliate": "nu ești afiliat al acestui operator",
       "tooManyCodes": "ai cerut prea multe coduri, încearcă din nou mai târziu",
       "codeExpired": "codul a expirat, cere unul nou",
-      "wrongCode": "cod greșit"
+      "wrongCode": "cod greșit",
+      "ownerOnly": "doar administratorul operatorului poate schimba comisioanele și plățile"
     },
     "webhooks": {
       "invalidSignature": "semnătură Stripe invalidă"
@@ -309,7 +310,8 @@
       "checkedIn": "Bine ai venit la bord.",
       "alreadyCheckedIn": "Acest bilet a fost deja scanat.",
       "notValid": "Acest bilet nu este valabil (anulat, rambursat sau neplătit).",
-      "otherOperator": "Acest cod QR nu este un bilet al acestui operator."
+      "otherOperator": "Acest cod QR nu este un bilet al acestui operator.",
+      "wrongDay": "Biletul este pentru altă zi."
     },
     "ticket": {
       "noPdf": "acest bilet nu este valabil, deci nu are PDF",
@@ -323,6 +325,15 @@
     },
     "limits": {
       "tooManyRequests": "prea multe încercări de pe această conexiune; așteaptă câteva minute și încearcă din nou"
+    },
+    "account": {
+      "challengeExpired": "conectarea a durat prea mult; începe din nou",
+      "twoFactorNotOn": "verificarea în doi pași nu este activată pentru acest cont",
+      "twoFactorLocked": "prea multe coduri greșite; așteaptă 15 minute și încearcă din nou",
+      "twoFactorWrongCode": "codul este greșit; scrie cele 6 cifre pe care le arată acum aplicația de autentificare",
+      "twoFactorAlreadyOn": "verificarea în doi pași este deja activată",
+      "twoFactorNoSetup": "începe din nou activarea",
+      "contactTaken": "acest număr de telefon sau email aparține deja altui cont"
     }
   },
   "auth": {
@@ -395,6 +406,19 @@
       "forBefore": "Invitația este pentru ",
       "forAfter": ". Intră în cont cu numărul de telefon sau emailul tău ca să o accepți.",
       "continue": "Continuă"
+    },
+    "mfa": {
+      "title": "Verificare în doi pași",
+      "intro": "Deschide aplicația de autentificare și scrie codul de 6 cifre afișat pentru acest cont.",
+      "recoveryIntro": "Scrie unul dintre codurile de rezervă salvate când ai activat verificarea în doi pași. Fiecare cod merge o singură dată.",
+      "codeLabel": "Codul din aplicația de autentificare",
+      "codeHint": "Codul se schimbă la fiecare 30 de secunde.",
+      "recoveryLabel": "Cod de rezervă",
+      "recoveryHint": "De exemplu K7PQ2-XM9TA",
+      "recoveryInvalid": "Un cod de rezervă are 10 litere și cifre.",
+      "useRecovery": "Nu am telefonul la mine",
+      "useApp": "Folosește aplicația de autentificare",
+      "startOver": "Începe din nou"
     }
   },
   "public": {
@@ -1722,6 +1746,16 @@
       "company": "Firmă",
       "action": "Vezi toate cererile",
       "sms": "{topic} de la {name}: {contact}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "Un nou mod de conectare a fost adăugat contului tău",
+      "contactAdded": "{contact} poate fi folosit acum pentru conectarea la contul tău.",
+      "twoFactorOnSubject": "Verificarea în doi pași este activată",
+      "twoFactorOn": "Verificarea în doi pași cu aplicație de autentificare a fost activată pentru contul tău.",
+      "twoFactorOffSubject": "Verificarea în doi pași a fost dezactivată",
+      "twoFactorOff": "Verificarea în doi pași a fost dezactivată pentru contul tău.",
+      "notYou": "Dacă nu ai fost tu, deschide contul și deconectează celelalte dispozitive: {url}",
+      "action": "Deschide contul meu"
     }
   },
   "catalog": {
@@ -2078,7 +2112,8 @@
         "checkedIn": "Îmbarcare confirmată",
         "alreadyCheckedIn": "Bilet deja folosit",
         "notValid": "Bilet nevalabil",
-        "error": "Nu am putut verifica biletul"
+        "error": "Nu am putut verifica biletul",
+        "wrongDay": "Bilet pentru altă zi"
       },
       "reasonUnknown": "Codul nu este un bilet al tău sau este deteriorat.",
       "reasonUnpaid": "Rezervarea nu a fost plătită.",
@@ -2097,7 +2132,9 @@
       "usedAt": "Scanat {when}",
       "usedAtBy": "Scanat {when} de {who}",
       "usedToday": "azi la {time}",
-      "usedOnDay": "{day}, ora {time}"
+      "usedOnDay": "{day}, ora {time}",
+      "wrongDay": "Biletul este pentru {day}, ora {time}. Nu a fost folosit.",
+      "boardAnyway": "Îmbarcă oricum"
     },
     "app": {
       "title": "Scaner bilete",
@@ -2209,6 +2246,67 @@
           "text": "Pentru datele rezervării, scrie operatorului folosind datele de pe bilet. Pentru orice ține de {app} sau de pagina de contact, folosește pagina noastră de contact."
         }
       }
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "Contul meu"
+    },
+    "link": "Contul meu",
+    "back": "Înapoi",
+    "title": "Contul meu",
+    "contact": {
+      "title": "Cum te conectezi",
+      "intro": "Primești codul de conectare prin SMS sau email. Adaugă-le pe amândouă, ca să poți intra și dacă unul nu mai merge.",
+      "phone": "Număr de telefon",
+      "email": "Email",
+      "none": "Neadăugat",
+      "change": "Schimbă",
+      "add": "Adaugă",
+      "phoneTitle": "Numărul de telefon pentru conectare",
+      "emailTitle": "Emailul pentru conectare",
+      "dialogIntro": "Trimitem un cod la noua adresă, ca să verificăm că e a ta.",
+      "save": "Confirmă",
+      "phoneSaved": "Numărul de telefon este salvat. De acum te poți conecta și cu el.",
+      "emailSaved": "Emailul este salvat. De acum te poți conecta și cu el."
+    },
+    "twoFactor": {
+      "title": "Verificare în doi pași",
+      "intro": "Opțional, pentru siguranță în plus: după codul prin SMS sau email, scrii și un cod dintr-o aplicație de autentificare de pe telefon (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "Verificarea în doi pași este activată",
+      "onSince": "Din {date}.",
+      "codesLeft": "Coduri de rezervă rămase: {count}.",
+      "codesLow": "Mai ai puține coduri de rezervă. Generează altele noi și păstrează-le într-un loc sigur.",
+      "newCodes": "Coduri de rezervă noi",
+      "turnOff": "Dezactivează",
+      "offBody": "Verificarea în doi pași este dezactivată. Oricine primește codul tău prin SMS sau email se poate conecta.",
+      "turnOn": "Activează verificarea în doi pași",
+      "turnOffTitle": "Dezactivează verificarea în doi pași",
+      "newCodesTitle": "Coduri de rezervă noi",
+      "turnOffIntro": "Scrie codul din aplicația de autentificare (sau un cod de rezervă) ca să confirmi.",
+      "newCodesIntro": "Scrie codul din aplicația de autentificare. Codurile de rezervă vechi nu vor mai funcționa.",
+      "turnedOff": "Verificarea în doi pași este dezactivată.",
+      "codesTitle": "Salvează codurile de rezervă",
+      "setupTitle": "Activează verificarea în doi pași",
+      "step1": "Instalează pe telefon o aplicație de autentificare, dacă nu ai deja una.",
+      "step2": "În aplicație, adaugă un cont și scanează acest cod QR.",
+      "step3": "Scrie codul de 6 cifre afișat de aplicație.",
+      "qrLabel": "Cod QR pentru aplicația de autentificare",
+      "cantScan": "Nu pot scana codul",
+      "typeKey": "În aplicație, alege să introduci o cheie și scrie-o pe aceasta:",
+      "codesIntro": "Dacă pierzi telefonul, cu aceste coduri te poți conecta. Fiecare merge o singură dată. Păstrează-le într-un loc sigur; nu le mai afișăm. Celelalte dispozitive au fost deconectate.",
+      "copy": "Copiază codurile",
+      "copied": "Copiate",
+      "saved": "Am salvat codurile",
+      "codeOrRecovery": "Codul din aplicație sau un cod de rezervă"
+    },
+    "devices": {
+      "title": "Dispozitive",
+      "intro": "Ai pierdut un telefon sau te-ai conectat pe un calculator comun la recepție? Ieși din cont peste tot, mai puțin aici.",
+      "signOutOthers": "Deconectează celelalte dispozitive",
+      "done": "Toate celelalte dispozitive au fost deconectate.",
+      "confirmTitle": "Deconectezi celelalte dispozitive?",
+      "confirmBody": "Toate celelalte telefoane și calculatoare conectate la contul tău vor trebui să se conecteze din nou. Aici rămâi conectat."
     }
   }
 }

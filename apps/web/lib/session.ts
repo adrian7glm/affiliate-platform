@@ -67,6 +67,21 @@ export function saveSession(token: string, me: MeDto): void {
   setCachedMe(me);
 }
 
+/** Keeps the profile, swaps the token (after the other devices were signed out). */
+export function replaceToken(token: string): void {
+  writeString(STORAGE_KEYS.token, token);
+}
+
+/** Where "back" goes from the account page: the area the person last used. */
+export function homePathFor(me: MeDto | null): string {
+  if (!me) return '/login';
+  const tenantId = getTenantId();
+  const membership =
+    me.memberships.find((m) => m.tenantId === tenantId) ?? me.memberships[0] ?? null;
+  if (membership) return homePathForRole(membership.role);
+  return me.user.isPlatformAdmin ? '/admin' : '/login';
+}
+
 /** Forgets the session and every cached response (localStorage and service worker cache). */
 export async function clearSession(): Promise<void> {
   clearAppStorage();

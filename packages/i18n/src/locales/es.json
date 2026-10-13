@@ -219,7 +219,8 @@
       "notAffiliate": "no eres afiliado de este operador",
       "tooManyCodes": "demasiados códigos solicitados, inténtalo más tarde",
       "codeExpired": "el código ha caducado, pide uno nuevo",
-      "wrongCode": "código incorrecto"
+      "wrongCode": "código incorrecto",
+      "ownerOnly": "solo el administrador del operador puede cambiar las comisiones y los pagos"
     },
     "webhooks": {
       "invalidSignature": "firma de Stripe no válida"
@@ -309,7 +310,8 @@
       "checkedIn": "Bienvenido a bordo.",
       "alreadyCheckedIn": "Este billete ya se escaneó.",
       "notValid": "Este billete no es válido (cancelado, reembolsado o sin pagar).",
-      "otherOperator": "Este código QR no es un billete de este operador."
+      "otherOperator": "Este código QR no es un billete de este operador.",
+      "wrongDay": "Este billete es para otro día."
     },
     "ticket": {
       "noPdf": "este billete no es válido, por lo que no tiene PDF",
@@ -323,6 +325,15 @@
     },
     "limits": {
       "tooManyRequests": "demasiados intentos desde esta conexión; espera unos minutos y vuelve a intentarlo"
+    },
+    "account": {
+      "challengeExpired": "el inicio de sesión ha tardado demasiado; vuelve a empezar",
+      "twoFactorNotOn": "la verificación en dos pasos no está activada en esta cuenta",
+      "twoFactorLocked": "demasiados códigos incorrectos; espera 15 minutos y vuelve a intentarlo",
+      "twoFactorWrongCode": "el código es incorrecto; escribe los 6 dígitos que muestra ahora la app de autenticación",
+      "twoFactorAlreadyOn": "la verificación en dos pasos ya está activada",
+      "twoFactorNoSetup": "vuelve a empezar la configuración",
+      "contactTaken": "este número de teléfono o correo ya pertenece a otra cuenta"
     }
   },
   "auth": {
@@ -395,6 +406,19 @@
       "forBefore": "Esta invitación es para ",
       "forAfter": ". Inicia sesión con tu número de teléfono o correo para aceptarla.",
       "continue": "Continuar"
+    },
+    "mfa": {
+      "title": "Verificación en dos pasos",
+      "intro": "Abre tu app de autenticación y escribe el código de 6 dígitos que muestra para esta cuenta.",
+      "recoveryIntro": "Escribe uno de los códigos de recuperación que guardaste al activar la verificación en dos pasos. Cada código sirve una sola vez.",
+      "codeLabel": "Código de la app de autenticación",
+      "codeHint": "El código cambia cada 30 segundos.",
+      "recoveryLabel": "Código de recuperación",
+      "recoveryHint": "Por ejemplo K7PQ2-XM9TA",
+      "recoveryInvalid": "Un código de recuperación tiene 10 letras y dígitos.",
+      "useRecovery": "No tengo el móvil",
+      "useApp": "Usar la app de autenticación",
+      "startOver": "Volver a empezar"
     }
   },
   "public": {
@@ -1722,6 +1746,16 @@
       "company": "Empresa",
       "action": "Ver todas las solicitudes",
       "sms": "{topic} de {name}: {contact}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "Se ha añadido una nueva forma de iniciar sesión en su cuenta",
+      "contactAdded": "{contact} ya puede usarse para iniciar sesión en su cuenta.",
+      "twoFactorOnSubject": "La verificación en dos pasos está activada",
+      "twoFactorOn": "Se ha activado la verificación en dos pasos con app de autenticación en su cuenta.",
+      "twoFactorOffSubject": "Se ha desactivado la verificación en dos pasos",
+      "twoFactorOff": "Se ha desactivado la verificación en dos pasos en su cuenta.",
+      "notYou": "Si no ha sido usted, abra su cuenta y cierre la sesión en los demás dispositivos: {url}",
+      "action": "Abrir mi cuenta"
     }
   },
   "catalog": {
@@ -2078,7 +2112,8 @@
         "checkedIn": "Embarque confirmado",
         "alreadyCheckedIn": "Billete ya usado",
         "notValid": "Billete no válido",
-        "error": "No pudimos comprobar el billete"
+        "error": "No pudimos comprobar el billete",
+        "wrongDay": "Billete para otro día"
       },
       "reasonUnknown": "Este código no es uno de tus billetes, o está dañado.",
       "reasonUnpaid": "La reserva no se ha pagado.",
@@ -2097,7 +2132,9 @@
       "usedAt": "Escaneado {when}",
       "usedAtBy": "Escaneado {when} por {who}",
       "usedToday": "hoy a las {time}",
-      "usedOnDay": "el {day} a las {time}"
+      "usedOnDay": "el {day} a las {time}",
+      "wrongDay": "Este billete es para el {day} a las {time}. No se ha usado.",
+      "boardAnyway": "Embarcar de todos modos"
     },
     "app": {
       "title": "Escáner de billetes",
@@ -2209,6 +2246,67 @@
           "text": "Para los datos de su reserva, escriba al operador usando los datos de su billete. Para cualquier cuestión sobre {app} o la página de contacto, use nuestra página de contacto."
         }
       }
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "Mi cuenta"
+    },
+    "link": "Mi cuenta",
+    "back": "Atrás",
+    "title": "Mi cuenta",
+    "contact": {
+      "title": "Cómo inicias sesión",
+      "intro": "Recibes el código de acceso por SMS o correo. Añade los dos, para poder iniciar sesión aunque uno deje de funcionar.",
+      "phone": "Número de teléfono",
+      "email": "Correo electrónico",
+      "none": "Sin añadir",
+      "change": "Cambiar",
+      "add": "Añadir",
+      "phoneTitle": "Número de teléfono para iniciar sesión",
+      "emailTitle": "Correo para iniciar sesión",
+      "dialogIntro": "Enviamos un código al nuevo número o correo, para comprobar que es tuyo.",
+      "save": "Confirmar",
+      "phoneSaved": "Tu número de teléfono está guardado. A partir de ahora puedes iniciar sesión con él.",
+      "emailSaved": "Tu correo está guardado. A partir de ahora puedes iniciar sesión con él."
+    },
+    "twoFactor": {
+      "title": "Verificación en dos pasos",
+      "intro": "Opcional, para más seguridad: después del código por SMS o correo, también escribes un código de una app de autenticación en tu móvil (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "La verificación en dos pasos está activada",
+      "onSince": "Desde el {date}.",
+      "codesLeft": "Códigos de recuperación restantes: {count}.",
+      "codesLow": "Te quedan pocos códigos de recuperación. Genera otros nuevos y guárdalos en un lugar seguro.",
+      "newCodes": "Nuevos códigos de recuperación",
+      "turnOff": "Desactivar",
+      "offBody": "La verificación en dos pasos está desactivada. Cualquiera que reciba tu código por SMS o correo puede iniciar sesión.",
+      "turnOn": "Activar la verificación en dos pasos",
+      "turnOffTitle": "Desactivar la verificación en dos pasos",
+      "newCodesTitle": "Nuevos códigos de recuperación",
+      "turnOffIntro": "Escribe el código de tu app de autenticación (o un código de recuperación) para confirmar.",
+      "newCodesIntro": "Escribe el código de tu app de autenticación. Tus códigos de recuperación antiguos dejarán de funcionar.",
+      "turnedOff": "La verificación en dos pasos está desactivada.",
+      "codesTitle": "Guarda tus códigos de recuperación",
+      "setupTitle": "Activar la verificación en dos pasos",
+      "step1": "Instala una app de autenticación en tu móvil, si no tienes ninguna.",
+      "step2": "En la app, añade una cuenta y escanea este código QR.",
+      "step3": "Escribe el código de 6 dígitos que muestra la app.",
+      "qrLabel": "Código QR para la app de autenticación",
+      "cantScan": "No puedo escanear el código",
+      "typeKey": "En la app, elige introducir una clave y escribe esta:",
+      "codesIntro": "Si pierdes el móvil, estos códigos te permiten iniciar sesión. Cada uno sirve una sola vez. Guárdalos en un lugar seguro; no volveremos a mostrarlos. Se ha cerrado la sesión en tus otros dispositivos.",
+      "copy": "Copiar los códigos",
+      "copied": "Copiados",
+      "saved": "He guardado los códigos",
+      "codeOrRecovery": "Código de la app o código de recuperación"
+    },
+    "devices": {
+      "title": "Dispositivos",
+      "intro": "¿Has perdido un móvil o has iniciado sesión en un ordenador compartido de la recepción? Cierra la sesión en todas partes excepto aquí.",
+      "signOutOthers": "Cerrar sesión en los demás dispositivos",
+      "done": "Se ha cerrado la sesión en todos los demás dispositivos.",
+      "confirmTitle": "¿Cerrar sesión en los demás dispositivos?",
+      "confirmBody": "Todos los demás móviles y ordenadores con la sesión iniciada en tu cuenta tendrán que volver a iniciar sesión. Aquí mantienes la sesión iniciada."
     }
   }
 }

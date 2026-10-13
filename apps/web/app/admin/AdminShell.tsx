@@ -16,6 +16,7 @@ import {
   IconLogout,
   IconMail,
   IconMenu,
+  IconShield,
   IconPercent,
 } from '@/components/icons';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -220,6 +221,9 @@ function AdminFrame({
               <p className="truncate text-sm font-semibold">{who}</p>
               <p className="text-sm text-muted">{t('admin.shell.role')}</p>
               <LanguageSwitcher className="-ml-2 mt-2" />
+              <ButtonLink href="/account" variant="ghost" icon={<IconShield />} className="-ml-3">
+                {t('account.link')}
+              </ButtonLink>
               <Button variant="ghost" icon={<IconLogout />} onClick={onLogout} className="-ml-3">
                 {t('admin.shell.logout')}
               </Button>
@@ -266,6 +270,9 @@ function AdminFrame({
               {t('admin.shell.whoWithRole', { name: who })}
             </p>
             <LanguageSwitcher className="-ml-2" />
+            <ButtonLink href="/account" variant="ghost" icon={<IconShield />} className="-ml-3">
+              {t('account.link')}
+            </ButtonLink>
             <Button variant="ghost" icon={<IconLogout />} onClick={onLogout} className="-ml-3">
               {t('admin.shell.logout')}
             </Button>

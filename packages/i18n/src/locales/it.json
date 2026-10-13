@@ -219,7 +219,8 @@
       "notAffiliate": "non sei un affiliato di questo operatore",
       "tooManyCodes": "troppi codici richiesti, riprova più tardi",
       "codeExpired": "il codice è scaduto, chiedine uno nuovo",
-      "wrongCode": "codice errato"
+      "wrongCode": "codice errato",
+      "ownerOnly": "solo l'amministratore dell'operatore può modificare commissioni e pagamenti"
     },
     "webhooks": {
       "invalidSignature": "firma Stripe non valida"
@@ -309,7 +310,8 @@
       "checkedIn": "Benvenuto a bordo.",
       "alreadyCheckedIn": "Questo biglietto è già stato scansionato.",
       "notValid": "Questo biglietto non è valido (annullato, rimborsato o non pagato).",
-      "otherOperator": "Questo codice QR non è un biglietto di questo operatore."
+      "otherOperator": "Questo codice QR non è un biglietto di questo operatore.",
+      "wrongDay": "Questo biglietto è per un altro giorno."
     },
     "ticket": {
       "noPdf": "questo biglietto non è valido, quindi non ha un PDF",
@@ -323,6 +325,15 @@
     },
     "limits": {
       "tooManyRequests": "troppi tentativi da questa connessione; attendi qualche minuto e riprova"
+    },
+    "account": {
+      "challengeExpired": "l'accesso ha richiesto troppo tempo; ricomincia",
+      "twoFactorNotOn": "la verifica in due passaggi non è attiva per questo account",
+      "twoFactorLocked": "troppi codici errati; attendi 15 minuti e riprova",
+      "twoFactorWrongCode": "il codice è errato; inserisci le 6 cifre che l'app di autenticazione mostra adesso",
+      "twoFactorAlreadyOn": "la verifica in due passaggi è già attiva",
+      "twoFactorNoSetup": "ricomincia la configurazione",
+      "contactTaken": "questo numero di telefono o questa email appartiene già a un altro account"
     }
   },
   "auth": {
@@ -395,6 +406,19 @@
       "forBefore": "Questo invito è per ",
       "forAfter": ". Accedi con il tuo numero di telefono o la tua email per accettarlo.",
       "continue": "Continua"
+    },
+    "mfa": {
+      "title": "Verifica in due passaggi",
+      "intro": "Apri l'app di autenticazione e inserisci il codice di 6 cifre che mostra per questo account.",
+      "recoveryIntro": "Inserisci uno dei codici di recupero che hai salvato quando hai attivato la verifica in due passaggi. Ogni codice funziona una sola volta.",
+      "codeLabel": "Codice dell'app di autenticazione",
+      "codeHint": "Il codice cambia ogni 30 secondi.",
+      "recoveryLabel": "Codice di recupero",
+      "recoveryHint": "Ad esempio K7PQ2-XM9TA",
+      "recoveryInvalid": "Un codice di recupero ha 10 lettere e cifre.",
+      "useRecovery": "Non ho il telefono con me",
+      "useApp": "Usa l'app di autenticazione",
+      "startOver": "Ricomincia"
     }
   },
   "public": {
@@ -1722,6 +1746,16 @@
       "company": "Azienda",
       "action": "Vedi tutte le richieste",
       "sms": "{topic} da {name}: {contact}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "Al tuo account è stato aggiunto un nuovo modo per accedere",
+      "contactAdded": "{contact} ora può essere usato per accedere al tuo account.",
+      "twoFactorOnSubject": "La verifica in due passaggi è attiva",
+      "twoFactorOn": "Per il tuo account è stata attivata la verifica in due passaggi con un'app di autenticazione.",
+      "twoFactorOffSubject": "La verifica in due passaggi è stata disattivata",
+      "twoFactorOff": "La verifica in due passaggi è stata disattivata per il tuo account.",
+      "notYou": "Se non sei stato tu, apri il tuo account ed esci dagli altri dispositivi: {url}",
+      "action": "Apri il mio account"
     }
   },
   "catalog": {
@@ -2078,7 +2112,8 @@
         "checkedIn": "Imbarco confermato",
         "alreadyCheckedIn": "Biglietto già usato",
         "notValid": "Biglietto non valido",
-        "error": "Non siamo riusciti a verificare il biglietto"
+        "error": "Non siamo riusciti a verificare il biglietto",
+        "wrongDay": "Biglietto per un altro giorno"
       },
       "reasonUnknown": "Questo codice non è uno dei tuoi biglietti, oppure è danneggiato.",
       "reasonUnpaid": "La prenotazione non è stata pagata.",
@@ -2097,7 +2132,9 @@
       "usedAt": "Scansionato {when}",
       "usedAtBy": "Scansionato {when} da {who}",
       "usedToday": "oggi alle {time}",
-      "usedOnDay": "{day} alle {time}"
+      "usedOnDay": "{day} alle {time}",
+      "wrongDay": "Questo biglietto è per il {day} alle {time}. Non è stato usato.",
+      "boardAnyway": "Imbarca comunque"
     },
     "app": {
       "title": "Scanner biglietti",
@@ -2209,6 +2246,67 @@
           "text": "Per i dati della tua prenotazione, scrivi all'operatore usando i recapiti sul biglietto. Per qualsiasi questione su {app} o sulla pagina contatti, usa la nostra pagina contatti."
         }
       }
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "Il mio account"
+    },
+    "link": "Il mio account",
+    "back": "Indietro",
+    "title": "Il mio account",
+    "contact": {
+      "title": "Come accedi",
+      "intro": "Ricevi il codice di accesso via SMS o email. Aggiungili entrambi, così puoi accedere anche se uno dei due smette di funzionare.",
+      "phone": "Numero di telefono",
+      "email": "Email",
+      "none": "Non aggiunto",
+      "change": "Modifica",
+      "add": "Aggiungi",
+      "phoneTitle": "Numero di telefono per l'accesso",
+      "emailTitle": "Email per l'accesso",
+      "dialogIntro": "Inviamo un codice al nuovo recapito, per verificare che sia tuo.",
+      "save": "Conferma",
+      "phoneSaved": "Il tuo numero di telefono è stato salvato. D'ora in poi puoi usarlo per accedere.",
+      "emailSaved": "La tua email è stata salvata. D'ora in poi puoi usarla per accedere."
+    },
+    "twoFactor": {
+      "title": "Verifica in due passaggi",
+      "intro": "Facoltativa, per una sicurezza in più: dopo il codice via SMS o email, inserisci anche un codice da un'app di autenticazione sul telefono (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "La verifica in due passaggi è attiva",
+      "onSince": "Dal {date}.",
+      "codesLeft": "Codici di recupero rimasti: {count}.",
+      "codesLow": "Ti restano pochi codici di recupero. Generane di nuovi e conservali in un posto sicuro.",
+      "newCodes": "Nuovi codici di recupero",
+      "turnOff": "Disattiva",
+      "offBody": "La verifica in due passaggi è disattivata. Chiunque riceva il tuo codice via SMS o email può accedere.",
+      "turnOn": "Attiva la verifica in due passaggi",
+      "turnOffTitle": "Disattiva la verifica in due passaggi",
+      "newCodesTitle": "Nuovi codici di recupero",
+      "turnOffIntro": "Inserisci il codice dell'app di autenticazione (o un codice di recupero) per confermare.",
+      "newCodesIntro": "Inserisci il codice dell'app di autenticazione. I vecchi codici di recupero smetteranno di funzionare.",
+      "turnedOff": "La verifica in due passaggi è disattivata.",
+      "codesTitle": "Salva i tuoi codici di recupero",
+      "setupTitle": "Attiva la verifica in due passaggi",
+      "step1": "Installa un'app di autenticazione sul telefono, se non ne hai già una.",
+      "step2": "Nell'app, aggiungi un account e scansiona questo codice QR.",
+      "step3": "Inserisci il codice di 6 cifre mostrato dall'app.",
+      "qrLabel": "Codice QR per l'app di autenticazione",
+      "cantScan": "Non riesco a scansionare il codice",
+      "typeKey": "Nell'app, scegli di inserire una chiave e digita questa:",
+      "codesIntro": "Se perdi il telefono, con questi codici puoi accedere. Ognuno funziona una sola volta. Conservali in un posto sicuro; non li mostreremo più. Gli altri tuoi dispositivi sono stati disconnessi.",
+      "copy": "Copia i codici",
+      "copied": "Copiati",
+      "saved": "Ho salvato i codici",
+      "codeOrRecovery": "Codice dell'app o codice di recupero"
+    },
+    "devices": {
+      "title": "Dispositivi",
+      "intro": "Hai perso un telefono o hai effettuato l'accesso da un computer condiviso alla reception? Esci ovunque tranne qui.",
+      "signOutOthers": "Esci dagli altri dispositivi",
+      "done": "Tutti gli altri dispositivi sono stati disconnessi.",
+      "confirmTitle": "Uscire dagli altri dispositivi?",
+      "confirmBody": "Tutti gli altri telefoni e computer connessi al tuo account dovranno accedere di nuovo. Qui resti connesso."
     }
   }
 }

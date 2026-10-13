@@ -20,6 +20,20 @@ import { DomainError } from './errors';
 export interface AuthUser {
   id: string;
   isPlatformAdmin: boolean;
+  sessionVersion: number;
+}
+
+/**
+ * Platform admin rights. When PLATFORM_ADMIN_EMAILS is set it has the last word: removing an
+ * email from it takes the rights away at once, even from sessions that are already open.
+ */
+export function isPlatformAdmin(
+  config: Pick<AppConfig, 'PLATFORM_ADMIN_EMAILS'>,
+  user: { email: string | null; isPlatformAdmin: boolean },
+): boolean {
+  if (!user.isPlatformAdmin) return false;
+  if (config.PLATFORM_ADMIN_EMAILS.length === 0) return true;
+  return user.email !== null && config.PLATFORM_ADMIN_EMAILS.includes(user.email);
 }
 
 /** The tenant a request acts in, resolved from the X-Tenant-Id header and the user's memberships. */
@@ -49,11 +63,23 @@ export class AuthGuard implements CanActivate {
     const claims = token ? verifySession(this.config.APP_SECRET, token) : null;
     if (!claims) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
     const [user] = await this.db
-      .select({ id: users.id, isPlatformAdmin: users.isPlatformAdmin })
+      .select({
+        id: users.id,
+        email: users.email,
+        isPlatformAdmin: users.isPlatformAdmin,
+        sessionVersion: users.sessionVersion,
+      })
       .from(users)
       .where(eq(users.id, claims.sub));
-    if (!user) throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
-    request.user = user;
+    // A token from before "sign out everywhere" (or before 2FA was turned on) no longer works.
+    if (!user || claims.sv !== user.sessionVersion) {
+      throw new DomainError('errors.auth.signInAgain', HttpStatus.UNAUTHORIZED);
+    }
+    request.user = {
+      id: user.id,
+      isPlatformAdmin: isPlatformAdmin(this.config, user),
+      sessionVersion: user.sessionVersion,
+    };
     return true;
   }
 }

@@ -334,10 +334,15 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
     expect(ticket.status).toBe('valid');
     const scan = () =>
       asOwner('post', '/operator/tickets/check-in').send({ token: ticket.qrToken });
+    // The day before, the ticket is not used up (it is for another day).
+    expect(((await scan().expect(200)).body as CheckInResultDto).result).toBe('wrong_day');
+    const bookingTime = h.clock.now().toISOString();
+    h.clock.set('2026-10-06T06:30:00Z'); // 09:30 in Bucharest, half an hour before departure
     expect((await scan().expect(200)).body).toMatchObject({
       result: 'checked_in',
       collectMinor: 0,
     });
+    h.clock.set(bookingTime);
     expect(((await scan().expect(200)).body as CheckInResultDto).result).toBe('already_checked_in');
     const forged = await asOwner('post', '/operator/tickets/check-in').send({
       token: `${ticket.qrToken!.slice(0, -4)}AAAA`,

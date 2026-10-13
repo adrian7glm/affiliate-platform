@@ -94,7 +94,9 @@ export class OperatorCommissionsController {
     return this.commissions.listPlans(tenant.tenantId);
   }
 
+  // Commission rates and payouts are money: the owner decides them, not staff.
   @Post('commission-plans')
+  @Roles('owner')
   createPlan(
     @CurrentTenant() tenant: TenantContext,
     @ZodBody(createPlanBody) body: CreatePlanBody,
@@ -103,6 +105,7 @@ export class OperatorCommissionsController {
   }
 
   @Put('commission-plans/:id')
+  @Roles('owner')
   updatePlan(
     @CurrentTenant() tenant: TenantContext,
     @Param('id', ParseUUIDPipe) id: string,
@@ -112,6 +115,7 @@ export class OperatorCommissionsController {
   }
 
   @Post('commission-plans/:id/make-default')
+  @Roles('owner')
   @HttpCode(200)
   makeDefault(
     @CurrentTenant() tenant: TenantContext,
@@ -121,6 +125,7 @@ export class OperatorCommissionsController {
   }
 
   @Delete('commission-plans/:id')
+  @Roles('owner')
   archivePlan(
     @CurrentTenant() tenant: TenantContext,
     @Param('id', ParseUUIDPipe) id: string,
@@ -141,6 +146,7 @@ export class OperatorCommissionsController {
   }
 
   @Post('payouts/close-period')
+  @Roles('owner')
   @HttpCode(200)
   closePeriod(
     @CurrentTenant() tenant: TenantContext,
@@ -162,6 +168,7 @@ export class OperatorCommissionsController {
   }
 
   @Post('payouts/:id/mark-paid')
+  @Roles('owner')
   @HttpCode(200)
   markPaid(
     @CurrentTenant() tenant: TenantContext,

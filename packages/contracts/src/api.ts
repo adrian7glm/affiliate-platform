@@ -79,13 +79,88 @@ export interface MeDto {
     email: string | null;
     phone: string | null;
     isPlatformAdmin: boolean;
+    /** Missing from profiles the app cached before the field existed. */
+    twoFactorEnabled?: boolean;
   };
   memberships: MembershipDto[];
 }
 
 export interface SessionDto extends MeDto {
   token: string;
+  mfaRequired?: false;
 }
+
+/**
+ * The SMS/email code was right but the person turned on two-step login: the session comes from
+ * POST /auth/mfa/verify with this token and a code from their authenticator app.
+ */
+export interface MfaChallengeDto {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type VerifyOtpResultDto = SessionDto | MfaChallengeDto;
+
+/** A 6-digit code from the authenticator app, or a recovery code such as `K7PQ2-XM9TA`. */
+const secondFactorCode = z.string().trim().min(6).max(20);
+
+export const verifyMfaBody = z.object({
+  mfaToken: z.string().min(10).max(2000),
+  code: secondFactorCode,
+});
+export type VerifyMfaBody = z.infer<typeof verifyMfaBody>;
+
+// ---------------------------------------------------------------------------------------------
+// The signed-in person's own account: contact details, two-step login, sessions
+// ---------------------------------------------------------------------------------------------
+
+export interface AccountSecurityDto {
+  email: string | null;
+  phone: string | null;
+  twoFactorEnabled: boolean;
+  twoFactorEnabledAt: string | null;
+  recoveryCodesLeft: number;
+}
+
+/** Shown once while setting up: the QR code encodes `otpauthUrl`; `secret` is for typing in. */
+export interface TwoFactorSetupDto {
+  secret: string;
+  otpauthUrl: string;
+}
+
+export const twoFactorCodeBody = z.object({ code: secondFactorCode });
+export type TwoFactorCodeBody = z.infer<typeof twoFactorCodeBody>;
+
+/** Turning on two-step login signs out every other device; this device gets `token`. */
+export interface TwoFactorEnabledDto {
+  recoveryCodes: string[];
+  token: string;
+}
+
+export interface RecoveryCodesDto {
+  recoveryCodes: string[];
+}
+
+/** A fresh session token for this device, after the others were signed out. */
+export interface NewSessionTokenDto {
+  token: string;
+}
+
+/** Add or change the phone number or email used to sign in: a code is sent to the new one. */
+export const contactChangeRequestBody = z.object({
+  destination: destinationSchema,
+  locale: z.string().max(20).optional(),
+});
+export type ContactChangeRequestBody = z.infer<typeof contactChangeRequestBody>;
+
+export const contactChangeVerifyBody = z.object({
+  destination: destinationSchema,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'the code has 6 digits'),
+});
+export type ContactChangeVerifyBody = z.infer<typeof contactChangeVerifyBody>;
 
 export const acceptInviteBody = z.object({
   token: z.string().min(16),
@@ -513,11 +588,19 @@ export interface TicketDto {
   contactPhone: string | null;
 }
 
-export const checkInBody = z.object({ token: z.string().min(16).max(2000) });
+export const checkInBody = z.object({
+  token: z.string().min(16).max(2000),
+  /** Board a ticket for another day anyway (the scanner answered `wrong_day` first). */
+  allowOtherDay: z.boolean().optional(),
+});
 export type CheckInBody = z.infer<typeof checkInBody>;
 
 export interface CheckInResultDto {
-  result: 'checked_in' | 'already_checked_in' | 'not_valid';
+  /**
+   * `wrong_day`: a valid ticket for a departure on another day (more than a few hours away). It
+   * is not used up; scanning again with `allowOtherDay` boards it anyway.
+   */
+  result: 'checked_in' | 'already_checked_in' | 'not_valid' | 'wrong_day';
   message: string;
   ticket: TicketDto | null;
   /** Money to take from the customer now: a pay-at-boarding booking checked in by this scan. */

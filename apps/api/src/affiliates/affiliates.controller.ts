@@ -39,7 +39,7 @@ export class OperatorAffiliatesController {
     @CurrentTenant() tenant: TenantContext,
     @ZodBody(inviteAffiliateBody) body: InviteAffiliateBody,
   ): Promise<AffiliateDto> {
-    return this.affiliates.invite(tenant.tenantId, body);
+    return this.affiliates.invite(tenant.tenantId, body, tenant.roles.includes('owner'));
   }
 
   @Patch(':id')
@@ -48,7 +48,7 @@ export class OperatorAffiliatesController {
     @Param('id', ParseUUIDPipe) id: string,
     @ZodBody(updateAffiliateBody) body: UpdateAffiliateBody,
   ): Promise<AffiliateDto> {
-    return this.affiliates.update(tenant.tenantId, id, body);
+    return this.affiliates.update(tenant.tenantId, id, body, tenant.roles.includes('owner'));
   }
 }
 
