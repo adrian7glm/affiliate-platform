@@ -8,15 +8,7 @@ import type {
   MeDto,
   UpdateAffiliateBody,
 } from '@ap/contracts';
-import {
-  type Database,
-  affiliates,
-  bookings,
-  commissionEntries,
-  memberships,
-  tenants,
-  users,
-} from '@ap/db';
+import { type Database, affiliates, bookings, commissionEntries, tenants } from '@ap/db';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { randomToken } from '../common/crypto';

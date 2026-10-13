@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@ap/i18n'],
   // The monorepo root (one pnpm lockfile for every package).
   outputFileTracingRoot: path.join(__dirname, '..', '..'),
-  // Linting is not part of this package's pipeline (typecheck + tests are).
+  // ESLint runs once for the whole repo (`pnpm lint` at the root, in CI), not inside next build.
   eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [

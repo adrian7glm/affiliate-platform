@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { periodKeyFor, periodRange, previousPeriod, tierProgress } from '@ap/commission';
 import type { AffiliateHomeDto, AffiliateMonthDto, EarningsDto } from '@ap/contracts';
 import { type Database, affiliates, bookings, commissionEntries, products } from '@ap/db';
-import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { BookingService } from '../booking/booking.service';
 import { Clock } from '../common/clock';
 import { NotFound } from '../common/errors';

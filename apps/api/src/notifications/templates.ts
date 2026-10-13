@@ -377,14 +377,14 @@ const GSM_REPLACEMENTS: Record<string, string> = {
   '–': '-',
   '—': '-',
   '…': '...',
-  ' ': ' ',
-  ' ': ' ',
+  '\u00a0': ' ',
+  '\u202f': ' ',
 };
 
 /** Replaces Romanian diacritics and typographic punctuation with their GSM-7 equivalents. */
 export function toGsm(text: string): string {
   return text
-    .replace(/[ăâîșşțţĂÂÎȘŞȚŢ„”“’‘–—…  ]/g, (c) => GSM_REPLACEMENTS[c] ?? c)
+    .replace(/[ăâîșşțţĂÂÎȘŞȚŢ„”“’‘–—…\u00a0\u202f]/g, (c) => GSM_REPLACEMENTS[c] ?? c)
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '');
 }
