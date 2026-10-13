@@ -3,9 +3,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ApiErrorFilter } from './common/errors';
 import type { AppConfig } from './config';
+import { I18nService } from './i18n/i18n.service';
 
 export function configureApp(app: INestApplication, config: AppConfig): INestApplication {
-  app.useGlobalFilters(new ApiErrorFilter());
+  app.useGlobalFilters(new ApiErrorFilter(app.get(I18nService)));
   app.enableCors({
     origin: [config.WEB_URL],
     allowedHeaders: ['authorization', 'content-type', 'x-tenant-id'],

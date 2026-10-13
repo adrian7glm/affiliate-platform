@@ -21,13 +21,14 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { randomToken } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
-import { Notifier } from '../common/notifier';
+import { NotificationsService } from '../notifications/notifications.service';
 import { TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB } from '../database/database.module';
 import { CommissionsService } from '../commissions/commissions.service';
 import { IdentityService } from '../identity/identity.service';
 import { LinksService } from '../tracking/links.service';
+import { SubscriptionsService } from '../platform/subscriptions.service';
 import { col } from '../common/sql';
 
 const INVITE_TTL_MS = 14 * 24 * 3_600_000;
@@ -44,7 +45,8 @@ export class AffiliatesService {
     private readonly identity: IdentityService,
     private readonly commissions: CommissionsService,
     private readonly links: LinksService,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   private dto(row: AffiliateRow): AffiliateDto {
@@ -89,6 +91,7 @@ export class AffiliatesService {
 
   async invite(tenantId: string, body: InviteAffiliateBody): Promise<AffiliateDto> {
     const tenant = await this.tenants.get(tenantId);
+    await this.subscriptions.assertCanAddAffiliate(tenantId);
     await this.commissions.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.parentAffiliateId) await this.get(tenantId, body.parentAffiliateId);
     const token = randomToken();
@@ -108,15 +111,17 @@ export class AffiliatesService {
         })
         .returning();
       await this.links.primaryLinkId(tx, tenantId, created!.id);
+      if (body.destination) {
+        await this.notifications.enqueue(tx, {
+          to: body.destination,
+          template: 'affiliate_invite',
+          locale: tenant.defaultLocale,
+          tenantId,
+          params: { tenantName: tenant.name, url: `${this.config.WEB_URL}/join/${token}` },
+        });
+      }
       return created!;
     });
-    if (body.destination) {
-      await this.notifier.send({
-        to: body.destination,
-        subject: `${tenant.name} te invită în rețeaua de afiliați`,
-        text: `${tenant.name} te invită să recomanzi excursiile lor și să câștigi comision. Activează-ți contul: ${this.config.WEB_URL}/join/${token}`,
-      });
-    }
     return this.dto(row);
   }
 
@@ -137,10 +142,7 @@ export class AffiliatesService {
     const current = await this.get(tenantId, affiliateId);
     await this.commissions.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.status === 'active' && current.status === 'invited') {
-      throw new DomainError(
-        'the affiliate has not accepted the invitation yet',
-        HttpStatus.CONFLICT,
-      );
+      throw new DomainError('errors.affiliates.notAccepted', HttpStatus.CONFLICT);
     }
     const [row] = await this.db
       .update(affiliates)
@@ -178,17 +180,14 @@ export class AffiliatesService {
         .for('update');
       if (!affiliate || affiliate.status !== 'invited') throw new NotFound('invitation');
       if (!affiliate.inviteExpiresAt || affiliate.inviteExpiresAt < this.clock.now()) {
-        throw new DomainError(
-          'this invitation has expired, ask the operator for a new one',
-          HttpStatus.GONE,
-        );
+        throw new DomainError('errors.affiliates.inviteExpired', HttpStatus.GONE);
       }
       const [existing] = await tx
         .select({ id: affiliates.id })
         .from(affiliates)
         .where(and(eq(affiliates.tenantId, affiliate.tenantId), eq(affiliates.userId, userId)));
       if (existing)
-        throw new DomainError('you are already an affiliate of this operator', HttpStatus.CONFLICT);
+        throw new DomainError('errors.affiliates.alreadyAffiliate', HttpStatus.CONFLICT);
       await tx
         .update(affiliates)
         .set({ userId, status: 'active', inviteToken: null, inviteExpiresAt: null })

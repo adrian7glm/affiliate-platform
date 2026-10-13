@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { canShare, copyText, shareLink } from '@/lib/share';
 import { Button, type ButtonSize } from './Button';
+import { useT } from './I18nProvider';
 import { IconCheck, IconCopy, IconShare } from './icons';
 
 interface ShareActionsProps {
@@ -22,12 +23,13 @@ export function ShareActions({
   url,
   title,
   text,
-  copyLabel = 'Copiază linkul',
-  copiedLabel = 'Linkul a fost copiat',
-  shareLabel = 'Distribuie',
+  copyLabel,
+  copiedLabel,
+  shareLabel,
   size = 'lg',
   stacked = true,
 }: ShareActionsProps) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   const [shareSupported, setShareSupported] = useState(false);
 
@@ -47,7 +49,7 @@ export function ShareActions({
         icon={copied ? <IconCheck /> : <IconCopy />}
         onClick={async () => setCopied(await copyText(url))}
       >
-        {copied ? 'Copiat!' : copyLabel}
+        {copied ? t('common.copied') : (copyLabel ?? t('common.copyLink'))}
       </Button>
       {shareSupported ? (
         <Button
@@ -57,11 +59,11 @@ export function ShareActions({
           icon={<IconShare />}
           onClick={() => void shareLink({ title, text, url })}
         >
-          {shareLabel}
+          {shareLabel ?? t('common.share')}
         </Button>
       ) : null}
       <span className="visually-hidden" role="status" aria-live="polite">
-        {copied ? copiedLabel : ''}
+        {copied ? (copiedLabel ?? t('common.linkCopied')) : ''}
       </span>
     </div>
   );

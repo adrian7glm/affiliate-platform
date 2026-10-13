@@ -197,6 +197,6 @@ export class LinksService {
       .select({ id: affiliateLinks.id })
       .from(affiliateLinks)
       .where(and(eq(affiliateLinks.id, linkId), eq(affiliateLinks.affiliateId, affiliateId)));
-    if (!link) throw new DomainError('link not found', HttpStatus.NOT_FOUND);
+    if (!link) throw new NotFound('link');
   }
 }

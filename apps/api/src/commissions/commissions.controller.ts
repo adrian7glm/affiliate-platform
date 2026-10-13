@@ -1,17 +1,20 @@
 import {
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { periodKeyFor, periodRange } from '@ap/commission';
 import {
   type AffiliateHomeDto,
+  type ArchivePlanResultDto,
   type ClosePeriodBody,
   type ClosePeriodResultDto,
   type CommissionPlanDto,
@@ -20,8 +23,10 @@ import {
   type EarningsDto,
   type OperatorDashboardDto,
   type PayoutDto,
+  type UpdatePlanBody,
   closePeriodBody,
   createPlanBody,
+  updatePlanBody,
 } from '@ap/contracts';
 import { type Database, affiliates, bookings, commissionEntries } from '@ap/db';
 import { and, desc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
@@ -95,6 +100,32 @@ export class OperatorCommissionsController {
     @ZodBody(createPlanBody) body: CreatePlanBody,
   ): Promise<CommissionPlanDto> {
     return this.commissions.createPlan(tenant.tenantId, body);
+  }
+
+  @Put('commission-plans/:id')
+  updatePlan(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @ZodBody(updatePlanBody) body: UpdatePlanBody,
+  ): Promise<CommissionPlanDto> {
+    return this.commissions.updatePlan(tenant.tenantId, id, body);
+  }
+
+  @Post('commission-plans/:id/make-default')
+  @HttpCode(200)
+  makeDefault(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CommissionPlanDto> {
+    return this.commissions.makeDefaultPlan(tenant.tenantId, id);
+  }
+
+  @Delete('commission-plans/:id')
+  archivePlan(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ArchivePlanResultDto> {
+    return this.commissions.archivePlan(tenant.tenantId, id);
   }
 
   @Get('commissions/report')

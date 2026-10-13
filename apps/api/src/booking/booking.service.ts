@@ -24,10 +24,10 @@ import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../common/clock';
 import { randomCode, ticketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
-import { Notifier } from '../common/notifier';
 import { type Tenant, TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from '../payments/gateway';
 import { SourcesService } from '../sources/sources.service';
@@ -67,7 +67,7 @@ export class BookingService {
     private readonly gateway: PaymentsGateway,
     private readonly outbox: Outbox,
     private readonly tickets: TicketsService,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
     private readonly sources: SourcesService,
   ) {}
 
@@ -102,9 +102,9 @@ export class BookingService {
       .from(affiliates)
       .where(eq(affiliates.id, affiliateId));
     if (affiliate?.status !== 'active')
-      throw new DomainError('your affiliate account is not active', HttpStatus.FORBIDDEN);
+      throw new DomainError('errors.booking.affiliateInactive', HttpStatus.FORBIDDEN);
     if (body.payment === 'on_site' && !tenant.allowPayOnSite) {
-      throw new DomainError('this operator does not accept payment at boarding');
+      throw new DomainError('errors.booking.noPayOnSite');
     }
     const result = await this.create({
       tenant,
@@ -116,14 +116,27 @@ export class BookingService {
       createdByUserId: userId,
       paymentMode: body.payment === 'on_site' ? 'on_site' : 'online',
     });
+    // Pay-on-site bookings get their ticket when it is issued; online ones get the payment link.
+    // The phone first: the customer is standing at the desk and reads an SMS at once.
     const contact = body.customer.phone ?? body.customer.email;
-    if (contact) {
-      await this.notifier.send({
+    if (contact && result.paymentUrl) {
+      const { booking } = result;
+      await this.notifications.enqueue(this.db, {
         to: contact,
-        subject: `${tenant.name}: ${result.booking.productName}`,
-        text: result.paymentUrl
-          ? `Finalizează plata pentru rezervarea ${result.booking.reference}: ${result.paymentUrl}`
-          : `Biletul tău ${result.booking.reference}: ${result.ticketUrl}`,
+        template: 'payment_link',
+        locale: body.customer.locale,
+        tenantId,
+        dedupeKey: `payment_link:${booking.id}`,
+        params: {
+          tenantName: tenant.name,
+          productName: booking.productName,
+          reference: booking.reference,
+          startsAt: booking.startsAt,
+          timezone: tenant.timezone,
+          totalMinor: booking.totalMinor,
+          currency: booking.currency,
+          url: result.paymentUrl,
+        },
       });
     }
     return result;
@@ -135,14 +148,14 @@ export class BookingService {
     const slot = await this.availability.slot(this.db, tenant.id, input.slotId);
     const product = await this.catalog.product(tenant.id, slot.productId);
     if (!product.active)
-      throw new DomainError('this trip is not available any more', HttpStatus.CONFLICT);
+      throw new DomainError('errors.booking.tripUnavailable', HttpStatus.CONFLICT);
 
     const quantities = new Map<string, number>();
     for (const item of input.items)
       quantities.set(item.priceId, (quantities.get(item.priceId) ?? 0) + item.quantity);
     const prices = await this.catalog.prices(tenant.id, product.id, [...quantities.keys()]);
     if (prices.length !== quantities.size)
-      throw new DomainError('unknown ticket type for this trip', HttpStatus.BAD_REQUEST);
+      throw new DomainError('errors.booking.unknownPrice', HttpStatus.BAD_REQUEST);
 
     const lines = prices.map((price) => ({ price, quantity: quantities.get(price.id)! }));
     const seats = lines.reduce((sum, l) => sum + l.quantity * l.price.seats, 0);
@@ -151,7 +164,7 @@ export class BookingService {
       (sum, l) => sum + includedTax(l.quantity * l.price.amountMinor, l.price.taxRateBps),
       0,
     );
-    if (seats < 1) throw new DomainError('choose at least one seat', HttpStatus.BAD_REQUEST);
+    if (seats < 1) throw new DomainError('errors.booking.noSeats', HttpStatus.BAD_REQUEST);
 
     const onSite = input.paymentMode === 'on_site';
     const holdExpiresAt = new Date(now.getTime() + this.config.HOLD_MINUTES * 60_000);
@@ -261,10 +274,7 @@ export class BookingService {
           await tx.update(bookings).set({ status: 'expired' }).where(eq(bookings.id, booking.id));
         });
         if (externalHoldId) await this.sources.release(product.id, externalHoldId);
-        throw new DomainError(
-          'payments are unavailable right now, try again in a minute',
-          HttpStatus.BAD_GATEWAY,
-        );
+        throw new DomainError('errors.booking.paymentsUnavailable', HttpStatus.BAD_GATEWAY);
       }
     }
 
@@ -431,6 +441,7 @@ export class BookingService {
           .where(eq(payments.id, payment.id));
       }
       await this.tickets.void(tx, bookingId);
+      if (wasConfirmed) await this.tickets.notifyCancelled(tx, tenant, booking, refunded);
       await this.audit(tx, booking, 'booking_cancelled', { reason, actorUserId, refunded });
       // Confirmed in the operator's system after we read the booking above: cancel it there too.
       const lateRef =

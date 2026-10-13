@@ -1,4 +1,5 @@
 import { percentToBps } from './format';
+import type { Translator } from './i18n';
 
 export interface TierDraft {
   key: string;
@@ -17,22 +18,24 @@ export interface TierValidation {
  * Validates the tier editor rows: the first tier starts at sale 1, thresholds strictly increase,
  * percentages are 0–100 (converted to basis points).
  */
-export function validateTiers(rows: TierDraft[]): TierValidation {
+export function validateTiers(rows: TierDraft[], t: Translator): TierValidation {
   const errors: Record<string, string> = {};
   const tiers: { fromSale: number; rateBps: number }[] = [];
-  if (rows.length === 0) return { tiers: null, errors, general: 'Adaugă cel puțin un nivel.' };
-  if (rows.length > 20) return { tiers: null, errors, general: 'Cel mult 20 de niveluri.' };
+  if (rows.length === 0)
+    return { tiers: null, errors, general: t.t('labels.tierEditor.atLeastOne') };
+  if (rows.length > 20)
+    return { tiers: null, errors, general: t.t('labels.tierEditor.atMost', { count: 20 }) };
 
   let previous = 0;
   rows.forEach((row, index) => {
     const fromSale = index === 0 ? 1 : Number(row.fromSale);
     const rateBps = percentToBps(row.percent);
     if (!Number.isInteger(fromSale) || fromSale < 1) {
-      errors[row.key] = 'Scrie numărul vânzării (1, 2, 3…).';
+      errors[row.key] = t.t('labels.tierEditor.saleNumber');
     } else if (fromSale <= previous) {
-      errors[row.key] = `Trebuie să fie mai mare decât ${previous}.`;
+      errors[row.key] = t.t('labels.tierEditor.greaterThan', { previous });
     } else if (rateBps === null) {
-      errors[row.key] = 'Scrie un procent între 0 și 100.';
+      errors[row.key] = t.t('labels.tierEditor.percent');
     } else {
       tiers.push({ fromSale, rateBps });
     }

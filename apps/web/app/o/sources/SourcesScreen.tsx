@@ -15,13 +15,15 @@ import { isApiError } from '@/lib/api';
 import type { SourceDto, SyncResultDto } from '@ap/contracts';
 import { formatDateTime } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
-import { pluralRo } from '@/lib/i18n';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
+import { useT } from '@/components/I18nProvider';
 import { useOperator } from '../OperatorContext';
 
 /** The operator's own booking system: connect it, see what was imported, sync on demand. */
 export function SourcesScreen() {
   const { membership } = useSession();
+  const i18n = useT();
+  const { t } = i18n;
   const sources = useApi(`operator-sources:${membership.tenantId}`, (signal) =>
     operatorApi.sources({ signal }),
   );
@@ -31,41 +33,38 @@ export function SourcesScreen() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Sistemul tău de rezervări"
-        description="Dacă ai deja un program de rezervări, îl poți conecta aici: excursiile, prețurile și plecările vin automat din el, iar rezervările făcute prin afiliați ajung tot acolo."
+        title={t('catalog.sources.title')}
+        description={t('catalog.sources.description')}
       />
 
       <Alert tone="info">
-        Nu ai un sistem propriu? Nu trebuie să conectezi nimic. Adaugă excursiile și plecările
-        direct în{' '}
+        {t('catalog.sources.noSystemBeforeLink')}{' '}
         <Link href="/o/products" className="font-semibold underline underline-offset-2">
-          Excursii și plecări
+          {t('catalog.sources.noSystemLink')}
         </Link>{' '}
-        și folosește calendarul platformei.
+        {t('catalog.sources.noSystemAfterLink')}
       </Alert>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section aria-labelledby="sources-title" className="flex flex-col gap-3">
           <h2 id="sources-title" className="text-xl font-semibold">
-            Sisteme conectate
+            {t('catalog.sources.connected')}
           </h2>
-          {sources.loading && !sources.data ? <LoadingBlock label="Se încarcă…" /> : null}
+          {sources.loading && !sources.data ? <LoadingBlock label={t('common.loading')} /> : null}
           {sources.error ? (
             <Alert
               tone="error"
               action={
                 <Button variant="secondary" onClick={sources.reload}>
-                  Încearcă din nou
+                  {t('common.retry')}
                 </Button>
               }
             >
-              {errorMessageRo(sources.error)}
+              {errorMessage(sources.error, i18n)}
             </Alert>
           ) : null}
           {sources.data && external.length === 0 ? (
-            <p className="rounded-2xl bg-surface-2 p-3 text-muted">
-              Niciun sistem conectat. Folosești calendarul platformei.
-            </p>
+            <p className="rounded-2xl bg-surface-2 p-3 text-muted">{t('catalog.sources.none')}</p>
           ) : null}
           <ul className="flex flex-col gap-3">
             {external.map((source) => (
@@ -88,10 +87,8 @@ export function SourcesScreen() {
             onConnected={(source) => sources.setData((prev) => [source, ...(prev ?? [])])}
           />
         ) : (
-          <Card title="Conectează un sistem">
-            <p className="text-muted">
-              Doar proprietarul contului poate conecta un sistem de rezervări.
-            </p>
+          <Card title={t('catalog.sources.connectTitle')}>
+            <p className="text-muted">{t('catalog.sources.ownerOnly')}</p>
           </Card>
         )}
       </div>
@@ -107,6 +104,8 @@ function SourceCard({
   onSynced: (source: SourceDto) => void;
 }) {
   const { tenant } = useOperator();
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SyncResultDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,8 +121,8 @@ function SourceCard({
     } catch (err) {
       setError(
         isApiError(err) && err.status === 502
-          ? 'Sistemul tău nu răspunde. Verifică adresa și tokenul, apoi încearcă din nou.'
-          : errorMessageRo(err),
+          ? t('catalog.sources.errNoResponse')
+          : errorMessage(err, i18n),
       );
     } finally {
       setBusy(false);
@@ -138,32 +137,34 @@ function SourceCard({
           {source.baseUrl ? <p className="break-all text-sm text-muted">{source.baseUrl}</p> : null}
         </div>
         <StatusChip tone={source.active ? 'success' : 'neutral'}>
-          {source.active ? 'Activ' : 'Inactiv'}
+          {source.active ? t('catalog.sources.active') : t('catalog.sources.inactive')}
         </StatusChip>
       </div>
       <dl className="grid grid-cols-2 gap-3">
         <div>
-          <dt className="text-sm text-muted">Ultima sincronizare</dt>
+          <dt className="text-sm text-muted">{t('catalog.sources.lastSync')}</dt>
           <dd className="font-semibold">
             {source.lastSyncedAt ? (
               <time dateTime={source.lastSyncedAt}>
-                {formatDateTime(source.lastSyncedAt, tenant.timezone)}
+                {formatDateTime(source.lastSyncedAt, tenant.timezone, lang)}
               </time>
             ) : (
-              'Niciodată'
+              t('catalog.sources.never')
             )}
           </dd>
         </div>
         <div>
-          <dt className="text-sm text-muted">Excursii</dt>
+          <dt className="text-sm text-muted">{t('catalog.sources.trips')}</dt>
           <dd className="font-semibold tabular-nums">{source.productCount}</dd>
         </div>
       </dl>
       <div aria-live="polite">
         {result ? (
           <Alert tone="success">
-            Sincronizat: {pluralRo(result.products, 'excursie', 'excursii')},{' '}
-            {pluralRo(result.slots, 'plecare', 'plecări')}.
+            {t('catalog.sources.synced', {
+              trips: tp('catalog.sources.syncedTrips', result.products),
+              departures: tp('catalog.sources.syncedDepartures', result.slots),
+            })}
           </Alert>
         ) : null}
       </div>
@@ -173,15 +174,17 @@ function SourceCard({
         icon={<IconRefresh />}
         onClick={sync}
         loading={busy}
-        loadingText="Se sincronizează…"
+        loadingText={t('catalog.sources.syncing')}
       >
-        Sincronizează acum
+        {t('catalog.sources.syncNow')}
       </Button>
     </article>
   );
 }
 
 function ConnectForm({ onConnected }: { onConnected: (source: SourceDto) => void }) {
+  const i18n = useT();
+  const { t, tp } = i18n;
   const [name, setName] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [token, setToken] = useState('');
@@ -193,11 +196,10 @@ function ConnectForm({ onConnected }: { onConnected: (source: SourceDto) => void
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next: Record<string, string> = {};
-    if (!name.trim()) next.name = 'Scrie un nume, ca să-l recunoști în listă.';
+    if (!name.trim()) next.name = t('catalog.sources.errName');
     const url = baseUrl.trim();
-    if (!/^https?:\/\/\S+$/i.test(url))
-      next.baseUrl = 'Adresa trebuie să înceapă cu https:// sau http://.';
-    if (!token.trim()) next.token = 'Lipsește tokenul de acces.';
+    if (!/^https?:\/\/\S+$/i.test(url)) next.baseUrl = t('catalog.sources.errUrl');
+    if (!token.trim()) next.token = t('catalog.sources.errToken');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -211,23 +213,17 @@ function ConnectForm({ onConnected }: { onConnected: (source: SourceDto) => void
         token: token.trim(),
       });
       onConnected(source);
-      setDone(
-        source.productCount === 1
-          ? `„${source.name}” a fost conectat. Am adus o excursie cu plecările ei.`
-          : `„${source.name}” a fost conectat. Am adus ${source.productCount} excursii cu plecările lor.`,
-      );
+      setDone(tp('catalog.sources.connectedNotice', source.productCount, { name: source.name }));
       setName('');
       setBaseUrl('');
       setToken('');
     } catch (err) {
       if (isApiError(err) && err.status === 400) {
-        setError(
-          'Sistemul tău nu a răspuns cu această adresă și acest token. Verifică-le și încearcă din nou.',
-        );
+        setError(t('catalog.sources.errRejected'));
       } else if (isApiError(err) && err.status === 403) {
-        setError('Doar proprietarul contului poate conecta un sistem de rezervări.');
+        setError(t('catalog.sources.ownerOnly'));
       } else {
-        setError(errorMessageRo(err));
+        setError(errorMessage(err, i18n));
       }
     } finally {
       setBusy(false);
@@ -236,36 +232,36 @@ function ConnectForm({ onConnected }: { onConnected: (source: SourceDto) => void
 
   return (
     <Card
-      title="Conectează un sistem"
-      description="Primești adresa API și tokenul de la firma care îți face programul de rezervări."
+      title={t('catalog.sources.connectTitle')}
+      description={t('catalog.sources.connectDescription')}
     >
       <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
         <Field
-          label="Nume"
+          label={t('catalog.sources.name')}
           name="name"
           autoComplete="off"
-          placeholder="ex. Programul meu de rezervări"
+          placeholder={t('catalog.sources.namePlaceholder')}
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={errors.name}
         />
         <Field
-          label="Adresa API"
+          label={t('catalog.sources.apiUrl')}
           name="baseUrl"
           type="url"
           inputMode="url"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
-          placeholder="https://rezervari.exemplu.ro/api"
+          placeholder={t('catalog.sources.apiUrlPlaceholder')}
           required
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
           error={errors.baseUrl}
         />
         <Field
-          label="Token de acces"
+          label={t('catalog.sources.token')}
           name="token"
           type="password"
           autoComplete="off"
@@ -278,8 +274,14 @@ function ConnectForm({ onConnected }: { onConnected: (source: SourceDto) => void
         />
         {error ? <Alert tone="error">{error}</Alert> : null}
         {done ? <Alert tone="success">{done}</Alert> : null}
-        <Button type="submit" size="lg" block loading={busy} loadingText="Se conectează…">
-          Conectează
+        <Button
+          type="submit"
+          size="lg"
+          block
+          loading={busy}
+          loadingText={t('catalog.sources.connecting')}
+        >
+          {t('catalog.sources.connect')}
         </Button>
       </form>
     </Card>

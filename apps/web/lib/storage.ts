@@ -69,7 +69,8 @@ export function clearAppStorage(): void {
     const keys: string[] = [];
     for (let i = 0; i < s.length; i++) {
       const k = s.key(i);
-      if (k && k.startsWith('ap.')) keys.push(k);
+      // The language choice outlives the session.
+      if (k && k.startsWith('ap.') && k !== 'ap.lang') keys.push(k);
     }
     keys.forEach((k) => s.removeItem(k));
   } catch {

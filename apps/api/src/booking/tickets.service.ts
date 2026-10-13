@@ -1,13 +1,16 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { CheckInResultDto, TicketDto } from '@ap/contracts';
-import { type Database, bookingItems, bookings, products, tenants, tickets } from '@ap/db';
+import { type Database, bookingItems, bookings, products, tenants, tickets, users } from '@ap/db';
 import { and, eq } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { TicketSigner, checkTicketLinkKey, ticketLinkKey } from '../common/crypto';
-import { NotFound } from '../common/errors';
-import { Notifier } from '../common/notifier';
+import { DomainError, NotFound } from '../common/errors';
+import type { Tenant } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
+import { I18nService } from '../i18n/i18n.service';
+import { NotificationsService, mask } from '../notifications/notifications.service';
+import { renderTicketPdf, ticketPdfFilename } from '../notifications/ticket-pdf';
 import { Outbox } from '../outbox/outbox';
 
 @Injectable()
@@ -19,12 +22,13 @@ export class TicketsService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly clock: Clock,
     private readonly outbox: Outbox,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
+    private readonly i18n: I18nService,
   ) {
     this.signer = new TicketSigner(config.APP_SECRET);
   }
 
-  /** Creates the booking's ticket once and sends its link to the customer. Idempotent. */
+  /** Creates the booking's ticket once and sends it to the customer. Idempotent. */
   async issue(tx: DbOrTx, bookingId: string, tenantId: string): Promise<void> {
     const [ticket] = await tx
       .insert(tickets)
@@ -33,19 +37,98 @@ export class TicketsService {
       .returning({ id: tickets.id });
     if (!ticket) return;
     const [row] = await tx
-      .select({ booking: bookings, productName: products.name })
+      .select({
+        booking: bookings,
+        productName: products.name,
+        meetingPoint: products.meetingPoint,
+        tenant: tenants,
+      })
       .from(bookings)
       .innerJoin(products, eq(products.id, bookings.productId))
+      .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
       .where(eq(bookings.id, bookingId));
-    const contact = row?.booking.customerEmail ?? row?.booking.customerPhone;
-    if (row && contact) {
-      const key = ticketLinkKey(this.config.APP_SECRET, bookingId);
-      await this.notifier.send({
-        to: contact,
-        subject: `${row.productName}: biletul tău ${row.booking.reference}`,
-        text: `Biletul tău pentru ${row.productName}: ${this.config.WEB_URL}/t/${bookingId}?k=${key}`,
-      });
-    }
+    if (!row) return;
+    const { booking, tenant } = row;
+    const items = await tx
+      .select({ label: bookingItems.label, quantity: bookingItems.quantity })
+      .from(bookingItems)
+      .where(eq(bookingItems.bookingId, bookingId));
+    // Email first: it carries the QR code itself and costs nothing.
+    const contact = booking.customerEmail ?? booking.customerPhone;
+    if (!contact) return;
+    await this.notifications.enqueue(tx, {
+      to: contact,
+      template: 'ticket',
+      locale: booking.customerLocale,
+      tenantId,
+      dedupeKey: `ticket:${bookingId}`,
+      params: {
+        tenantName: tenant.name,
+        productName: row.productName,
+        reference: booking.reference,
+        startsAt: booking.startsAt.toISOString(),
+        timezone: tenant.timezone,
+        customerName: booking.customerName,
+        meetingPoint: row.meetingPoint,
+        seats: booking.seats,
+        url: this.customerUrl(bookingId, booking.customerLocale),
+        qrToken: this.qrToken(ticket.id, booking),
+        amountDueOnSiteMinor:
+          booking.paymentMode === 'on_site' && !booking.paidAt ? booking.totalMinor : 0,
+        currency: booking.currency,
+        items,
+        brandColor: tenant.branding.primaryColor ?? null,
+      },
+    });
+  }
+
+  /** Tells the customer that a confirmed booking was cancelled, and whether it was refunded. */
+  async notifyCancelled(
+    tx: DbOrTx,
+    tenant: Tenant,
+    booking: typeof bookings.$inferSelect,
+    refunded: boolean,
+  ): Promise<void> {
+    const contact = booking.customerEmail ?? booking.customerPhone;
+    if (!contact) return;
+    const [product] = await tx
+      .select({ name: products.name })
+      .from(products)
+      .where(eq(products.id, booking.productId));
+    await this.notifications.enqueue(tx, {
+      to: contact,
+      template: 'booking_cancelled',
+      locale: booking.customerLocale,
+      tenantId: tenant.id,
+      dedupeKey: `booking_cancelled:${booking.id}`,
+      params: {
+        tenantName: tenant.name,
+        productName: product?.name ?? '',
+        reference: booking.reference,
+        startsAt: booking.startsAt.toISOString(),
+        timezone: tenant.timezone,
+        refunded,
+      },
+    });
+  }
+
+  /** The ticket page link sent to the customer, in their language. */
+  customerUrl(bookingId: string, locale: string): string {
+    const key = ticketLinkKey(this.config.APP_SECRET, bookingId);
+    return `${this.config.WEB_URL}/t/${bookingId}?k=${key}&lang=${this.i18n.pick(locale, 'en')}`;
+  }
+
+  private qrToken(
+    ticketId: string,
+    booking: Pick<typeof bookings.$inferSelect, 'tenantId' | 'reference' | 'startsAt' | 'seats'>,
+  ): string {
+    return this.signer.sign({
+      tid: ticketId,
+      ten: booking.tenantId,
+      ref: booking.reference,
+      at: booking.startsAt.toISOString(),
+      seats: booking.seats,
+    });
   }
 
   async void(tx: DbOrTx, bookingId: string): Promise<void> {
@@ -58,6 +141,51 @@ export class TicketsService {
     return this.ticketDto(bookingId);
   }
 
+  /**
+   * The ticket as a PDF to keep on the phone. Only for tickets that can be boarded with (valid,
+   * or already used, which prints as used); the language defaults to the customer's.
+   */
+  async pdf(
+    bookingId: string,
+    key: string,
+    lang: string | null,
+  ): Promise<{ filename: string; content: Buffer }> {
+    const ticket = await this.view(bookingId, key);
+    if (!ticket.qrToken) {
+      throw new DomainError('errors.ticket.noPdf', HttpStatus.CONFLICT);
+    }
+    const [row] = await this.db
+      .select({ locale: bookings.customerLocale, branding: tenants.branding })
+      .from(bookings)
+      .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
+      .where(eq(bookings.id, bookingId));
+    const language = this.i18n.pick(lang ?? row?.locale, 'en');
+    const content = await renderTicketPdf(
+      {
+        tenantName: ticket.tenantName,
+        productName: ticket.productName,
+        reference: ticket.bookingReference,
+        startsAt: ticket.startsAt,
+        timezone: ticket.timezone,
+        customerName: ticket.customerName,
+        meetingPoint: ticket.meetingPoint,
+        seats: ticket.seats,
+        items: ticket.items,
+        qrToken: ticket.qrToken,
+        amountDueOnSiteMinor: ticket.amountDueOnSiteMinor,
+        currency: ticket.currency,
+        url: this.customerUrl(bookingId, language),
+        used: ticket.status === 'checked_in',
+        brandColor: row?.branding.primaryColor ?? null,
+      },
+      this.i18n.translator(language),
+    );
+    return {
+      filename: ticketPdfFilename(ticket.bookingReference, this.i18n.translator(language)),
+      content,
+    };
+  }
+
   private async ticketDto(bookingId: string): Promise<TicketDto> {
     const [row] = await this.db
       .select({
@@ -65,6 +193,7 @@ export class TicketsService {
         product: products,
         tenantName: tenants.name,
         timezone: tenants.timezone,
+        branding: tenants.branding,
         ticket: tickets,
       })
       .from(bookings)
@@ -87,13 +216,7 @@ export class TicketsService {
           : ticket.status;
     const qrToken =
       ticket && (status === 'valid' || status === 'checked_in')
-        ? this.signer.sign({
-            tid: ticket.id,
-            ten: booking.tenantId,
-            ref: booking.reference,
-            at: booking.startsAt.toISOString(),
-            seats: booking.seats,
-          })
+        ? this.qrToken(ticket.id, booking)
         : null;
     const dueOnSite = booking.paymentMode === 'on_site' && !booking.paidAt ? booking.totalMinor : 0;
     return {
@@ -102,6 +225,7 @@ export class TicketsService {
       productName: row.product.name,
       tenantName: row.tenantName,
       timezone: row.timezone,
+      branding: row.branding,
       startsAt: booking.startsAt.toISOString(),
       meetingPoint: row.product.meetingPoint,
       seats: booking.seats,
@@ -115,14 +239,21 @@ export class TicketsService {
   }
 
   /** Boarding scan. Also the moment a pay-on-site booking counts as paid. */
-  async checkIn(tenantId: string, token: string, userId: string): Promise<CheckInResultDto> {
+  async checkIn(
+    tenantId: string,
+    token: string,
+    userId: string,
+    lang = 'en',
+  ): Promise<CheckInResultDto> {
     const payload = this.signer.verify(token);
     if (!payload || payload.ten !== tenantId) {
       return {
         result: 'not_valid',
-        message: 'This QR code is not a ticket of this operator.',
+        message: this.i18n.translate(lang, 'errors.checkIn.otherOperator'),
         ticket: null,
         collectMinor: 0,
+        checkedInAt: null,
+        checkedInBy: null,
       };
     }
     const now = this.clock.now();
@@ -133,6 +264,10 @@ export class TicketsService {
         .where(and(eq(tickets.id, payload.tid), eq(tickets.tenantId, tenantId)))
         .for('update');
       if (!ticket) return { result: 'not_valid' as const, bookingId: null, collectMinor: 0 };
+      const firstScan = {
+        checkedInAt: ticket.checkedInAt,
+        checkedInByUserId: ticket.checkedInByUserId,
+      };
       const [booking] = await tx
         .select()
         .from(bookings)
@@ -141,8 +276,14 @@ export class TicketsService {
       if (!booking || ticket.status === 'void' || booking.status !== 'confirmed') {
         return { result: 'not_valid' as const, bookingId: ticket.bookingId, collectMinor: 0 };
       }
-      if (ticket.status === 'checked_in')
-        return { result: 'already_checked_in' as const, bookingId: booking.id, collectMinor: 0 };
+      if (ticket.status === 'checked_in') {
+        return {
+          result: 'already_checked_in' as const,
+          bookingId: booking.id,
+          collectMinor: 0,
+          ...firstScan,
+        };
+      }
 
       await tx
         .update(tickets)
@@ -170,20 +311,40 @@ export class TicketsService {
         bookingId: booking.id,
         checkedInAt: now.toISOString(),
       });
-      return { result: 'checked_in' as const, bookingId: booking.id, collectMinor };
+      return {
+        result: 'checked_in' as const,
+        bookingId: booking.id,
+        collectMinor,
+        checkedInAt: now,
+        checkedInByUserId: userId,
+      };
     });
 
     const ticket = outcome.bookingId ? await this.ticketDto(outcome.bookingId) : null;
+    const scan = 'checkedInAt' in outcome ? outcome : null;
     const messages = {
-      checked_in: 'Welcome aboard.',
-      already_checked_in: 'This ticket was already scanned.',
-      not_valid: 'This ticket is not valid (cancelled, refunded or unpaid).',
+      checked_in: 'errors.checkIn.checkedIn',
+      already_checked_in: 'errors.checkIn.alreadyCheckedIn',
+      not_valid: 'errors.checkIn.notValid',
     };
     return {
       result: outcome.result,
-      message: messages[outcome.result],
+      message: this.i18n.translate(lang, messages[outcome.result]),
       ticket,
       collectMinor: outcome.collectMinor,
+      checkedInAt: scan?.checkedInAt?.toISOString() ?? null,
+      checkedInBy: scan?.checkedInByUserId ? await this.personLabel(scan.checkedInByUserId) : null,
     };
+  }
+
+  /** A name to show on the scanner for whoever scanned a ticket. */
+  private async personLabel(userId: string): Promise<string | null> {
+    const [user] = await this.db
+      .select({ name: users.name, email: users.email, phone: users.phone })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!user) return null;
+    const contact = user.email ?? user.phone;
+    return user.name ?? (contact ? mask(contact) : null);
   }
 }

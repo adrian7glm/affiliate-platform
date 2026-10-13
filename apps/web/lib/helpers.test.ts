@@ -1,6 +1,6 @@
 import type { PriceDto, SlotDto } from '@ap/contracts';
 import { describe, expect, it } from 'vitest';
-import { looksLikeToken } from '@/app/o/scan/qrDecoder';
+import { looksLikeToken } from '@/components/scanner/qrDecoder';
 import { qrPath } from '@/components/QrCode';
 import {
   defaultQuantities,
@@ -15,6 +15,7 @@ import {
 import { isValidEmail, isValidPhone, maskDestination, normalizePhone } from './contact';
 import { addDays, dateKeyInTz, isoWeekday, nextDays, shiftPeriod } from './dates';
 import { parseHex, parseTicketUrl, readableTextOn, ticketPath } from './links';
+import { getT } from './i18n';
 import { validateTiers } from './plans';
 import { pickMembership, safeNextPath } from './session';
 
@@ -125,10 +126,13 @@ describe('links', () => {
 
 describe('validateTiers', () => {
   it('accepts increasing thresholds and forces the first tier to sale 1', () => {
-    const result = validateTiers([
-      { key: 'a', fromSale: '3', percent: '10' },
-      { key: 'b', fromSale: '6', percent: '12,5' },
-    ]);
+    const result = validateTiers(
+      [
+        { key: 'a', fromSale: '3', percent: '10' },
+        { key: 'b', fromSale: '6', percent: '12,5' },
+      ],
+      getT('ro'),
+    );
     expect(result.tiers).toEqual([
       { fromSale: 1, rateBps: 1000 },
       { fromSale: 6, rateBps: 1250 },
@@ -136,13 +140,17 @@ describe('validateTiers', () => {
   });
 
   it('flags thresholds that do not increase and bad percentages', () => {
-    const result = validateTiers([
-      { key: 'a', fromSale: '1', percent: '10' },
-      { key: 'b', fromSale: '1', percent: '15' },
-      { key: 'c', fromSale: '8', percent: 'x' },
-    ]);
+    const result = validateTiers(
+      [
+        { key: 'a', fromSale: '1', percent: '10' },
+        { key: 'b', fromSale: '1', percent: '15' },
+        { key: 'c', fromSale: '8', percent: 'x' },
+      ],
+      getT('ro'),
+    );
     expect(result.tiers).toBeNull();
     expect(Object.keys(result.errors)).toEqual(['b', 'c']);
+    expect(result.errors.c).toBe(getT('ro').t('labels.tierEditor.percent'));
   });
 });
 

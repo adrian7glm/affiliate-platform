@@ -1,4 +1,5 @@
 import type { ApiError as ApiErrorBody } from '@ap/contracts';
+import { getActiveLang } from './i18n';
 import { STORAGE_KEYS, readString } from './storage';
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(
@@ -56,6 +57,8 @@ export interface RequestOptions {
   /** Explicit token/tenant, bypassing localStorage (tests, server-side). */
   token?: string | null;
   tenantId?: string | null;
+  /** Language for error messages (default: the page language). */
+  lang?: string | null;
 }
 
 export function buildUrl(base: string, path: string, query?: Query): string {
@@ -98,6 +101,9 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const headers: Record<string, string> = { Accept: 'application/json' };
 
   if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const lang = options.lang !== undefined ? options.lang : getActiveLang();
+  // A CORS-safelisted header, so it adds no preflight request.
+  if (lang) headers['Accept-Language'] = lang;
   if (auth) {
     const token = options.token !== undefined ? options.token : readString(STORAGE_KEYS.token);
     if (token) headers.Authorization = `Bearer ${token}`;

@@ -1,13 +1,17 @@
 import type { MetadataRoute } from 'next';
-import { APP_DESCRIPTION, APP_FULL_NAME, APP_NAME, THEME_COLOR_LIGHT } from '@/lib/brand';
+import { THEME_COLOR_LIGHT } from '@/lib/brand';
+import { getServerT, serverLang } from '@/lib/i18n-server';
 
-export default function manifest(): MetadataRoute.Manifest {
+/** Install manifest of the affiliate app, in the visitor's language (saved choice or browser). */
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const lang = await serverLang();
+  const { t } = await getServerT(lang);
   return {
     id: '/a',
-    name: APP_FULL_NAME,
-    short_name: APP_NAME,
-    description: APP_DESCRIPTION,
-    lang: 'ro',
+    name: t('common.appFullName'),
+    short_name: t('common.appName'),
+    description: t('common.appDescription'),
+    lang,
     start_url: '/a',
     scope: '/',
     display: 'standalone',
@@ -23,14 +27,14 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: 'Arată QR',
-        short_name: 'QR',
+        name: t('common.appShortcuts.qr'),
+        short_name: t('common.appShortcuts.qrShort'),
         url: '/a/qr',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
       },
       {
-        name: 'Rezervă acum',
-        short_name: 'Rezervă',
+        name: t('common.appShortcuts.book'),
+        short_name: t('common.appShortcuts.bookShort'),
         url: '/a/book',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
       },

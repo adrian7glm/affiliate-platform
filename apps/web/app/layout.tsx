@@ -1,22 +1,23 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { I18nProvider } from '@/components/I18nProvider';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
-import {
-  APP_DESCRIPTION,
-  APP_FULL_NAME,
-  APP_NAME,
-  THEME_COLOR_DARK,
-  THEME_COLOR_LIGHT,
-} from '@/lib/brand';
+import { THEME_COLOR_DARK, THEME_COLOR_LIGHT } from '@/lib/brand';
+import { DEFAULT_LANG } from '@/lib/i18n';
+import { getServerT, serverLang } from '@/lib/i18n-server';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: { default: APP_FULL_NAME, template: `%s · ${APP_NAME}` },
-  description: APP_DESCRIPTION,
-  applicationName: APP_NAME,
-  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: 'default' },
-  formatDetection: { telephone: false, email: false, address: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerT(await serverLang());
+  const appName = t('common.appName');
+  return {
+    title: { default: t('common.appFullName'), template: `%s · ${appName}` },
+    description: t('common.appDescription'),
+    applicationName: appName,
+    appleWebApp: { capable: true, title: appName, statusBarStyle: 'default' },
+    formatDetection: { telephone: false, email: false, address: false },
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -29,11 +30,13 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // The provider sets <html lang> to the chosen language once mounted; this is the first guess.
+  const lang = await serverLang(undefined, DEFAULT_LANG);
   return (
-    <html lang="ro">
+    <html lang={lang}>
       <body className="antialiased">
-        {children}
+        <I18nProvider>{children}</I18nProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

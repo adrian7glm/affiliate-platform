@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { csvEscape, minorToCsvAmount, toCsv } from './csv';
+import { translate } from './i18n';
 
 describe('csv', () => {
   it('quotes only when needed', () => {
@@ -26,5 +27,14 @@ describe('csv', () => {
   it('writes amounts with a dot', () => {
     expect(minorToCsvAmount(12345)).toBe('123.45');
     expect(minorToCsvAmount(500, 0)).toBe('500');
+  });
+
+  it('takes column headers from the language files', () => {
+    const header = (lang: string) => [
+      translate(lang, 'operator.payouts.csvAffiliate'),
+      translate(lang, 'operator.payouts.csvAmount'),
+    ];
+    expect(toCsv(header('ro'), [])).toBe('Afiliat,Suma');
+    expect(toCsv(header('en'), [])).toBe('Affiliate,Amount');
   });
 });

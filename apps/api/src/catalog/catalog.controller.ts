@@ -1,11 +1,30 @@
-import { Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   type CreateProductBody,
   type CreateSlotsBody,
+  type DeleteSlotsBody,
+  type DeleteSlotsResultDto,
+  type OperatorSlotDto,
   type ProductDto,
   type SlotDto,
+  type UpdateProductBody,
+  type UpdateSlotsBody,
+  type UpdateSlotsResultDto,
   createProductBody,
   createSlotsBody,
+  deleteSlotsBody,
+  updateProductBody,
+  updateSlotsBody,
 } from '@ap/contracts';
 import { AuthGuard, CurrentTenant, Roles, type TenantContext, TenantGuard } from '../common/auth';
 import { Clock } from '../common/clock';
@@ -35,14 +54,23 @@ export class OperatorCatalogController {
     return this.catalog.createProduct(tenant.tenantId, body);
   }
 
+  @Patch(':id')
+  update(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @ZodBody(updateProductBody) body: UpdateProductBody,
+  ): Promise<ProductDto> {
+    return this.catalog.updateProduct(tenant.tenantId, id, body);
+  }
+
   @Get(':id/slots')
   slots(
     @CurrentTenant() tenant: TenantContext,
     @Param('id', ParseUUIDPipe) id: string,
     @Query('from') from: unknown,
     @Query('to') to: unknown,
-  ): Promise<SlotDto[]> {
-    return this.catalog.listSlots(
+  ): Promise<OperatorSlotDto[]> {
+    return this.catalog.listOperatorSlots(
       tenant.tenantId,
       id,
       parseDateParam(from, 'from'),
@@ -58,6 +86,25 @@ export class OperatorCatalogController {
     @ZodBody(createSlotsBody) body: CreateSlotsBody,
   ): Promise<{ created: number }> {
     return this.catalog.createSlots(tenant.tenantId, id, body);
+  }
+
+  @Patch(':id/slots')
+  updateSlots(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @ZodBody(updateSlotsBody) body: UpdateSlotsBody,
+  ): Promise<UpdateSlotsResultDto> {
+    return this.catalog.updateSlots(tenant.tenantId, id, body);
+  }
+
+  @Post(':id/slots/delete')
+  @HttpCode(200)
+  deleteSlots(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @ZodBody(deleteSlotsBody) body: DeleteSlotsBody,
+  ): Promise<DeleteSlotsResultDto> {
+    return this.catalog.deleteSlots(tenant.tenantId, id, body.slotIds);
   }
 }
 

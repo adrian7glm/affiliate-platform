@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
+import { I18nProvider } from './I18nProvider';
 import { Stepper } from './Stepper';
 
 function Harness({ max = 3 }: { max?: number }) {
@@ -35,5 +36,15 @@ describe('Stepper', () => {
 
     fireEvent.click(minus);
     expect(value.textContent).toBe('1');
+  });
+
+  it('names its buttons in the page language by default', () => {
+    render(
+      <I18nProvider lang="en" languages={[]} overrides={{}}>
+        <Stepper label="Child" value={1} onChange={() => undefined} />
+      </I18nProvider>,
+    );
+    expect(screen.getByRole('button', { name: 'Increase Child' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Decrease Child' })).toBeTruthy();
   });
 });

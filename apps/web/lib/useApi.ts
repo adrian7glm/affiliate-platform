@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isApiError } from './api';
+import type { Translator } from './i18n';
 
 export interface ApiState<T> {
   data: T | null;
@@ -63,19 +64,21 @@ export function useApi<T>(
   return { data, error, loading, reload, setData };
 }
 
-/** Romanian, human message for an error thrown by the API client. */
-export function errorMessageRo(err: unknown): string {
+/** Human message, in the page language, for an error thrown by the API client. */
+export function errorMessage(
+  err: unknown,
+  translator: Pick<Translator, 't'> | Translator['t'],
+): string {
+  const t = typeof translator === 'function' ? { t: translator } : translator;
   if (isApiError(err)) {
-    if (err.isNetwork) return 'Nu ai conexiune la internet. Verifică și încearcă din nou.';
-    if (err.status === 401) return 'Sesiunea a expirat. Intră din nou în cont.';
-    if (err.status === 403) return 'Nu ai acces la această secțiune.';
-    if (err.status === 404) return 'Nu am găsit ce căutai.';
-    if (err.status === 409)
-      return err.message || 'Operațiunea intră în conflict cu datele existente.';
-    if (err.status === 429) return 'Prea multe încercări. Așteaptă puțin și încearcă din nou.';
-    if (err.status >= 500)
-      return 'Serverul nu răspunde momentan. Încearcă din nou în câteva secunde.';
-    return err.message || 'Cererea nu a putut fi procesată.';
+    if (err.isNetwork) return t.t('common.errorNetwork');
+    if (err.status === 401) return t.t('common.errorSession');
+    if (err.status === 403 && !err.message) return t.t('common.errorForbidden');
+    if (err.status === 404 && !err.message) return t.t('common.errorNotFound');
+    if (err.status === 429) return t.t('common.errorTooMany');
+    if (err.status >= 500) return t.t('common.errorServer');
+    // The API translates its own messages (it gets the page language in Accept-Language).
+    return err.message || t.t('common.errorRequest');
   }
-  return 'Ceva n-a mers. Încearcă din nou.';
+  return t.t('common.errorGeneric');
 }

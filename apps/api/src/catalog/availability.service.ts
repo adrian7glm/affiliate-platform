@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { holds, slots } from '@ap/db';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
-import { DomainError } from '../common/errors';
+import { DomainError, NotFound } from '../common/errors';
 import type { DbOrTx } from '../database/database.module';
 
 export type Slot = typeof slots.$inferSelect;
@@ -19,13 +19,13 @@ export class AvailabilityService {
       .select()
       .from(slots)
       .where(and(eq(slots.id, slotId), eq(slots.tenantId, tenantId)));
-    if (!slot) throw new DomainError('departure not found', HttpStatus.NOT_FOUND);
+    if (!slot) throw new NotFound('departure');
     return slot;
   }
 
   assertBookable(slot: Slot, now: Date): void {
     if (slot.closed || slot.startsAt <= now) {
-      throw new DomainError('this departure can no longer be booked', HttpStatus.CONFLICT);
+      throw new DomainError('errors.departures.closed', HttpStatus.CONFLICT);
     }
   }
 
@@ -57,9 +57,12 @@ export class AvailabilityService {
         .from(slots)
         .where(eq(slots.id, slot.id));
       const left = current ? Math.max(0, current.capacity - current.reserved) : 0;
-      throw new DomainError(`only ${left} seats left on this departure`, HttpStatus.CONFLICT, {
-        available: left,
-      });
+      throw new DomainError(
+        'errors.departures.seatsLeft',
+        HttpStatus.CONFLICT,
+        { available: left },
+        { count: left },
+      );
     }
     return this.insertHold(db, slot, seats, expiresAt, null);
   }

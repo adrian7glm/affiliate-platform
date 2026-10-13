@@ -6,8 +6,8 @@ import { APP_CONFIG, type AppConfig } from '../config';
 import { Clock } from '../common/clock';
 import { generateOtp, hashOtp, signSession } from '../common/crypto';
 import { DomainError } from '../common/errors';
-import { Notifier } from '../common/notifier';
 import { DB, type DbOrTx } from '../database/database.module';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const OTP_TTL_MS = 10 * 60_000;
 const OTP_MAX_ATTEMPTS = 5;
@@ -21,11 +21,11 @@ export class IdentityService {
   constructor(
     @Inject(DB) private readonly db: Database,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
-    private readonly notifier: Notifier,
+    private readonly notifications: NotificationsService,
     private readonly clock: Clock,
   ) {}
 
-  async requestOtp(destination: string): Promise<void> {
+  async requestOtp(destination: string, locale = 'en'): Promise<void> {
     const now = this.clock.now();
     const [recent] = await this.db
       .select({ count: sql<number>`count(*)::int` })
@@ -37,10 +37,7 @@ export class IdentityService {
         ),
       );
     if ((recent?.count ?? 0) >= OTP_MAX_PER_HOUR) {
-      throw new DomainError(
-        'too many codes requested, try again later',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new DomainError('errors.auth.tooManyCodes', HttpStatus.TOO_MANY_REQUESTS);
     }
     const code = generateOtp();
     await this.db.insert(otpCodes).values({
@@ -48,10 +45,11 @@ export class IdentityService {
       codeHash: hashOtp(this.config.APP_SECRET, destination, code),
       expiresAt: new Date(now.getTime() + OTP_TTL_MS),
     });
-    await this.notifier.send({
+    await this.notifications.sendNow({
       to: destination,
-      subject: 'Codul tău de conectare',
-      text: `Codul tău de conectare este ${code}. Expiră în 10 minute.`,
+      template: 'login_code',
+      locale,
+      params: { code, webHost: new URL(this.config.WEB_URL).hostname },
     });
   }
 
@@ -70,17 +68,20 @@ export class IdentityService {
       .orderBy(desc(otpCodes.createdAt))
       .limit(1);
     if (!otp || otp.attempts >= OTP_MAX_ATTEMPTS) {
-      throw new DomainError('the code has expired, ask for a new one', HttpStatus.UNAUTHORIZED);
+      throw new DomainError('errors.auth.codeExpired', HttpStatus.UNAUTHORIZED);
     }
     if (otp.codeHash !== hashOtp(this.config.APP_SECRET, destination, code)) {
       await this.db
         .update(otpCodes)
         .set({ attempts: sql`${otpCodes.attempts} + 1` })
         .where(eq(otpCodes.id, otp.id));
-      throw new DomainError('wrong code', HttpStatus.UNAUTHORIZED);
+      throw new DomainError('errors.auth.wrongCode', HttpStatus.UNAUTHORIZED);
     }
     await this.db.update(otpCodes).set({ consumedAt: now }).where(eq(otpCodes.id, otp.id));
     const userId = await this.findOrCreateUser(this.db, destination);
+    if (isEmail(destination) && this.config.PLATFORM_ADMIN_EMAILS.includes(destination)) {
+      await this.db.update(users).set({ isPlatformAdmin: true }).where(eq(users.id, userId));
+    }
     const me = await this.me(userId);
     return {
       ...me,
@@ -105,12 +106,13 @@ export class IdentityService {
 
   async me(userId: string): Promise<MeDto> {
     const [user] = await this.db.select().from(users).where(eq(users.id, userId));
-    if (!user) throw new DomainError('user not found', HttpStatus.UNAUTHORIZED);
+    if (!user) throw new DomainError('errors.notFound.user', HttpStatus.UNAUTHORIZED);
     const rows = await this.db
       .select({
         tenantId: tenants.id,
         tenantSlug: tenants.slug,
         tenantName: tenants.name,
+        tenantStatus: tenants.status,
         role: memberships.role,
         affiliateId: affiliates.id,
       })

@@ -4,8 +4,11 @@ import { dateKeyInTz } from './dates';
 export type Quantities = Record<string, number>;
 
 /** Departures grouped by local calendar day, each day sorted by time. */
-export function groupSlotsByDay(slots: SlotDto[], tz?: string | null): Map<string, SlotDto[]> {
-  const byDay = new Map<string, SlotDto[]>();
+export function groupSlotsByDay<T extends SlotDto>(
+  slots: T[],
+  tz?: string | null,
+): Map<string, T[]> {
+  const byDay = new Map<string, T[]>();
   for (const slot of [...slots].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
     const key = dateKeyInTz(slot.startsAt, tz);
     const list = byDay.get(key);

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { THEME_COLOR_LIGHT } from '@/lib/brand';
-import { isLang, translate } from '@/lib/i18n';
+import { PUBLIC_DEFAULT_LANG, langFromTag } from '@/lib/i18n';
+import { getServerT, serverLanguages } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,14 +18,16 @@ export async function GET(
   const { bookingId } = await params;
   const key = request.nextUrl.searchParams.get('k') ?? '';
   const langParam = request.nextUrl.searchParams.get('lang');
-  const lang = isLang(langParam) ? langParam : 'en';
-  if (!KEY_RE.test(key) || !/^[A-Za-z0-9-]{1,64}$/.test(bookingId)) {
-    return new NextResponse('Not found', { status: 404 });
-  }
+  const available = (await serverLanguages()).map((l) => l.code);
+  const lang = langFromTag(langParam, available) ?? PUBLIC_DEFAULT_LANG;
 
   const ticketPath = `/t/${bookingId}`;
   const startUrl = `${ticketPath}?${new URLSearchParams({ k: key, lang }).toString()}`;
-  const name = translate(lang, 'ticketTitle');
+  const { t } = await getServerT(lang);
+  if (!KEY_RE.test(key) || !/^[A-Za-z0-9-]{1,64}$/.test(bookingId)) {
+    return new NextResponse(t('public.notFoundTitle'), { status: 404 });
+  }
+  const name = t('ticket.title');
   const manifest = {
     id: ticketPath,
     name,

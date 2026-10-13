@@ -13,9 +13,39 @@ const schema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((v) => v === 'true'),
-  NOTIFIER: z.enum(['console', 'silent']).default('console'),
+  /** console: messages are printed in the API log. smtp: any SMTP provider. disabled: no email. */
+  EMAIL_PROVIDER: z.enum(['console', 'smtp', 'disabled']).default('console'),
+  /** e.g. smtps://user:password@smtp.example.com:465 */
+  SMTP_URL: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
+  EMAIL_FROM: z.string().min(3).default('Bilete <no-reply@localhost>'),
+  EMAIL_REPLY_TO: z.string().optional(),
+  /** console: messages are printed in the API log. twilio: real SMS. disabled: no SMS. */
+  SMS_PROVIDER: z.enum(['console', 'twilio', 'disabled']).default('console'),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  /** A Twilio phone number (+40...) or an alphanumeric sender ID of up to 11 characters. */
+  TWILIO_FROM: z.string().optional(),
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
   /** Minutes a customer has to pay before the held seats are released. */
   HOLD_MINUTES: z.coerce.number().int().min(1).default(15),
+  /** Comma-separated emails that get the platform owner's admin area when they sign in. */
+  PLATFORM_ADMIN_EMAILS: z
+    .string()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  /** true: any operator can create an account at /start. false: by invitation only. */
+  SELF_SIGNUP: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  /** manual: subscriptions are invoiced by hand. stripe: Stripe Billing charges operators' cards. */
+  BILLING_PROVIDER: z.enum(['manual', 'stripe']).default('manual'),
+  STRIPE_BILLING_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type AppConfig = z.infer<typeof schema>;
@@ -35,8 +65,37 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   ) {
     throw new Error('PAYMENTS_PROVIDER=stripe needs STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET');
   }
+  if (
+    config.BILLING_PROVIDER === 'stripe' &&
+    (!config.STRIPE_SECRET_KEY || !config.STRIPE_BILLING_WEBHOOK_SECRET)
+  ) {
+    throw new Error(
+      'BILLING_PROVIDER=stripe needs STRIPE_SECRET_KEY and STRIPE_BILLING_WEBHOOK_SECRET',
+    );
+  }
   if (config.NODE_ENV === 'production' && config.PAYMENTS_PROVIDER === 'fake') {
     throw new Error('the fake payments provider cannot run in production');
+  }
+  if (config.EMAIL_PROVIDER === 'smtp' && !config.SMTP_URL) {
+    throw new Error('EMAIL_PROVIDER=smtp needs SMTP_URL');
+  }
+  if (
+    config.SMS_PROVIDER === 'twilio' &&
+    (!config.TWILIO_ACCOUNT_SID ||
+      !config.TWILIO_AUTH_TOKEN ||
+      !(config.TWILIO_FROM || config.TWILIO_MESSAGING_SERVICE_SID))
+  ) {
+    throw new Error(
+      'SMS_PROVIDER=twilio needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID',
+    );
+  }
+  if (
+    config.NODE_ENV === 'production' &&
+    (config.EMAIL_PROVIDER === 'console' || config.SMS_PROVIDER === 'console')
+  ) {
+    throw new Error(
+      'in production, set EMAIL_PROVIDER and SMS_PROVIDER to a real provider or to disabled',
+    );
   }
   return config;
 }

@@ -7,20 +7,39 @@ import {
   writeJson,
   writeString,
 } from './storage';
+import type { Translator } from './i18n';
 
-export type Area = 'affiliate' | 'operator';
+export type Area = 'affiliate' | 'operator' | 'scanner';
 
 export const AREA_ROLES: Record<Area, readonly Role[]> = {
   affiliate: ['affiliate'],
   operator: ['owner', 'staff'],
+  // Operator staff can open the bare scanner too (e.g. on a phone left at the pier).
+  scanner: ['scanner', 'owner', 'staff'],
+};
+
+const AREA_HOME: Record<Area, '/a' | '/o' | '/s'> = {
+  affiliate: '/a',
+  operator: '/o',
+  scanner: '/s',
 };
 
 export function areaForRole(role: Role): Area {
-  return role === 'affiliate' ? 'affiliate' : 'operator';
+  if (role === 'affiliate') return 'affiliate';
+  if (role === 'scanner') return 'scanner';
+  return 'operator';
 }
 
-export function homePathForRole(role: Role): '/a' | '/o' {
-  return role === 'affiliate' ? '/a' : '/o';
+export function homePathForRole(role: Role): '/a' | '/o' | '/s' {
+  return AREA_HOME[areaForRole(role)];
+}
+
+/** The signed-in area a path belongs to, or null for public pages. */
+export function areaForPath(path: string): Area | null {
+  const match = (Object.entries(AREA_HOME) as [Area, string][]).find(
+    ([, home]) => path === home || path.startsWith(`${home}/`) || path.startsWith(`${home}?`),
+  );
+  return match?.[0] ?? null;
 }
 
 export function getToken(): string | null {
@@ -86,8 +105,8 @@ export function safeNextPath(next: string | null | undefined): string | null {
   return next;
 }
 
-export const ROLE_LABELS_RO: Record<Role, string> = {
-  owner: 'Administrator',
-  staff: 'Personal',
-  affiliate: 'Afiliat',
-};
+/** "Administrator" / "Staff" / "Affiliate" / "Ticket scanning" in the page language. */
+export const roleLabel = (t: Translator, role: Role): string => t.tk(`auth.role.${role}`);
+
+/** What each area is called in the account chooser. */
+export const areaLabel = (t: Translator, area: Area): string => t.tk(`auth.area.${area}`);

@@ -1,20 +1,21 @@
 'use client';
 
-import type { TicketDto } from '@ap/contracts';
+import type { CheckInResultDto, TicketDto } from '@ap/contracts';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { IconAlert, IconCamera, IconCheck, IconScan, IconX } from '@/components/icons';
-import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
 import { Spinner } from '@/components/Spinner';
 import { isApiError } from '@/lib/api';
 import { dateKeyInTz, formatDayLong, formatTime, todayKey } from '@/lib/dates';
 import { operatorApi, publicApi } from '@/lib/endpoints';
 import { parseTicketUrl } from '@/lib/links';
-import { errorMessageRo } from '@/lib/useApi';
-import { useOperator } from '../OperatorContext';
+import { formatMoney } from '@/lib/format';
+import type { Lang, Translator } from '@/lib/i18n';
+import { errorMessage } from '@/lib/useApi';
+import { useT } from '@/components/I18nProvider';
 import { createQrDecoder, looksLikeToken, type QrDecoder } from './qrDecoder';
 
 type CameraState = 'idle' | 'starting' | 'on' | 'denied' | 'unavailable' | 'error';
@@ -24,6 +25,8 @@ type Outcome =
       kind: 'checked_in' | 'already_checked_in' | 'not_valid';
       ticket: TicketDto | null;
       collectMinor: number | null;
+      checkedInAt?: string | null;
+      checkedInBy?: string | null;
     }
   | { kind: 'error'; message: string; input: string };
 
@@ -31,8 +34,18 @@ type Outcome =
 const REPEAT_WINDOW_MS = 5000;
 const SCAN_INTERVAL_MS = 180;
 
-export function ScanScreen() {
-  const { tenant } = useOperator();
+export interface ScanScreenProps {
+  tenant: { timezone: string; currency: string };
+  /** Show the page title and help line (the scanner app has its own header instead). */
+  showHeader?: boolean;
+  /** Called after each scan that reached the server, e.g. to refresh a counter. */
+  onScanned?: (result: CheckInResultDto) => void;
+}
+
+/** Boarding scanner: reads ticket QR codes with the camera and checks them in. */
+export function ScanScreen({ tenant, showHeader = true, onScanned }: ScanScreenProps) {
+  const i18n = useT();
+  const { t } = i18n;
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const decoderRef = useRef<QrDecoder | null>(null);
@@ -134,7 +147,14 @@ export function ScanScreen() {
         } else {
           const result = await operatorApi.checkIn({ token });
           const collectMinor = result.collectMinor > 0 ? result.collectMinor : null;
-          setOutcome({ kind: result.result, ticket: result.ticket, collectMinor });
+          setOutcome({
+            kind: result.result,
+            ticket: result.ticket,
+            collectMinor,
+            checkedInAt: result.checkedInAt,
+            checkedInBy: result.checkedInBy,
+          });
+          onScanned?.(result);
           try {
             navigator.vibrate?.(result.result === 'checked_in' ? 120 : [90, 60, 90, 60, 220]);
           } catch {
@@ -143,15 +163,13 @@ export function ScanScreen() {
         }
       } catch (err) {
         const message =
-          isApiError(err) && err.isNotFound
-            ? 'Nu am găsit biletul. Verifică linkul.'
-            : errorMessageRo(err);
+          isApiError(err) && err.isNotFound ? t('boarding.scan.notFound') : errorMessage(err, i18n);
         setOutcome({ kind: 'error', message, input });
       } finally {
         setChecking(false);
       }
     },
-    [resolveToken],
+    [resolveToken, onScanned, t, i18n],
   );
 
   // Decode frames while the camera is on and no result is waiting to be read.
@@ -207,7 +225,7 @@ export function ScanScreen() {
     event.preventDefault();
     const text = manual.trim();
     if (!text) {
-      setManualError('Lipește codul sau linkul biletului.');
+      setManualError(t('boarding.scan.manualEmpty'));
       return;
     }
     setManualError(null);
@@ -218,10 +236,9 @@ export function ScanScreen() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Scanează bilete"
-        description="Ține codul QR al clientului în cadru. Verificarea pornește singură."
-      />
+      {showHeader ? (
+        <PageHeader title={t('boarding.scan.title')} description={t('boarding.scan.description')} />
+      ) : null}
 
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
         <div
@@ -237,7 +254,7 @@ export function ScanScreen() {
             playsInline
             muted
             autoPlay
-            aria-label="Imaginea camerei"
+            aria-label={t('boarding.scan.cameraVideo')}
           />
           {camera === 'on' ? (
             <div
@@ -246,7 +263,7 @@ export function ScanScreen() {
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-white">
-              <Spinner label="Pornește camera…" />
+              <Spinner label={t('boarding.scan.cameraStarting')} />
             </div>
           )}
         </div>
@@ -257,7 +274,7 @@ export function ScanScreen() {
             className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-3xl border border-line bg-surface p-6"
           >
             <Spinner size={40} />
-            <p className="text-lg font-semibold">Se verifică biletul…</p>
+            <p className="text-lg font-semibold">{t('boarding.scan.checking')}</p>
           </div>
         ) : null}
 
@@ -278,12 +295,12 @@ export function ScanScreen() {
 
         <details className="rounded-3xl border border-line bg-surface p-4">
           <summary className="flex min-h-12 cursor-pointer items-center font-semibold">
-            Nu merge camera? Introdu biletul manual
+            {t('boarding.scan.manualSummary')}
           </summary>
           <form onSubmit={submitManual} noValidate className="mt-3 flex flex-col gap-3">
             <Field
-              label="Linkul sau codul biletului"
-              hint="Linkul primit de client (…/t/…) sau codul copiat de pe bilet."
+              label={t('boarding.scan.manualLabel')}
+              hint={t('boarding.scan.manualHint')}
               name="ticket"
               autoComplete="off"
               autoCapitalize="none"
@@ -293,7 +310,7 @@ export function ScanScreen() {
               error={manualError}
             />
             <Button type="submit" variant="secondary" disabled={checking}>
-              Verifică biletul
+              {t('boarding.scan.checkTicket')}
             </Button>
           </form>
         </details>
@@ -303,13 +320,14 @@ export function ScanScreen() {
 }
 
 function CameraPrompt({ state, onStart }: { state: CameraState; onStart: () => void }) {
+  const { t } = useT();
   if (state === 'denied') {
     return (
-      <Alert tone="warning" title="Camera este blocată">
-        Permite accesul la cameră din setările browserului pentru acest site, apoi apasă din nou.
+      <Alert tone="warning" title={t('boarding.scan.deniedTitle')}>
+        {t('boarding.scan.deniedBody')}
         <div className="mt-3">
           <Button icon={<IconCamera />} onClick={onStart}>
-            Încearcă din nou
+            {t('common.retry')}
           </Button>
         </div>
       </Alert>
@@ -317,44 +335,67 @@ function CameraPrompt({ state, onStart }: { state: CameraState; onStart: () => v
   }
   if (state === 'unavailable') {
     return (
-      <Alert tone="warning" title="Nu am găsit o cameră">
-        Pe acest dispozitiv nu este disponibilă o cameră. Poți introduce biletul manual mai jos.
+      <Alert tone="warning" title={t('boarding.scan.unavailableTitle')}>
+        {t('boarding.scan.unavailableBody')}
       </Alert>
     );
   }
   return (
     <div className="flex flex-col items-center gap-4 rounded-3xl border border-line bg-surface p-6 text-center">
       <IconScan size={48} className="text-brand" />
-      <p className="text-muted">
-        Folosește camera telefonului pentru a citi biletele la îmbarcare.
-      </p>
-      {state === 'error' ? <Alert tone="error">Camera nu a pornit. Încearcă din nou.</Alert> : null}
+      <p className="text-muted">{t('boarding.scan.intro')}</p>
+      {state === 'error' ? <Alert tone="error">{t('boarding.scan.cameraError')}</Alert> : null}
       <Button size="xl" block icon={<IconCamera />} onClick={onStart}>
-        Pornește camera
+        {t('boarding.scan.startCamera')}
       </Button>
     </div>
   );
 }
 
 const OUTCOME_STYLE = {
-  checked_in: { title: 'Îmbarcare confirmată', box: 'bg-success text-on-success', Icon: IconCheck },
+  checked_in: {
+    title: 'boarding.scan.outcome.checkedIn',
+    box: 'bg-success text-on-success',
+    Icon: IconCheck,
+  },
   already_checked_in: {
-    title: 'Bilet deja folosit',
+    title: 'boarding.scan.outcome.alreadyCheckedIn',
     box: 'bg-warning text-on-warning',
     Icon: IconAlert,
   },
-  not_valid: { title: 'Bilet nevalabil', box: 'bg-danger text-on-danger', Icon: IconX },
+  not_valid: {
+    title: 'boarding.scan.outcome.notValid',
+    box: 'bg-danger text-on-danger',
+    Icon: IconX,
+  },
   error: {
-    title: 'Nu am putut verifica biletul',
+    title: 'boarding.scan.outcome.error',
     box: 'bg-danger text-on-danger',
     Icon: IconAlert,
   },
 } as const;
 
-function notValidReason(ticket: TicketDto | null): string {
-  if (!ticket) return 'Codul nu este un bilet al tău sau este deteriorat.';
-  if (ticket.status === 'pending_payment') return 'Rezervarea nu a fost plătită.';
-  return 'Rezervarea a fost anulată sau rambursată.';
+/** "Scanned today at 10:52 by Mihai" for a ticket that was already used. */
+function usedLine(
+  t: Translator['t'],
+  lang: Lang,
+  at: string,
+  by: string | null,
+  timezone: string,
+): string {
+  const time = formatTime(at, timezone, lang);
+  const day = dateKeyInTz(at, timezone);
+  const when =
+    day === todayKey(timezone)
+      ? t('boarding.scan.usedToday', { time })
+      : t('boarding.scan.usedOnDay', { day: formatDayLong(day, lang), time });
+  return by ? t('boarding.scan.usedAtBy', { when, who: by }) : t('boarding.scan.usedAt', { when });
+}
+
+function notValidReason(t: Translator['t'], ticket: TicketDto | null): string {
+  if (!ticket) return t('boarding.scan.reasonUnknown');
+  if (ticket.status === 'pending_payment') return t('boarding.scan.reasonUnpaid');
+  return t('boarding.scan.reasonCancelled');
 }
 
 function ResultPanel({
@@ -372,6 +413,7 @@ function ResultPanel({
   onNext: () => void;
   onRetry?: () => void;
 }) {
+  const { t, lang } = useT();
   const style = OUTCOME_STYLE[outcome.kind];
   const ticket = outcome.kind === 'error' ? null : outcome.ticket;
   const otherDay = ticket && dateKeyInTz(ticket.startsAt, timezone) !== todayKey(timezone);
@@ -390,61 +432,75 @@ function ResultPanel({
           tabIndex={-1}
           className="text-2xl font-bold outline-none"
         >
-          {style.title}
+          {t(style.title)}
         </h2>
       </div>
 
       <div className="flex flex-col gap-4 p-5">
         {outcome.kind === 'error' ? <p>{outcome.message}</p> : null}
-        {outcome.kind === 'not_valid' ? <p className="text-lg">{notValidReason(ticket)}</p> : null}
+        {outcome.kind === 'not_valid' ? (
+          <p className="text-lg">{notValidReason(t, ticket)}</p>
+        ) : null}
+        {outcome.kind === 'already_checked_in' && outcome.checkedInAt ? (
+          <p className="rounded-2xl border-2 border-warning bg-warning-soft p-4 text-xl font-semibold text-warning-fg">
+            {usedLine(t, lang, outcome.checkedInAt, outcome.checkedInBy ?? null, timezone)}
+          </p>
+        ) : null}
 
         {outcome.kind === 'checked_in' && ticket?.paymentMode === 'on_site' ? (
           <div className="rounded-2xl border-2 border-warning bg-warning-soft p-4 text-warning-fg">
-            <p className="font-semibold">Plată la îmbarcare</p>
+            <p className="font-semibold">{t('boarding.scan.payOnSite')}</p>
             {outcome.collectMinor !== null ? (
               <p className="text-3xl font-bold">
-                Încasează <MoneyText amountMinor={outcome.collectMinor} currency={currency} />
+                {t('boarding.scan.collect', {
+                  amount: formatMoney(outcome.collectMinor, currency, lang),
+                })}
               </p>
             ) : (
-              <p className="text-lg">Încasează suma rezervării de la client.</p>
+              <p className="text-lg">{t('boarding.scan.collectTotal')}</p>
             )}
           </div>
         ) : null}
 
         {otherDay && ticket ? (
           <Alert tone="warning">
-            Atenție: biletul este pentru {formatDayLong(dateKeyInTz(ticket.startsAt, timezone))}.
+            {t('boarding.scan.otherDay', {
+              day: formatDayLong(dateKeyInTz(ticket.startsAt, timezone), lang),
+            })}
           </Alert>
         ) : null}
 
         {ticket ? (
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
             <div className="col-span-2">
-              <dt className="text-sm text-muted">Client</dt>
+              <dt className="text-sm text-muted">{t('boarding.scan.customer')}</dt>
               <dd className="text-xl font-semibold">{ticket.customerName}</dd>
             </div>
             <div className="col-span-2">
-              <dt className="text-sm text-muted">Excursie</dt>
+              <dt className="text-sm text-muted">{t('boarding.scan.trip')}</dt>
               <dd className="font-semibold">
-                {ticket.productName} · {formatTime(ticket.startsAt, timezone)}
+                {ticket.productName} · {formatTime(ticket.startsAt, timezone, lang)}
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-muted">Locuri</dt>
+              <dt className="text-sm text-muted">{t('boarding.scan.seats')}</dt>
               <dd className="text-xl font-semibold">{ticket.seats}</dd>
             </div>
             <div>
-              <dt className="text-sm text-muted">Referință</dt>
+              <dt className="text-sm text-muted">{t('boarding.scan.reference')}</dt>
               <dd className="font-semibold">{ticket.bookingReference}</dd>
             </div>
             {ticket.items.length > 0 ? (
               <div className="col-span-2">
-                <dt className="text-sm text-muted">Bilete</dt>
+                <dt className="text-sm text-muted">{t('boarding.scan.tickets')}</dt>
                 <dd>
                   <ul>
                     {ticket.items.map((item) => (
                       <li key={item.label}>
-                        {item.quantity} × {item.label}
+                        {t('boarding.scan.itemLine', {
+                          quantity: item.quantity,
+                          label: item.label,
+                        })}
                       </li>
                     ))}
                   </ul>
@@ -457,11 +513,11 @@ function ResultPanel({
         <div className="flex flex-col gap-2">
           {onRetry ? (
             <Button size="lg" block variant="secondary" onClick={onRetry}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           ) : null}
           <Button size="xl" block icon={<IconScan />} onClick={onNext}>
-            Scanează următorul
+            {t('boarding.scan.next')}
           </Button>
         </div>
       </div>

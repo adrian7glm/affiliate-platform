@@ -1,3 +1,7 @@
+'use client';
+
+import { useT } from './I18nProvider';
+
 export function Spinner({ size = 24, label }: { size?: number; label?: string }) {
   return (
     <span className="inline-flex items-center gap-2" role={label ? 'status' : undefined}>
@@ -32,10 +36,11 @@ export function Spinner({ size = 24, label }: { size?: number; label?: string })
 }
 
 /** Centered loading placeholder for a whole section. */
-export function LoadingBlock({ label = 'Se încarcă…' }: { label?: string }) {
+export function LoadingBlock({ label }: { label?: string }) {
+  const { t } = useT();
   return (
     <div className="flex min-h-40 items-center justify-center text-muted">
-      <Spinner label={label} />
+      <Spinner label={label ?? t('common.loading')} />
     </div>
   );
 }

@@ -1,4 +1,16 @@
 import type {
+  ArchivePlanResultDto,
+  DeleteSlotsResultDto,
+  OperatorSettingsDto,
+  OperatorSlotDto,
+  UpdatePlanBody,
+  UpdateProductBody,
+  UpdateSettingsBody,
+  UpdateSlotsBody,
+  UpdateSlotsResultDto,
+  AddScannerBody,
+  ScannerAccountDto,
+  ScannerContextDto,
   ConnectSourceBody,
   PublicCheckoutBody,
   SourceDto,
@@ -26,6 +38,7 @@ import type {
   InvitePreviewDto,
   LinkDto,
   MeDto,
+  OperatorAnalyticsDto,
   OperatorDashboardDto,
   PayoutDto,
   ProductDto,
@@ -37,7 +50,7 @@ import type {
   UpdateAffiliateBody,
   VerifyOtpBody,
 } from '@ap/contracts';
-import { apiFetch, type RequestOptions } from './api';
+import { API_URL, apiFetch, buildUrl, type RequestOptions } from './api';
 
 /**
  * One typed function per endpoint in docs/api.md. Pages call these instead of building URLs.
@@ -83,6 +96,8 @@ export const affiliateApi = {
 
 export const operatorApi = {
   dashboard: (o?: Opts) => apiFetch<OperatorDashboardDto>('/operator/dashboard', o),
+  analytics: (period: string, o?: Opts) =>
+    apiFetch<OperatorAnalyticsDto>('/operator/analytics', { ...o, query: { period } }),
   affiliates: (o?: Opts) => apiFetch<AffiliateWithStatsDto[]>('/operator/affiliates', o),
   inviteAffiliate: (body: InviteAffiliateBody, o?: Opts) =>
     apiFetch<AffiliateDto>('/operator/affiliates', { ...o, method: 'POST', body }),
@@ -91,11 +106,29 @@ export const operatorApi = {
   plans: (o?: Opts) => apiFetch<CommissionPlanDto[]>('/operator/commission-plans', o),
   createPlan: (body: CreatePlanBody, o?: Opts) =>
     apiFetch<CommissionPlanDto>('/operator/commission-plans', { ...o, method: 'POST', body }),
+  updatePlan: (id: string, body: UpdatePlanBody, o?: Opts) =>
+    apiFetch<CommissionPlanDto>(`/operator/commission-plans/${enc(id)}`, {
+      ...o,
+      method: 'PUT',
+      body,
+    }),
+  makeDefaultPlan: (id: string, o?: Opts) =>
+    apiFetch<CommissionPlanDto>(`/operator/commission-plans/${enc(id)}/make-default`, {
+      ...o,
+      method: 'POST',
+    }),
+  archivePlan: (id: string, o?: Opts) =>
+    apiFetch<ArchivePlanResultDto>(`/operator/commission-plans/${enc(id)}`, {
+      ...o,
+      method: 'DELETE',
+    }),
   products: (o?: Opts) => apiFetch<ProductDto[]>('/operator/products', o),
   createProduct: (body: CreateProductBody, o?: Opts) =>
     apiFetch<ProductDto>('/operator/products', { ...o, method: 'POST', body }),
+  updateProduct: (id: string, body: UpdateProductBody, o?: Opts) =>
+    apiFetch<ProductDto>(`/operator/products/${enc(id)}`, { ...o, method: 'PATCH', body }),
   slots: (productId: string, range: DateRange, o?: Opts) =>
-    apiFetch<SlotDto[]>(`/operator/products/${enc(productId)}/slots`, {
+    apiFetch<OperatorSlotDto[]>(`/operator/products/${enc(productId)}/slots`, {
       ...o,
       query: { ...range },
     }),
@@ -105,6 +138,21 @@ export const operatorApi = {
       method: 'POST',
       body,
     }),
+  updateSlots: (productId: string, body: UpdateSlotsBody, o?: Opts) =>
+    apiFetch<UpdateSlotsResultDto>(`/operator/products/${enc(productId)}/slots`, {
+      ...o,
+      method: 'PATCH',
+      body,
+    }),
+  deleteSlots: (productId: string, slotIds: string[], o?: Opts) =>
+    apiFetch<DeleteSlotsResultDto>(`/operator/products/${enc(productId)}/slots/delete`, {
+      ...o,
+      method: 'POST',
+      body: { slotIds },
+    }),
+  settings: (o?: Opts) => apiFetch<OperatorSettingsDto>('/operator/settings', o),
+  updateSettings: (body: UpdateSettingsBody, o?: Opts) =>
+    apiFetch<OperatorSettingsDto>('/operator/settings', { ...o, method: 'PATCH', body }),
   bookings: (range: DateRange, o?: Opts) =>
     apiFetch<BookingDto[]>('/operator/bookings', { ...o, query: { ...range } }),
   cancelBooking: (id: string, body: CancelBookingBody, o?: Opts) =>
@@ -128,6 +176,16 @@ export const operatorApi = {
     apiFetch<SourceDto>('/operator/sources', { ...o, method: 'POST', body }),
   syncSource: (id: string, o?: Opts) =>
     apiFetch<SyncResultDto>(`/operator/sources/${enc(id)}/sync`, { ...o, method: 'POST' }),
+  scanners: (o?: Opts) => apiFetch<ScannerAccountDto[]>('/operator/scanners', o),
+  addScanner: (body: AddScannerBody, o?: Opts) =>
+    apiFetch<ScannerAccountDto>('/operator/scanners', { ...o, method: 'POST', body }),
+  removeScanner: (userId: string, o?: Opts) =>
+    apiFetch<void>(`/operator/scanners/${enc(userId)}`, { ...o, method: 'DELETE' }),
+};
+
+/** The boarding scanner app (scanner accounts and operator staff). */
+export const scannerApi = {
+  context: (o?: Opts) => apiFetch<ScannerContextDto>('/scanner/context', o),
 };
 
 export const publicApi = {
@@ -156,6 +214,13 @@ export const publicApi = {
       ...o,
       auth: false,
       query: { k: key },
+    }),
+  /** Direct link to the PDF ticket; `download` asks the browser to save it. */
+  ticketPdfUrl: (bookingId: string, key: string, lang: string, download = false) =>
+    buildUrl(API_URL, `/public/tickets/${enc(bookingId)}/pdf`, {
+      k: key,
+      lang,
+      download: download ? 1 : undefined,
     }),
   devPaymentSucceed: (bookingId: string, key: string, o?: Opts) =>
     apiFetch<void>(`/public/dev-payments/${enc(bookingId)}/succeed`, {

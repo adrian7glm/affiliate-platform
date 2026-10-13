@@ -7,6 +7,7 @@ import { BookingItem } from '@/components/BookingItem';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { Field, SelectField, TextareaField } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconDownload, IconX } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
@@ -16,18 +17,20 @@ import { downloadCsv, minorToCsvAmount, toCsv } from '@/lib/csv';
 import { addDays, dateKeyInTz, formatDateTime, formatDayLong, todayKey } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
 import { currencyDigits } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
-import { BOOKING_CHANNEL, BOOKING_STATUS } from '@/lib/labels';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { bookingChannel, bookingStatus } from '@/lib/labels';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
 
 type StatusFilter = 'all' | BookingStatus;
 
 const CANCELLABLE: BookingStatus[] = ['pending_payment', 'confirmed'];
 
-function matches(booking: BookingDto, query: string): boolean {
+/** Statuses offered in the filter (expired bookings are not listed). */
+const FILTER_STATUSES: BookingStatus[] = ['pending_payment', 'confirmed', 'cancelled', 'refunded'];
+
+function matches(booking: BookingDto, query: string, locale: string): boolean {
   if (!query) return true;
-  const q = query.toLocaleLowerCase('ro');
+  const q = query.toLocaleLowerCase(locale);
   return [
     booking.customerName,
     booking.reference,
@@ -36,11 +39,13 @@ function matches(booking: BookingDto, query: string): boolean {
     booking.externalRef ?? '',
   ]
     .join(' ')
-    .toLocaleLowerCase('ro')
+    .toLocaleLowerCase(locale)
     .includes(q);
 }
 
 export function BookingsScreen() {
+  const tr = useT();
+  const { t, tp, lang, locale } = tr;
   const { tenant } = useOperator();
   const today = todayKey(tenant.timezone);
   const [range, setRange] = useState({ from: today, to: addDays(today, 7) });
@@ -57,9 +62,9 @@ export function BookingsScreen() {
   const visible = useMemo(
     () =>
       (bookings.data ?? []).filter(
-        (b) => (status === 'all' || b.status === status) && matches(b, query.trim()),
+        (b) => (status === 'all' || b.status === status) && matches(b, query.trim(), locale),
       ),
-    [bookings.data, status, query],
+    [bookings.data, status, query, locale],
   );
 
   const byDay = useMemo(() => {
@@ -76,7 +81,7 @@ export function BookingsScreen() {
   function applyRange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft.from || !draft.to || draft.to < draft.from) {
-      setRangeError('Data „până la” trebuie să fie după data „de la”.');
+      setRangeError(t('operator.bookings.rangeError'));
       return;
     }
     setRangeError(null);
@@ -93,37 +98,39 @@ export function BookingsScreen() {
     const digits = currencyDigits(tenant.currency);
     const csv = toCsv(
       [
-        'Referință',
-        'Ref. sistem propriu',
-        'Excursie',
-        'Plecare',
-        'Locuri',
-        'Client',
-        'Total',
-        'Monedă',
-        'Plată',
-        'Status',
-        'Canal',
-        'Afiliat',
-        'Creată',
+        t('operator.bookings.csvReference'),
+        t('operator.bookings.csvExternalRef'),
+        t('operator.bookings.csvProduct'),
+        t('operator.bookings.csvDeparture'),
+        t('operator.bookings.csvSeats'),
+        t('operator.bookings.csvCustomer'),
+        t('operator.bookings.csvTotal'),
+        t('operator.bookings.csvCurrency'),
+        t('operator.bookings.csvPayment'),
+        t('operator.bookings.csvStatus'),
+        t('operator.bookings.csvChannel'),
+        t('operator.bookings.csvAffiliate'),
+        t('operator.bookings.csvCreated'),
       ],
       visible.map((b) => [
         b.reference,
         b.externalRef,
         b.productName,
-        formatDateTime(b.startsAt, tenant.timezone),
+        formatDateTime(b.startsAt, tenant.timezone, lang),
         b.seats,
         b.customerName,
         minorToCsvAmount(b.totalMinor, digits),
         b.currency,
-        b.paymentMode === 'online' ? 'Online' : 'La îmbarcare',
-        BOOKING_STATUS[b.status].label,
-        BOOKING_CHANNEL[b.channel],
+        b.paymentMode === 'online'
+          ? t('operator.bookings.paymentOnline')
+          : t('operator.bookings.paymentOnBoard'),
+        bookingStatus(tr, b.status).label,
+        bookingChannel(tr, b.channel),
         b.affiliateName,
-        formatDateTime(b.createdAt, tenant.timezone),
+        formatDateTime(b.createdAt, tenant.timezone, lang),
       ]),
     );
-    downloadCsv(`rezervari-${range.from}-${range.to}.csv`, csv);
+    downloadCsv(t('operator.bookings.csvFile', { from: range.from, to: range.to }), csv);
   }
 
   const totalSeats = visible
@@ -133,33 +140,33 @@ export function BookingsScreen() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Rezervări"
-        description="Rezervările după data excursiei. Rezervările neplătite care au expirat nu apar aici."
+        title={t('operator.bookings.title')}
+        description={t('operator.bookings.description')}
         actions={
           visible.length > 0 ? (
             <Button variant="secondary" icon={<IconDownload />} onClick={exportCsv}>
-              Descarcă CSV
+              {t('operator.bookings.downloadCsv')}
             </Button>
           ) : null
         }
       />
 
       <section
-        aria-label="Filtre"
+        aria-label={t('operator.bookings.filters')}
         className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4"
       >
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => preset(today, today)}>
-            Azi
+            {t('operator.bookings.today')}
           </Button>
           <Button variant="secondary" onClick={() => preset(addDays(today, 1), addDays(today, 1))}>
-            Mâine
+            {t('operator.bookings.tomorrow')}
           </Button>
           <Button variant="secondary" onClick={() => preset(today, addDays(today, 7))}>
-            Următoarele 7 zile
+            {t('operator.bookings.next7')}
           </Button>
           <Button variant="secondary" onClick={() => preset(addDays(today, -30), today)}>
-            Ultimele 30 de zile
+            {t('operator.bookings.last30')}
           </Button>
         </div>
         <form
@@ -168,76 +175,74 @@ export function BookingsScreen() {
           className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
         >
           <Field
-            label="Excursii de la"
+            label={t('operator.bookings.from')}
             type="date"
             name="from"
             value={draft.from}
             onChange={(e) => setDraft((d) => ({ ...d, from: e.target.value }))}
           />
           <Field
-            label="până la"
+            label={t('operator.bookings.to')}
             type="date"
             name="to"
             value={draft.to}
             min={draft.from}
             onChange={(e) => setDraft((d) => ({ ...d, to: e.target.value }))}
           />
-          <Button type="submit">Arată</Button>
+          <Button type="submit">{t('operator.bookings.show')}</Button>
         </form>
         {rangeError ? <p className="text-sm font-medium text-danger-fg">{rangeError}</p> : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
-            label="Caută"
+            label={t('operator.bookings.search')}
             type="search"
             name="q"
             autoComplete="off"
-            placeholder="Nume client, referință, afiliat"
+            placeholder={t('operator.bookings.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
           <SelectField
-            label="Status"
+            label={t('operator.bookings.status')}
             name="status"
             value={status}
             onChange={(e) => setStatus(e.target.value as StatusFilter)}
           >
-            <option value="all">Toate</option>
-            {(Object.keys(BOOKING_STATUS) as BookingStatus[])
-              .filter((s) => s !== 'expired')
-              .map((s) => (
-                <option key={s} value={s}>
-                  {BOOKING_STATUS[s].label}
-                </option>
-              ))}
+            <option value="all">{t('operator.bookings.all')}</option>
+            {FILTER_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {bookingStatus(tr, s).label}
+              </option>
+            ))}
           </SelectField>
         </div>
       </section>
 
-      {bookings.loading && !bookings.data ? <LoadingBlock label="Se încarcă rezervările…" /> : null}
+      {bookings.loading && !bookings.data ? (
+        <LoadingBlock label={t('operator.bookings.loading')} />
+      ) : null}
       {bookings.error ? (
         <Alert
           tone="error"
           action={
             <Button variant="secondary" onClick={bookings.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(bookings.error)}
+          {errorMessage(bookings.error, tr)}
         </Alert>
       ) : null}
 
       {bookings.data ? (
         <p className="text-muted" aria-live="polite">
-          {pluralRo(visible.length, 'rezervare', 'rezervări')} ·{' '}
-          {pluralRo(totalSeats, 'loc confirmat', 'locuri confirmate')}
+          {tp('operator.bookings.count', visible.length)} ·{' '}
+          {tp('operator.bookings.confirmedSeats', totalSeats)}
         </p>
       ) : null}
 
       {bookings.data && visible.length === 0 ? (
-        <p className="rounded-2xl bg-surface-2 p-4 text-muted">
-          Nicio rezervare pentru filtrele alese.
-        </p>
+        <p className="rounded-2xl bg-surface-2 p-4 text-muted">{t('operator.bookings.empty')}</p>
       ) : null}
 
       <div className="flex flex-col gap-5">
@@ -251,7 +256,7 @@ export function BookingsScreen() {
               id={`day-${day}`}
               className="border-b border-line py-3 text-lg font-semibold first-letter:uppercase"
             >
-              {formatDayLong(day)}
+              {formatDayLong(day, lang)}
             </h2>
             <ul className="divide-y divide-line">
               {list.map((booking) => (
@@ -262,9 +267,11 @@ export function BookingsScreen() {
                     showExternalRef
                     extra={
                       <p className="text-sm text-muted">
-                        {BOOKING_CHANNEL[booking.channel]}
+                        {bookingChannel(tr, booking.channel)}
                         {booking.affiliateName ? ` · ${booking.affiliateName}` : ''} ·{' '}
-                        {booking.paymentMode === 'online' ? 'Plată online' : 'Plată la îmbarcare'}
+                        {booking.paymentMode === 'online'
+                          ? t('operator.bookings.paidOnline')
+                          : t('operator.bookings.payOnBoard')}
                       </p>
                     }
                     actions={
@@ -275,7 +282,7 @@ export function BookingsScreen() {
                           onClick={() => setCancelling(booking)}
                           className="-ml-3"
                         >
-                          Anulează
+                          {t('operator.bookings.cancel')}
                         </Button>
                       ) : null
                     }
@@ -290,7 +297,7 @@ export function BookingsScreen() {
       <Dialog
         open={cancelling !== null}
         onClose={() => setCancelling(null)}
-        title="Anulezi rezervarea?"
+        title={t('operator.bookings.cancelTitle')}
         description={
           cancelling ? `${cancelling.reference} · ${cancelling.customerName}` : undefined
         }
@@ -325,6 +332,8 @@ function CancelForm({
   onDone: (booking: BookingDto) => void;
   onCancel: () => void;
 }) {
+  const tr = useT();
+  const { t, lang } = tr;
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -336,7 +345,7 @@ function CancelForm({
     event.preventDefault();
     const text = reason.trim();
     if (!text) {
-      setReasonError('Scrie pe scurt motivul anulării.');
+      setReasonError(t('operator.bookings.reasonRequired'));
       return;
     }
     setReasonError(null);
@@ -347,8 +356,8 @@ function CancelForm({
     } catch (err) {
       setError(
         isApiError(err) && err.status === 502
-          ? 'Sistemul tău de rezervări sau plățile nu răspund. Rezervarea nu a fost anulată; încearcă din nou.'
-          : errorMessageRo(err),
+          ? t('operator.bookings.providerDown')
+          : errorMessage(err, tr),
       );
       setBusy(false);
     }
@@ -358,44 +367,45 @@ function CancelForm({
     <form onSubmit={submit} noValidate className="flex flex-col gap-4">
       <dl className="grid grid-cols-2 gap-3 rounded-2xl bg-surface-2 p-3 text-sm">
         <div className="col-span-2">
-          <dt className="text-muted">Excursie</dt>
+          <dt className="text-muted">{t('operator.bookings.trip')}</dt>
           <dd className="font-semibold">
-            {booking.productName}, {formatDateTime(booking.startsAt, timezone)}
+            {booking.productName}, {formatDateTime(booking.startsAt, timezone, lang)}
           </dd>
         </div>
         <div>
-          <dt className="text-muted">Locuri</dt>
+          <dt className="text-muted">{t('operator.bookings.seats')}</dt>
           <dd className="font-semibold">{booking.seats}</dd>
         </div>
         <div>
-          <dt className="text-muted">Total</dt>
+          <dt className="text-muted">{t('operator.bookings.total')}</dt>
           <dd className="font-semibold">
             <MoneyText amountMinor={booking.totalMinor} currency={booking.currency} />
           </dd>
         </div>
       </dl>
-      {paid ? (
-        <Alert tone="warning">
-          Clientul a plătit online: suma se returnează automat pe cardul lui.
-        </Alert>
-      ) : null}
+      {paid ? <Alert tone="warning">{t('operator.bookings.refundNotice')}</Alert> : null}
       <TextareaField
-        label="Motivul anulării"
+        label={t('operator.bookings.reason')}
         name="reason"
         maxLength={400}
         required
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         error={reasonError}
-        placeholder="ex. Vreme rea, excursia nu mai pleacă"
+        placeholder={t('operator.bookings.reasonPlaceholder')}
       />
       {error ? <Alert tone="error">{error}</Alert> : null}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel}>
-          Renunță
+          {t('operator.bookings.keep')}
         </Button>
-        <Button type="submit" variant="danger" loading={busy} loadingText="Se anulează…">
-          Anulează rezervarea
+        <Button
+          type="submit"
+          variant="danger"
+          loading={busy}
+          loadingText={t('operator.bookings.cancelling')}
+        >
+          {t('operator.bookings.confirmCancel')}
         </Button>
       </div>
     </form>

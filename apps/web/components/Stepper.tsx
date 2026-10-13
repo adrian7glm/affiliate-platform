@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, type ReactNode } from 'react';
+import { useT } from './I18nProvider';
 import { IconMinus, IconPlus } from './icons';
 
 export interface StepperProps {
@@ -23,9 +24,10 @@ export function Stepper({
   onChange,
   min = 0,
   max = 50,
-  decreaseLabel = `Scade ${label}`,
-  increaseLabel = `Crește ${label}`,
+  decreaseLabel,
+  increaseLabel,
 }: StepperProps) {
+  const { t } = useT();
   const labelId = useId();
   const canDecrease = value > min;
   const canIncrease = value < max;
@@ -48,7 +50,7 @@ export function Stepper({
           className="inline-flex size-12 items-center justify-center rounded-full border-2 border-line-strong bg-surface text-fg disabled:opacity-40"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={!canDecrease}
-          aria-label={decreaseLabel}
+          aria-label={decreaseLabel ?? t('common.decrease', { label })}
         >
           <IconMinus />
         </button>
@@ -65,7 +67,7 @@ export function Stepper({
           className="inline-flex size-12 items-center justify-center rounded-full border-2 border-transparent bg-brand text-on-brand disabled:opacity-40"
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={!canIncrease}
-          aria-label={increaseLabel}
+          aria-label={increaseLabel ?? t('common.increase', { label })}
         >
           <IconPlus />
         </button>

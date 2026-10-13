@@ -7,8 +7,10 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { Clock } from '../src/common/clock';
-import { MemoryNotifier, Notifier } from '../src/common/notifier';
 import { loadConfig } from '../src/config';
+import { NotificationsService } from '../src/notifications/notifications.service';
+import { MemoryTransport, type SentMessage } from '../src/notifications/transports/dev';
+import { EmailTransport, SmsTransport } from '../src/notifications/transports/transport';
 import { Outbox } from '../src/outbox/outbox';
 import { PaymentsGateway } from '../src/payments/gateway';
 import type { FakeGateway } from '../src/payments/fake.gateway';
@@ -40,7 +42,11 @@ export interface Harness {
   app: INestApplication;
   http: ReturnType<typeof request>;
   clock: TestClock;
-  notifier: MemoryNotifier;
+  /** Every SMS and email sent. */
+  messages: MemoryTransport;
+  notifications: NotificationsService;
+  /** Sends the queued messages, then returns the last one sent to `to`. */
+  lastMessage(to: string): Promise<SentMessage | undefined>;
   outbox: Outbox;
   payments: FakeGateway;
   tenantId: string;
@@ -48,8 +54,12 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-/** Boots the whole API against a fresh database, with a controllable clock and in-memory notifier. */
-export async function startHarness(url: string, now: string): Promise<Harness> {
+/** Boots the whole API against a fresh database, with a controllable clock and in-memory SMS and email. */
+export async function startHarness(
+  url: string,
+  now: string,
+  env: Record<string, string> = {},
+): Promise<Harness> {
   await resetDatabase(url);
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -58,16 +68,18 @@ export async function startHarness(url: string, now: string): Promise<Harness> {
     APP_SECRET: 'test-secret-that-is-long-enough',
     PAYMENTS_PROVIDER: 'fake',
     WORKER_ENABLED: 'false',
-    NOTIFIER: 'silent',
     HOLD_MINUTES: '30',
+    ...env,
   });
   const clock = new TestClock(new Date(now));
-  const notifier = new MemoryNotifier();
+  const messages = new MemoryTransport();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule.with(config)] })
     .overrideProvider(Clock)
     .useValue(clock)
-    .overrideProvider(Notifier)
-    .useValue(notifier)
+    .overrideProvider(EmailTransport)
+    .useValue(messages.email)
+    .overrideProvider(SmsTransport)
+    .useValue(messages.sms)
     .compile();
   const app = configureApp(
     moduleRef.createNestApplication({ rawBody: true, logger: ['error'] }),
@@ -90,11 +102,17 @@ export async function startHarness(url: string, now: string): Promise<Harness> {
     .values({ userId: owner!.id, tenantId: tenant!.id, role: 'owner' });
   await seed.close();
 
+  const notifications = app.get(NotificationsService);
   return {
     app,
     http: request(app.getHttpServer()),
     clock,
-    notifier,
+    messages,
+    notifications,
+    lastMessage: async (to) => {
+      await notifications.deliverDue();
+      return messages.last(to);
+    },
     outbox: app.get(Outbox),
     payments: app.get(PaymentsGateway) as FakeGateway,
     tenantId: tenant!.id,
@@ -103,10 +121,10 @@ export async function startHarness(url: string, now: string): Promise<Harness> {
   };
 }
 
-/** Signs in through the real OTP flow, reading the code from the in-memory notifier. */
+/** Signs in through the real OTP flow, reading the code from the in-memory SMS and email. */
 export async function signIn(h: Harness, destination: string): Promise<string> {
   await h.http.post('/auth/otp/request').send({ destination }).expect(204);
-  const code = /(\d{6})/.exec(h.notifier.last(destination)?.text ?? '')?.[1];
+  const code = /(\d{6})/.exec(h.messages.last(destination)?.text ?? '')?.[1];
   if (!code) throw new Error(`no login code sent to ${destination}`);
   const response = await h.http.post('/auth/otp/verify').send({ destination, code }).expect(200);
   return response.body.token as string;

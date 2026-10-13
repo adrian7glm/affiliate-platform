@@ -8,6 +8,7 @@ import {
 import { BookingService } from '../booking/booking.service';
 import { CommissionsService } from '../commissions/commissions.service';
 import { APP_CONFIG, type AppConfig } from '../config';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
 import { SourcesService } from '../sources/sources.service';
 
@@ -26,11 +27,13 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     private readonly bookingService: BookingService,
     private readonly commissions: CommissionsService,
     private readonly sources: SourcesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   onApplicationBootstrap(): void {
     if (!this.config.WORKER_ENABLED) return;
     this.every('outbox', 3_000, () => this.outbox.drain());
+    this.every('send-notifications', 3_000, () => this.notifications.deliverDue());
     this.every('expire-unpaid-bookings', 60_000, () => this.bookingService.expireUnpaid());
     this.every('approve-commissions', 10 * 60_000, () => this.commissions.approveDue());
     this.every('sync-availability-sources', 10 * 60_000, () => this.sources.syncAll());

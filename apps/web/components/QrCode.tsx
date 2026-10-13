@@ -1,4 +1,7 @@
+'use client';
+
 import { create as createQr } from 'qrcode';
+import { useT } from './I18nProvider';
 
 export type QrErrorLevel = 'L' | 'M' | 'Q' | 'H';
 
@@ -28,7 +31,7 @@ export function qrPath(value: string, level: QrErrorLevel = 'M'): { path: string
 
 interface QrCodeProps {
   value: string;
-  /** Accessible description, e.g. "Cod QR pentru rezervare". */
+  /** Accessible description, e.g. "Ticket QR code ABC123" (translated by the caller). */
   label: string;
   level?: QrErrorLevel;
   className?: string;
@@ -39,6 +42,7 @@ interface QrCodeProps {
  * server-rendered pages. Always dark-on-white with a quiet zone so every camera can read it.
  */
 export function QrCode({ value, label, level = 'M', className = '' }: QrCodeProps) {
+  const { t } = useT();
   let content: { path: string; size: number } | null = null;
   try {
     content = qrPath(value, level);
@@ -50,7 +54,7 @@ export function QrCode({ value, label, level = 'M', className = '' }: QrCodeProp
       <div
         className={`qr-surface flex aspect-square items-center justify-center rounded-2xl p-4 text-center ${className}`}
       >
-        Codul QR nu poate fi generat.
+        {t('common.qrFailed')}
       </div>
     );
   }

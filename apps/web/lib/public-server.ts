@@ -1,9 +1,9 @@
 import type { ProductDto, PublicTenantDto } from '@ap/contracts';
-import { headers } from 'next/headers';
 import { cache } from 'react';
 import { isApiError } from './api';
 import { publicApi } from './endpoints';
-import { DEFAULT_LANG, langFromAcceptLanguage, langFromTag, type Lang } from './i18n';
+import { PUBLIC_DEFAULT_LANG, type Lang } from './i18n';
+import { serverLang } from './i18n-server';
 import { SERVER_API_URL } from './server-api';
 
 /** Server-side helpers for the public (tourist) pages. */
@@ -27,12 +27,9 @@ export const loadProduct = cache((slug: string, productSlug: string) =>
   load<ProductDto>(() => publicApi.product(slug, productSlug, { baseUrl: SERVER_API_URL })),
 );
 
-/** `?lang=` wins, then the browser's preferred language (Accept-Language), then English. */
-export async function requestLang(queryLang: string | string[] | undefined): Promise<Lang> {
-  const fromQuery = langFromTag(Array.isArray(queryLang) ? queryLang[0] : queryLang);
-  if (fromQuery) return fromQuery;
-  const accept = (await headers()).get('accept-language');
-  return langFromAcceptLanguage(accept) ?? DEFAULT_LANG;
+/** `?lang=` wins, then the saved choice, then the browser's language, then English. */
+export function requestLang(queryLang: string | string[] | undefined): Promise<Lang> {
+  return serverLang(queryLang, PUBLIC_DEFAULT_LANG);
 }
 
 /** Appends `lang` to an internal path. */

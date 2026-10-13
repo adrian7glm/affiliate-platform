@@ -4,13 +4,14 @@ import type { CheckoutResultDto, Locale } from '@ap/contracts';
 import { useEffect, useRef } from 'react';
 import { Button, ButtonLink } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { useT, useTranslatorFor } from '@/components/I18nProvider';
 import { IconChat, IconCheck, IconExternal, IconMessage, IconPlus } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { QrCode } from '@/components/QrCode';
 import { ShareActions } from '@/components/ShareActions';
 import { DEFAULT_TIMEZONE, dateKeyInTz, formatDayLong, formatTime } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
+import { isLang, type Lang, type Translator } from '@/lib/i18n';
 import { parseTicketUrl, ticketPath } from '@/lib/links';
 import { smsUrl, whatsappUrl } from '@/lib/share';
 
@@ -23,24 +24,27 @@ interface BookingResultProps {
   onNewBooking: () => void;
 }
 
-/** Message for the customer, in their language when we have it (Romanian or English). */
+/** The customer's language when the platform has texts for it, else English. */
+export function customerLang(locale: Locale): Lang {
+  return isLang(locale) ? locale : 'en';
+}
+
+/** Message for the customer, written with a translator in the customer's language. */
 export function customerMessage(
   kind: 'pay' | 'ticket',
-  locale: Locale,
+  { t, lang }: Pick<Translator, 't' | 'lang'>,
   data: { name: string; product: string; startsAt: string; url: string },
 ): string {
-  const lang = locale === 'ro' ? 'ro' : 'en';
-  const day = formatDayLong(dateKeyInTz(data.startsAt, DEFAULT_TIMEZONE), lang);
-  const time = formatTime(data.startsAt, DEFAULT_TIMEZONE, lang);
-  const first = data.name.split(' ')[0] ?? data.name;
-  if (lang === 'ro') {
-    return kind === 'pay'
-      ? `Bună, ${first}! Rezervarea ta pentru ${data.product}, ${day}, ora ${time}, te așteaptă. Plătește aici ca să primești biletul: ${data.url}`
-      : `Bună, ${first}! Biletul tău pentru ${data.product}, ${day}, ora ${time}: ${data.url}`;
-  }
+  const vars = {
+    name: data.name.split(' ')[0] ?? data.name,
+    product: data.product,
+    day: formatDayLong(dateKeyInTz(data.startsAt, DEFAULT_TIMEZONE), lang),
+    time: formatTime(data.startsAt, DEFAULT_TIMEZONE, lang),
+    url: data.url,
+  };
   return kind === 'pay'
-    ? `Hi ${first}! Your booking for ${data.product} on ${day} at ${time} is waiting. Pay here to get your ticket: ${data.url}`
-    : `Hi ${first}! Your ticket for ${data.product} on ${day} at ${time}: ${data.url}`;
+    ? t('affiliate.customerMessage.pay', vars)
+    : t('affiliate.customerMessage.ticket', vars);
 }
 
 export function BookingResult({
@@ -51,13 +55,15 @@ export function BookingResult({
   locale,
   onNewBooking,
 }: BookingResultProps) {
+  const { t, lang } = useT();
+  const customerT = useTranslatorFor(customerLang(locale));
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);
 
   const { booking, paymentUrl, ticketUrl } = result;
   const payOnline = !!paymentUrl;
   const shareUrl = paymentUrl ?? ticketUrl;
-  const message = customerMessage(payOnline ? 'pay' : 'ticket', locale, {
+  const message = customerMessage(payOnline ? 'pay' : 'ticket', customerT, {
     name: customerName,
     product: productName,
     startsAt: booking.startsAt,
@@ -65,7 +71,7 @@ export function BookingResult({
   });
   const ticket = parseTicketUrl(ticketUrl);
   const ticketHref = ticket
-    ? ticketPath(ticket.bookingId, ticket.key, locale === 'ro' ? 'ro' : 'en')
+    ? ticketPath(ticket.bookingId, ticket.key, customerLang(locale))
     : ticketUrl;
   const dayKey = dateKeyInTz(booking.startsAt, DEFAULT_TIMEZONE);
 
@@ -77,12 +83,16 @@ export function BookingResult({
         </span>
         <div className="min-w-0">
           <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold outline-none">
-            {payOnline ? 'Rezervare creată' : 'Rezervare confirmată'}
+            {payOnline ? t('affiliate.result.created') : t('affiliate.result.confirmed')}
           </h1>
           <p className="text-muted">
-            {productName} · {formatDayLong(dayKey)}, ora{' '}
-            {formatTime(booking.startsAt, DEFAULT_TIMEZONE)} · {booking.customerName} · cod{' '}
-            {booking.reference}
+            {t('affiliate.result.summary', {
+              product: productName,
+              day: formatDayLong(dayKey, lang),
+              time: formatTime(booking.startsAt, DEFAULT_TIMEZONE, lang),
+              customer: booking.customerName,
+              reference: booking.reference,
+            })}
           </p>
         </div>
       </header>
@@ -90,41 +100,37 @@ export function BookingResult({
       <Card>
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-xl font-bold">
-            {payOnline
-              ? 'Clientul scanează și plătește pe telefonul lui'
-              : 'Clientul scanează și își salvează biletul'}
+            {payOnline ? t('affiliate.result.scanToPay') : t('affiliate.result.scanToSave')}
           </p>
           <QrCode
             value={shareUrl}
             label={
-              payOnline ? 'Cod QR pentru plata rezervării' : 'Cod QR pentru biletul clientului'
+              payOnline ? t('affiliate.result.qrPayLabel') : t('affiliate.result.qrTicketLabel')
             }
             className="w-full max-w-80 p-1"
           />
           {payOnline ? (
             <p className="text-lg">
-              Total de plată:{' '}
+              {t('affiliate.result.totalToPay')}{' '}
               <MoneyText
                 amountMinor={booking.totalMinor}
                 currency={booking.currency}
+                lang={lang}
                 className="font-bold"
               />
             </p>
           ) : (
             <p className="text-lg">
-              De plătit la îmbarcare:{' '}
+              {t('affiliate.result.payOnBoarding')}{' '}
               <MoneyText
                 amountMinor={booking.totalMinor}
                 currency={booking.currency}
+                lang={lang}
                 className="font-bold"
               />
             </p>
           )}
-          {payOnline ? (
-            <p className="text-sm text-muted">
-              Locurile sunt păstrate pentru scurt timp. Biletul ajunge la client imediat după plată.
-            </p>
-          ) : null}
+          {payOnline ? <p className="text-sm text-muted">{t('affiliate.result.held')}</p> : null}
         </div>
       </Card>
 
@@ -138,7 +144,7 @@ export function BookingResult({
           block
           icon={<IconChat />}
         >
-          Trimite pe WhatsApp
+          {t('affiliate.result.whatsapp')}
         </ButtonLink>
         <ButtonLink
           href={smsUrl(message, customerPhone)}
@@ -148,7 +154,7 @@ export function BookingResult({
           block
           icon={<IconMessage />}
         >
-          Trimite SMS
+          {t('affiliate.result.sms')}
         </ButtonLink>
         <ShareActions
           url={shareUrl}
@@ -163,17 +169,19 @@ export function BookingResult({
           block
           icon={<IconExternal />}
         >
-          Vezi biletul
+          {t('affiliate.result.viewTicket')}
         </ButtonLink>
       </div>
 
       <Button size="lg" variant="secondary" block icon={<IconPlus />} onClick={onNewBooking}>
-        Rezervare nouă
+        {t('affiliate.result.newBooking')}
       </Button>
 
       <p className="text-center text-sm text-muted">
-        Total {formatMoney(booking.totalMinor, booking.currency)} ·{' '}
-        {pluralRo(booking.seats, 'loc', 'locuri')}
+        {t('affiliate.result.footer', {
+          total: formatMoney(booking.totalMinor, booking.currency, lang),
+          count: booking.seats,
+        })}
       </p>
     </div>
   );

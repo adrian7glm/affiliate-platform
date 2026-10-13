@@ -1,12 +1,19 @@
 'use client';
 
-import type { CheckoutResultDto, Locale, ProductDto, SlotDto } from '@ap/contracts';
+import {
+  localeSchema,
+  type CheckoutResultDto,
+  type Locale,
+  type ProductDto,
+  type SlotDto,
+} from '@ap/contracts';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ChoiceGroup, Field } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { SlotPicker } from '@/components/booking/SlotPicker';
 import { TicketQuantities } from '@/components/booking/TicketQuantities';
@@ -27,15 +34,27 @@ import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/li
 import { DEFAULT_TIMEZONE, dateKeyInTz, formatDayLong, formatTime, nextDays } from '@/lib/dates';
 import { affiliateApi } from '@/lib/endpoints';
 import { formatMoney } from '@/lib/format';
-import { formatDuration, getT } from '@/lib/i18n';
-import { LOCALE_LABELS } from '@/lib/labels';
+import { formatDuration } from '@/lib/i18n';
 import { useAffiliateHome } from '@/lib/useAffiliateHome';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { BookingResult } from './BookingResult';
 
-const t = getT('ro');
 const TZ = DEFAULT_TIMEZONE;
-const STEP_TITLES = ['Excursie și oră', 'Bilete', 'Datele clientului'] as const;
+const STEP_KEYS = [
+  'affiliate.book.stepTrip',
+  'affiliate.book.stepTickets',
+  'affiliate.book.stepCustomer',
+] as const;
+
+/** A language's own name ("Deutsch", "Română"), so the customer recognises it. */
+function nativeLanguageName(code: string): string {
+  try {
+    const name = new Intl.DisplayNames([code], { type: 'language' }).of(code) ?? code;
+    return name.charAt(0).toLocaleUpperCase(code) + name.slice(1);
+  } catch {
+    return code.toUpperCase();
+  }
+}
 type Step = 1 | 2 | 3;
 type Payment = 'link' | 'on_site';
 
@@ -47,6 +66,8 @@ interface CustomerErrors {
 }
 
 export function BookFlow() {
+  const i18n = useT();
+  const { t, tp, lang } = i18n;
   const searchParams = useSearchParams();
   const urlStep = Math.min(3, Math.max(1, Number(searchParams.get('step')) || 1)) as Step;
   const home = useAffiliateHome();
@@ -120,8 +141,8 @@ export function BookFlow() {
   }
 
   function continueFromStep1() {
-    if (!product) return setStepError('Alege excursia.');
-    if (!slot) return setStepError('Alege ora plecării.');
+    if (!product) return setStepError(t('affiliate.book.chooseProduct'));
+    if (!slot) return setStepError(t('affiliate.book.chooseTime'));
     if (ticketCount(quantities) === 0)
       setQuantities(defaultQuantities(product.prices, slot.available));
     goTo(2);
@@ -129,9 +150,9 @@ export function BookFlow() {
 
   function continueFromStep2() {
     if (!product || !slot) return;
-    if (ticketCount(quantities) === 0) return setStepError(t.t('selectTickets'));
+    if (ticketCount(quantities) === 0) return setStepError(t('affiliate.book.selectTickets'));
     if (seatsNeeded(product.prices, quantities) > slot.available)
-      return setStepError(t.tp('notEnoughSeats', slot.available));
+      return setStepError(tp('affiliate.book.notEnoughSeats', slot.available));
     goTo(3);
   }
 
@@ -141,12 +162,10 @@ export function BookFlow() {
     const errors: CustomerErrors = {};
     const cleanPhone = phone.trim() ? normalizePhone(phone) : '';
     const cleanEmail = email.trim() ? normalizeEmail(email) : '';
-    if (!name.trim()) errors.name = 'Scrie numele clientului.';
-    if (cleanPhone && !isValidPhone(cleanPhone))
-      errors.phone = 'Scrie numărul cu prefixul țării, ex. +44 7700 900123.';
-    if (cleanEmail && !isValidEmail(cleanEmail)) errors.email = 'Adresa de email nu pare corectă.';
-    if (!cleanPhone && !cleanEmail)
-      errors.contact = 'Completează telefonul sau emailul clientului.';
+    if (!name.trim()) errors.name = t('affiliate.book.nameRequired');
+    if (cleanPhone && !isValidPhone(cleanPhone)) errors.phone = t('affiliate.book.phoneInvalid');
+    if (cleanEmail && !isValidEmail(cleanEmail)) errors.email = t('affiliate.book.emailInvalid');
+    if (!cleanPhone && !cleanEmail) errors.contact = t('affiliate.book.contactRequired');
     setCustomerErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -171,18 +190,16 @@ export function BookFlow() {
       home.reload();
     } catch (err) {
       if (isApiError(err) && err.status === 409) {
-        setSubmitError(
-          'Nu mai sunt destule locuri la această plecare. Alege altă oră sau mai puține bilete.',
-        );
+        setSubmitError(t('affiliate.book.errorSoldOut'));
         slots.reload();
       } else if (isApiError(err) && err.status === 403) {
-        setSubmitError('Contul tău de afiliat nu este activ. Vorbește cu operatorul.');
+        setSubmitError(t('affiliate.book.errorInactive'));
       } else if (isApiError(err) && err.status === 422 && payment === 'on_site') {
-        setSubmitError('Operatorul nu acceptă plata la îmbarcare. Alege plata online.');
+        setSubmitError(t('affiliate.book.errorNoPayOnSite'));
       } else if (isApiError(err) && err.status === 502) {
-        setSubmitError('Plățile nu sunt disponibile momentan. Încearcă din nou într-un minut.');
+        setSubmitError(t('affiliate.book.errorPayments'));
       } else {
-        setSubmitError(errorMessageRo(err));
+        setSubmitError(errorMessage(err, i18n));
       }
     } finally {
       setBusy(false);
@@ -227,22 +244,19 @@ export function BookFlow() {
   return (
     <div className="page-x mx-auto flex max-w-xl flex-col gap-4">
       <header className="pt-4">
-        <p className="font-semibold text-muted">
-          Rezervare nouă · {t.t('stepOf', { step, total: 3 })}
-        </p>
+        <p className="font-semibold text-muted">{t('affiliate.book.header', { step, total: 3 })}</p>
         <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold outline-none">
-          {STEP_TITLES[step - 1]}
+          {t(STEP_KEYS[step - 1]!)}
         </h1>
-        <ol className="mt-3 grid grid-cols-3 gap-1.5" aria-label="Pași">
-          {STEP_TITLES.map((title, i) => (
+        <ol className="mt-3 grid grid-cols-3 gap-1.5" aria-label={t('affiliate.book.steps')}>
+          {STEP_KEYS.map((key, i) => (
             <li
-              key={title}
+              key={key}
               aria-current={i + 1 === step ? 'step' : undefined}
               className={`h-1.5 rounded-full ${i + 1 <= step ? 'bg-brand' : 'bg-surface-2'}`}
             >
               <span className="visually-hidden">
-                {title}
-                {i + 1 < step ? ' (gata)' : ''}
+                {i + 1 < step ? t('affiliate.book.stepDone', { step: t(key) }) : t(key)}
               </span>
             </li>
           ))}
@@ -257,20 +271,20 @@ export function BookFlow() {
               tone="error"
               action={
                 <Button variant="secondary" onClick={products.reload}>
-                  Încearcă din nou
+                  {t('common.retry')}
                 </Button>
               }
             >
-              {errorMessageRo(products.error)}
+              {errorMessage(products.error, i18n)}
             </Alert>
           ) : null}
           {products.data && products.data.length === 0 ? (
-            <Alert tone="info">Operatorul nu are încă excursii disponibile.</Alert>
+            <Alert tone="info">{t('affiliate.book.noProducts')}</Alert>
           ) : null}
 
           {products.data && products.data.length > 1 ? (
             <ChoiceGroup
-              legend="Excursia"
+              legend={t('affiliate.book.productLegend')}
               name="product"
               value={productId}
               onChange={(id) => {
@@ -283,7 +297,10 @@ export function BookFlow() {
               options={products.data.map((p) => ({
                 value: p.id,
                 label: p.name,
-                description: `${formatDuration(p.durationMinutes)} · de la ${formatMoney(p.fromMinor, p.currency)}`,
+                description: t('affiliate.book.productLine', {
+                  duration: formatDuration(p.durationMinutes, lang),
+                  price: formatMoney(p.fromMinor, p.currency, lang),
+                }),
               }))}
             />
           ) : null}
@@ -292,34 +309,36 @@ export function BookFlow() {
             <p className="rounded-2xl bg-surface-2 p-4">
               <span className="block font-semibold">{product.name}</span>
               <span className="text-sm text-muted">
-                {formatDuration(product.durationMinutes)} · de la{' '}
-                {formatMoney(product.fromMinor, product.currency)}
+                {t('affiliate.book.productLine', {
+                  duration: formatDuration(product.durationMinutes, lang),
+                  price: formatMoney(product.fromMinor, product.currency, lang),
+                })}
               </span>
             </p>
           ) : null}
 
           {product ? (
             slots.loading && !slots.data ? (
-              <LoadingBlock label="Căutăm plecările…" />
+              <LoadingBlock label={t('affiliate.book.loadingSlots')} />
             ) : slots.error ? (
               <Alert
                 tone="error"
                 action={
                   <Button variant="secondary" onClick={slots.reload}>
-                    Încearcă din nou
+                    {t('common.retry')}
                   </Button>
                 }
               >
-                {errorMessageRo(slots.error)}
+                {errorMessage(slots.error, i18n)}
               </Alert>
             ) : upcoming.length === 0 ? (
-              <Alert tone="info">{t.t('noDepartures')}</Alert>
+              <Alert tone="info">{t('affiliate.book.noDepartures')}</Alert>
             ) : (
               <SlotPicker
                 days={days}
                 slots={upcoming}
                 timezone={TZ}
-                t={t}
+                t={i18n}
                 date={date}
                 onDateChange={(d) => {
                   setDate(d);
@@ -342,7 +361,7 @@ export function BookFlow() {
 
           <StickyActions aboveNav>
             <Button size="lg" block onClick={continueFromStep1}>
-              Continuă
+              {t('affiliate.book.continue')}
             </Button>
           </StickyActions>
         </>
@@ -361,13 +380,13 @@ export function BookFlow() {
                 setStepError(null);
               }}
               available={slot.available}
-              t={t}
+              t={i18n}
               error={stepError}
             />
           </Card>
           <StickyActions aboveNav>
             <Button size="lg" block onClick={continueFromStep2}>
-              Continuă · {formatMoney(total, currency)}
+              {t('affiliate.book.continueTotal', { total: formatMoney(total, currency, lang) })}
             </Button>
           </StickyActions>
         </>
@@ -387,7 +406,12 @@ export function BookFlow() {
                     .map((p) => `${quantities[p.id]} × ${p.label}`)
                     .join(', ')}
                 </span>
-                <MoneyText amountMinor={total} currency={currency} className="font-bold" />
+                <MoneyText
+                  amountMinor={total}
+                  currency={currency}
+                  lang={lang}
+                  className="font-bold"
+                />
               </span>
             }
           />
@@ -395,7 +419,7 @@ export function BookFlow() {
           <Card>
             <div className="flex flex-col gap-4">
               <Field
-                label="Numele clientului"
+                label={t('affiliate.book.nameLabel')}
                 name="customer-name"
                 // The customer's data, not the receptionist's: do not autofill her own details.
                 autoComplete="off"
@@ -411,12 +435,11 @@ export function BookFlow() {
                 className={`text-sm ${customerErrors.contact ? 'font-medium text-danger-fg' : 'text-muted'}`}
                 role={customerErrors.contact ? 'alert' : undefined}
               >
-                {customerErrors.contact ??
-                  'Completează telefonul sau emailul: acolo primește clientul biletul.'}
+                {customerErrors.contact ?? t('affiliate.book.contactHint')}
               </p>
               <Field
-                label="Telefonul clientului"
-                hint="Cu prefixul țării, ex. +44 7700 900123"
+                label={t('affiliate.book.phoneLabel')}
+                hint={t('affiliate.book.phoneHint')}
                 name="customer-phone"
                 type="tel"
                 inputMode="tel"
@@ -425,10 +448,10 @@ export function BookFlow() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 error={customerErrors.phone}
-                optionalText="sau email"
+                optionalText={t('affiliate.book.orEmail')}
               />
               <Field
-                label="Emailul clientului"
+                label={t('affiliate.book.emailLabel')}
                 name="customer-email"
                 type="email"
                 inputMode="email"
@@ -439,17 +462,17 @@ export function BookFlow() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 error={customerErrors.email}
-                optionalText="sau telefon"
+                optionalText={t('affiliate.book.orPhone')}
               />
               <Field
-                label="Camera"
+                label={t('affiliate.book.roomLabel')}
                 name="hotel-room"
                 autoComplete="off"
                 enterKeyHint="done"
                 maxLength={20}
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
-                optionalText="opțional"
+                optionalText={t('affiliate.optional')}
               />
             </div>
           </Card>
@@ -457,40 +480,38 @@ export function BookFlow() {
           <Card>
             <div className="flex flex-col gap-5">
               <ChoiceGroup<Locale>
-                legend="Limba clientului"
-                hint="Biletul și mesajele vin în această limbă."
+                legend={t('affiliate.book.localeLegend')}
+                hint={t('affiliate.book.localeHint')}
                 name="locale"
                 value={locale}
                 onChange={setLocale}
                 gridClassName="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3"
-                options={(Object.keys(LOCALE_LABELS) as Locale[]).map((code) => ({
+                options={localeSchema.options.map((code) => ({
                   value: code,
-                  label: LOCALE_LABELS[code],
+                  label: nativeLanguageName(code),
                 }))}
               />
               {allowPayOnSite ? (
                 <ChoiceGroup<Payment>
-                  legend="Plata"
+                  legend={t('affiliate.book.paymentLegend')}
                   name="payment"
                   value={payment}
                   onChange={setPayment}
                   options={[
                     {
                       value: 'link',
-                      label: 'Online, acum',
-                      description: 'Clientul scanează un cod sau primește linkul de plată.',
+                      label: t('affiliate.book.payOnline'),
+                      description: t('affiliate.book.payOnlineHint'),
                     },
                     {
                       value: 'on_site',
-                      label: 'La îmbarcare',
-                      description: 'Clientul plătește operatorului înainte de plecare.',
+                      label: t('affiliate.book.payOnSite'),
+                      description: t('affiliate.book.payOnSiteHint'),
                     },
                   ]}
                 />
               ) : (
-                <p className="text-sm text-muted">
-                  Clientul plătește online: îi arăți un cod QR sau îi trimiți linkul.
-                </p>
+                <p className="text-sm text-muted">{t('affiliate.book.payOnlineOnly')}</p>
               )}
             </div>
           </Card>
@@ -498,8 +519,14 @@ export function BookFlow() {
           {submitError ? <Alert tone="error">{submitError}</Alert> : null}
 
           <StickyActions aboveNav>
-            <Button type="submit" size="lg" block loading={busy} loadingText="Se rezervă…">
-              Rezervă · {formatMoney(total, currency)}
+            <Button
+              type="submit"
+              size="lg"
+              block
+              loading={busy}
+              loadingText={t('affiliate.book.booking')}
+            >
+              {t('affiliate.book.submit', { total: formatMoney(total, currency, lang) })}
             </Button>
           </StickyActions>
         </form>
@@ -519,6 +546,7 @@ function SlotSummary({
   onChange: () => void;
   extra?: ReactNode;
 }) {
+  const { t, lang } = useT();
   const dayKey = dateKeyInTz(slot.startsAt, TZ);
   return (
     <div className="flex flex-col gap-2 rounded-2xl bg-surface-2 p-4">
@@ -526,11 +554,14 @@ function SlotSummary({
         <div className="min-w-0">
           <p className="font-semibold">{product.name}</p>
           <p className="text-muted">
-            {formatDayLong(dayKey)}, ora {formatTime(slot.startsAt, TZ)}
+            {t('affiliate.book.slotWhen', {
+              day: formatDayLong(dayKey, lang),
+              time: formatTime(slot.startsAt, TZ, lang),
+            })}
           </p>
         </div>
         <Button variant="ghost" onClick={onChange} className="-mr-2 -mt-2 shrink-0 px-3">
-          Schimbă
+          {t('affiliate.book.change')}
         </Button>
       </div>
       {extra}

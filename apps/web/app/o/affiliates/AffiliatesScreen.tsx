@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
 import { ChoiceGroup, Field, SelectField } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconChat, IconQr } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
@@ -18,20 +19,23 @@ import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/li
 import { formatPeriod } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
 import { bpsToPercentInput, formatBps, percentToBps } from '@/lib/format';
-import { pluralRo } from '@/lib/i18n';
-import { AFFILIATE_STATUS } from '@/lib/labels';
+import type { Translator } from '@/lib/i18n';
+import { affiliateStatus } from '@/lib/labels';
 import { whatsappUrl } from '@/lib/share';
-import { errorMessageRo, useApi } from '@/lib/useApi';
+import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
+import { Rich, slots } from '../Rich';
 
-function planSummary(plan: CommissionPlanDto | undefined): string {
-  if (!plan) return 'Planul implicit';
-  if (plan.kind === 'fixed') return `${plan.name} · ${formatBps(plan.rateBps ?? 0)}`;
-  const rates = (plan.tiers ?? []).map((t) => formatBps(t.rateBps));
+function planSummary(plan: CommissionPlanDto | undefined, tr: Translator): string {
+  if (!plan) return tr.t('operator.affiliates.defaultPlan');
+  if (plan.kind === 'fixed') return `${plan.name} · ${formatBps(plan.rateBps ?? 0, tr.lang)}`;
+  const rates = (plan.tiers ?? []).map((tier) => formatBps(tier.rateBps, tr.lang));
   return `${plan.name} · ${rates.join(' → ')}`;
 }
 
 export function AffiliatesScreen() {
+  const tr = useT();
+  const { t, tp, lang } = tr;
   const { tenant, dashboard } = useOperator();
   const affiliates = useApi('operator-affiliates', (signal) => operatorApi.affiliates({ signal }));
   const plans = useApi('operator-plans', (signal) => operatorApi.plans({ signal }));
@@ -59,7 +63,7 @@ export function AffiliatesScreen() {
       mergeAffiliate(updated);
       dashboard.reload();
     } catch (err) {
-      setRowError(errorMessageRo(err));
+      setRowError(errorMessage(err, tr));
     } finally {
       setBusyId(null);
     }
@@ -68,8 +72,8 @@ export function AffiliatesScreen() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title="Afiliați"
-        description="Recepționeri, concierge și ghizi care îți recomandă excursiile."
+        title={t('operator.affiliates.title')}
+        description={t('operator.affiliates.description')}
       />
 
       <InviteForm
@@ -87,11 +91,11 @@ export function AffiliatesScreen() {
           tone="error"
           action={
             <Button variant="secondary" onClick={affiliates.reload}>
-              Încearcă din nou
+              {t('common.retry')}
             </Button>
           }
         >
-          {errorMessageRo(affiliates.error)}
+          {errorMessage(affiliates.error, tr)}
         </Alert>
       ) : null}
       {rowError ? <Alert tone="error">{rowError}</Alert> : null}
@@ -99,19 +103,19 @@ export function AffiliatesScreen() {
       {affiliates.data ? (
         <section aria-labelledby="affiliates-title" className="flex flex-col gap-3">
           <h2 id="affiliates-title" className="text-xl font-semibold">
-            {pluralRo(affiliates.data.length, 'afiliat', 'afiliați')}
+            {tp('operator.affiliates.count', affiliates.data.length)}
             {affiliates.data[0] ? (
               <span className="ml-2 text-base font-normal text-muted">
-                · {formatPeriod(affiliates.data[0].month.periodKey)}
+                · {formatPeriod(affiliates.data[0].month.periodKey, lang)}
               </span>
             ) : null}
           </h2>
           {affiliates.data.length === 0 ? (
-            <p className="text-muted">Încă nu ai afiliați. Invită primul afiliat mai sus.</p>
+            <p className="text-muted">{t('operator.affiliates.empty')}</p>
           ) : (
             <ul className="grid gap-3 md:grid-cols-2">
               {affiliates.data.map((affiliate) => {
-                const status = AFFILIATE_STATUS[affiliate.status];
+                const status = affiliateStatus(tr, affiliate.status);
                 const plan = affiliate.commissionPlanId
                   ? planById.get(affiliate.commissionPlanId)
                   : defaultPlan;
@@ -123,20 +127,24 @@ export function AffiliatesScreen() {
                           <div className="min-w-0">
                             <h3 className="text-lg font-semibold">{affiliate.displayName}</h3>
                             <p className="text-sm text-muted">
-                              {affiliate.type === 'organization' ? 'Organizație' : 'Persoană'}
+                              {affiliate.type === 'organization'
+                                ? t('operator.affiliates.typeOrganization')
+                                : t('operator.affiliates.typePerson')}
                             </p>
                           </div>
                           <StatusChip tone={status.tone}>{status.label}</StatusChip>
                         </div>
                         <dl className="grid grid-cols-2 gap-2 text-sm">
                           <div className="rounded-xl bg-surface-2 p-2.5">
-                            <dt className="text-muted">Vânzări luna aceasta</dt>
+                            <dt className="text-muted">
+                              {t('operator.affiliates.salesThisMonth')}
+                            </dt>
                             <dd className="text-lg font-bold tabular-nums">
                               {affiliate.month.paidSales}
                             </dd>
                           </div>
                           <div className="rounded-xl bg-surface-2 p-2.5">
-                            <dt className="text-muted">Comision câștigat</dt>
+                            <dt className="text-muted">{t('operator.affiliates.earned')}</dt>
                             <dd className="text-lg font-bold">
                               <MoneyText
                                 amountMinor={affiliate.month.earnedMinor}
@@ -145,17 +153,19 @@ export function AffiliatesScreen() {
                             </dd>
                           </div>
                           <div className="col-span-2">
-                            <dt className="text-muted">Comision</dt>
+                            <dt className="text-muted">{t('operator.affiliates.commission')}</dt>
                             <dd>
                               {affiliate.commissionRateBpsOverride !== null
-                                ? `${formatBps(affiliate.commissionRateBpsOverride)} (procent personalizat)`
-                                : planSummary(plan)}
+                                ? t('operator.affiliates.customRate', {
+                                    rate: formatBps(affiliate.commissionRateBpsOverride, lang),
+                                  })
+                                : planSummary(plan, tr)}
                             </dd>
                           </div>
                         </dl>
                         <div className="mt-auto flex flex-wrap gap-2">
                           <Button variant="secondary" onClick={() => setEditing(affiliate)}>
-                            Modifică
+                            {t('operator.affiliates.edit')}
                           </Button>
                           {affiliate.status !== 'invited' ? (
                             <Button
@@ -163,7 +173,9 @@ export function AffiliatesScreen() {
                               loading={busyId === affiliate.id}
                               onClick={() => void toggleSuspend(affiliate)}
                             >
-                              {affiliate.status === 'suspended' ? 'Reactivează' : 'Suspendă'}
+                              {affiliate.status === 'suspended'
+                                ? t('operator.affiliates.reactivate')
+                                : t('operator.affiliates.suspend')}
                             </Button>
                           ) : affiliate.inviteUrl ? (
                             <Button
@@ -171,7 +183,7 @@ export function AffiliatesScreen() {
                               icon={<IconQr />}
                               onClick={() => setInvited(affiliate)}
                             >
-                              Arată invitația
+                              {t('operator.affiliates.showInvite')}
                             </Button>
                           ) : null}
                         </div>
@@ -185,16 +197,22 @@ export function AffiliatesScreen() {
         </section>
       ) : null}
 
-      <Dialog open={!!invited} onClose={() => setInvited(null)} title="Invitația este gata">
+      <Dialog
+        open={!!invited}
+        onClose={() => setInvited(null)}
+        title={t('operator.affiliates.inviteReady')}
+      >
         {invited?.inviteUrl ? (
           <div className="flex flex-col gap-4">
             <p>
-              Trimite linkul lui <strong>{invited.displayName}</strong> sau lasă-l să scaneze codul
-              cu telefonul.
+              <Rich
+                text={t('operator.affiliates.sendLink', slots('name'))}
+                parts={{ name: <strong>{invited.displayName}</strong> }}
+              />
             </p>
             <QrCode
               value={invited.inviteUrl}
-              label={`Cod QR de invitație pentru ${invited.displayName}`}
+              label={t('operator.affiliates.qrLabel', { name: invited.displayName })}
               className="mx-auto w-full max-w-72"
             />
             <p className="break-all rounded-xl bg-surface-2 px-3 py-2 font-mono text-sm">
@@ -202,12 +220,17 @@ export function AffiliatesScreen() {
             </p>
             <ShareActions
               url={invited.inviteUrl}
-              title="Invitație"
-              text={`Invitație de afiliat la ${tenant.name}:`}
+              title={t('operator.affiliates.shareTitle')}
+              text={t('operator.affiliates.shareText', { tenant: tenant.name })}
               size="md"
             />
             <ButtonLink
-              href={whatsappUrl(`Te invit să devii afiliat ${tenant.name}: ${invited.inviteUrl}`)}
+              href={whatsappUrl(
+                t('operator.affiliates.whatsappText', {
+                  tenant: tenant.name,
+                  url: invited.inviteUrl,
+                }),
+              )}
               external
               target="_blank"
               rel="noopener noreferrer"
@@ -215,11 +238,11 @@ export function AffiliatesScreen() {
               icon={<IconChat />}
               block
             >
-              Trimite pe WhatsApp
+              {t('operator.affiliates.whatsapp')}
             </ButtonLink>
           </div>
         ) : (
-          <p>Afiliatul a fost adăugat.</p>
+          <p>{t('operator.affiliates.added')}</p>
         )}
       </Dialog>
 
@@ -244,6 +267,8 @@ function InviteForm({
   plans: CommissionPlanDto[];
   onInvited: (a: AffiliateDto) => void;
 }) {
+  const tr = useT();
+  const { t } = tr;
   const [displayName, setDisplayName] = useState('');
   const [type, setType] = useState<'person' | 'organization'>('person');
   const [destination, setDestination] = useState('');
@@ -259,7 +284,7 @@ function InviteForm({
     event.preventDefault();
     const next: typeof errors = {};
     let cleanDestination: string | undefined;
-    if (!displayName.trim()) next.name = 'Scrie numele afiliatului.';
+    if (!displayName.trim()) next.name = t('operator.affiliates.nameRequired');
     if (destination.trim()) {
       cleanDestination = destination.includes('@')
         ? normalizeEmail(destination)
@@ -267,12 +292,12 @@ function InviteForm({
       const ok = destination.includes('@')
         ? isValidEmail(cleanDestination)
         : isValidPhone(cleanDestination);
-      if (!ok) next.destination = 'Scrie un email sau un număr de telefon valid, ex. 0722 123 456.';
+      if (!ok) next.destination = t('operator.affiliates.destinationInvalid');
     }
     let overrideBps: number | null = null;
     if (override.trim()) {
       overrideBps = percentToBps(override);
-      if (overrideBps === null) next.override = 'Scrie un procent între 0 și 100, ex. 12,5.';
+      if (overrideBps === null) next.override = t('operator.affiliates.percentInvalid');
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -294,7 +319,7 @@ function InviteForm({
       setOverride('');
       setType('person');
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, tr));
     } finally {
       setBusy(false);
     }
@@ -303,13 +328,13 @@ function InviteForm({
   return (
     <div id="invite" className="scroll-mt-20">
       <Card
-        title="Invită un afiliat"
-        description="Primești un link și un cod QR de trimis afiliatului."
+        title={t('operator.affiliates.inviteTitle')}
+        description={t('operator.affiliates.inviteDescription')}
       >
         <form onSubmit={submit} method="post" noValidate className="grid gap-4 md:grid-cols-2">
           <Field
-            label="Nume"
-            hint="Persoana sau hotelul, ex. „Maria – Hotel Delta”."
+            label={t('operator.affiliates.name')}
+            hint={t('operator.affiliates.nameHint')}
             name="displayName"
             autoComplete="off"
             required
@@ -319,10 +344,10 @@ function InviteForm({
             error={errors.name}
           />
           <Field
-            label="Telefon sau email"
-            hint="Dacă îl completezi, îi trimitem invitația direct."
+            label={t('operator.affiliates.destination')}
+            hint={t('operator.affiliates.destinationHint')}
             name="destination"
-            optionalText="opțional"
+            optionalText={t('common.optional')}
             autoComplete="off"
             inputMode="email"
             autoCapitalize="off"
@@ -332,37 +357,37 @@ function InviteForm({
             error={errors.destination}
           />
           <ChoiceGroup
-            legend="Tip"
+            legend={t('operator.affiliates.type')}
             name="type"
             value={type}
             onChange={setType}
             gridClassName="grid grid-cols-2 gap-2"
             options={[
-              { value: 'person', label: 'Persoană' },
-              { value: 'organization', label: 'Organizație' },
+              { value: 'person', label: t('operator.affiliates.typePerson') },
+              { value: 'organization', label: t('operator.affiliates.typeOrganization') },
             ]}
           />
           <SelectField
-            label="Plan de comision"
+            label={t('operator.affiliates.plan')}
             name="planId"
             value={planId}
             onChange={(e) => setPlanId(e.target.value)}
           >
-            <option value="">Planul implicit</option>
+            <option value="">{t('operator.affiliates.defaultPlan')}</option>
             {plans.map((p) => (
               <option key={p.id} value={p.id}>
-                {planSummary(p)}
+                {planSummary(p, tr)}
               </option>
             ))}
           </SelectField>
           <Field
-            label="Procent personalizat"
-            hint="Înlocuiește planul pentru acest afiliat."
+            label={t('operator.affiliates.customPercent')}
+            hint={t('operator.affiliates.customPercentHint')}
             name="override"
-            optionalText="opțional"
+            optionalText={t('common.optional')}
             inputMode="decimal"
             autoComplete="off"
-            placeholder="ex. 12,5"
+            placeholder={t('operator.affiliates.percentPlaceholder')}
             value={override}
             onChange={(e) => setOverride(e.target.value)}
             error={errors.override}
@@ -373,10 +398,10 @@ function InviteForm({
               type="submit"
               size="lg"
               loading={busy}
-              loadingText="Se creează…"
+              loadingText={t('operator.affiliates.creating')}
               className="md:self-start"
             >
-              Creează invitația
+              {t('operator.affiliates.create')}
             </Button>
           </div>
         </form>
@@ -396,11 +421,12 @@ function EditAffiliateDialog({
   onClose: () => void;
   onSaved: (a: AffiliateDto) => void;
 }) {
+  const { t } = useT();
   return (
     <Dialog
       open={!!affiliate}
       onClose={onClose}
-      title={affiliate ? `Modifică: ${affiliate.displayName}` : ''}
+      title={affiliate ? t('operator.affiliates.editTitle', { name: affiliate.displayName }) : ''}
     >
       {affiliate ? (
         <EditAffiliateForm
@@ -423,6 +449,8 @@ function EditAffiliateForm({
   plans: CommissionPlanDto[];
   onSaved: (a: AffiliateDto) => void;
 }) {
+  const tr = useT();
+  const { t } = tr;
   const [displayName, setDisplayName] = useState(affiliate.displayName);
   const [planId, setPlanId] = useState(affiliate.commissionPlanId ?? '');
   const [override, setOverride] = useState(
@@ -440,11 +468,11 @@ function EditAffiliateForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next: typeof errors = {};
-    if (!displayName.trim()) next.name = 'Numele nu poate fi gol.';
+    if (!displayName.trim()) next.name = t('operator.affiliates.nameEmpty');
     let overrideBps: number | null = null;
     if (override.trim()) {
       overrideBps = percentToBps(override);
-      if (overrideBps === null) next.override = 'Scrie un procent între 0 și 100, ex. 12,5.';
+      if (overrideBps === null) next.override = t('operator.affiliates.percentInvalid');
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -459,7 +487,7 @@ function EditAffiliateForm({
       });
       onSaved(updated);
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, tr));
       setBusy(false);
     }
   }
@@ -467,7 +495,7 @@ function EditAffiliateForm({
   return (
     <form onSubmit={submit} method="post" noValidate className="flex flex-col gap-4">
       <Field
-        label="Nume"
+        label={t('operator.affiliates.name')}
         name="displayName"
         autoComplete="off"
         required
@@ -477,23 +505,23 @@ function EditAffiliateForm({
         error={errors.name}
       />
       <SelectField
-        label="Plan de comision"
+        label={t('operator.affiliates.plan')}
         name="planId"
         value={planId}
         onChange={(e) => setPlanId(e.target.value)}
       >
-        <option value="">Planul implicit</option>
+        <option value="">{t('operator.affiliates.defaultPlan')}</option>
         {plans.map((p) => (
           <option key={p.id} value={p.id}>
-            {planSummary(p)}
+            {planSummary(p, tr)}
           </option>
         ))}
       </SelectField>
       <Field
-        label="Procent personalizat"
-        hint="Lasă gol ca să se aplice planul."
+        label={t('operator.affiliates.customPercent')}
+        hint={t('operator.affiliates.customPercentEditHint')}
         name="override"
-        optionalText="opțional"
+        optionalText={t('common.optional')}
         inputMode="decimal"
         autoComplete="off"
         value={override}
@@ -502,26 +530,26 @@ function EditAffiliateForm({
       />
       {affiliate.status !== 'invited' ? (
         <ChoiceGroup
-          legend="Stare"
+          legend={t('operator.affiliates.status')}
           name="status"
           value={status}
           onChange={setStatus}
           gridClassName="grid grid-cols-2 gap-2"
           options={[
-            { value: 'active', label: 'Activ' },
+            { value: 'active', label: affiliateStatus(tr, 'active').label },
             {
               value: 'suspended',
-              label: 'Suspendat',
-              description: 'Linkurile lui se opresc; nu primește comision nou',
+              label: affiliateStatus(tr, 'suspended').label,
+              description: t('operator.affiliates.suspendedDescription'),
             },
           ]}
         />
       ) : (
-        <p className="text-sm text-muted">Afiliatul nu a acceptat încă invitația.</p>
+        <p className="text-sm text-muted">{t('operator.affiliates.notAccepted')}</p>
       )}
       {error ? <Alert tone="error">{error}</Alert> : null}
-      <Button type="submit" size="lg" block loading={busy} loadingText="Se salvează…">
-        Salvează
+      <Button type="submit" size="lg" block loading={busy} loadingText={t('common.saving')}>
+        {t('common.save')}
       </Button>
     </form>
   );

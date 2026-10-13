@@ -161,7 +161,7 @@ describe.skipIf(!databaseUrl)(
     it('never oversells: the operator system has the last word on seats', async () => {
       const [slot] = await publicSlots('2026-10-06');
       const response = await checkout(slot!, 2).expect(409);
-      expect(response.body.message).toContain('only 1 seats left');
+      expect(response.body.message).toContain('only 1 seat left');
     });
 
     it('releases the hold in the operator system when an unpaid booking is cancelled', async () => {

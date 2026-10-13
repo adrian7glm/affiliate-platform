@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
-import { Button } from '@/components/Button';
+import { Button, ButtonLink } from '@/components/Button';
 import { ChoiceGroup, Field } from '@/components/Field';
+import { useT } from '@/components/I18nProvider';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { isApiError } from '@/lib/api';
-import { APP_NAME } from '@/lib/brand';
 import {
   isValidEmail,
   isValidPhone,
@@ -19,7 +20,8 @@ import {
 } from '@/lib/contact';
 import { authApi } from '@/lib/endpoints';
 import {
-  ROLE_LABELS_RO,
+  areaForPath,
+  areaLabel,
   areaForRole,
   clearSession,
   getCachedMe,
@@ -27,12 +29,13 @@ import {
   getToken,
   homePathForRole,
   pickMembership,
+  roleLabel,
   safeNextPath,
   saveSession,
   setTenantId,
 } from '@/lib/session';
 import { readString, writeString } from '@/lib/storage';
-import { errorMessageRo } from '@/lib/useApi';
+import { errorMessage } from '@/lib/useApi';
 
 type Method = 'phone' | 'email';
 type Step = 'destination' | 'code' | 'tenant';
@@ -40,8 +43,19 @@ type Step = 'destination' | 'code' | 'tenant';
 const METHOD_KEY = 'ap.loginMethod';
 const RESEND_SECONDS = 30;
 
-export function LoginFlow({ next, reason }: { next: string | null; reason: string | null }) {
+export function LoginFlow({
+  next,
+  reason,
+  prefill,
+}: {
+  next: string | null;
+  reason: string | null;
+  /** Phone number or email from an invitation link, filled in for the person. */
+  prefill?: string | null;
+}) {
   const router = useRouter();
+  const i18n = useT();
+  const { t, lang } = i18n;
   const nextPath = safeNextPath(next);
   const [step, setStep] = useState<Step>('destination');
   const [method, setMethod] = useState<Method>('phone');
@@ -59,7 +73,10 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
   // Remember the preferred login method; offer the account chooser if already signed in.
   useEffect(() => {
     const saved = readString(METHOD_KEY);
-    if (saved === 'email' || saved === 'phone') setMethod(saved);
+    if (prefill) {
+      setMethod(prefill.includes('@') ? 'email' : 'phone');
+      setRawDestination(prefill);
+    } else if (saved === 'email' || saved === 'phone') setMethod(saved);
     const cached = getCachedMe();
     if (getToken() && cached && cached.memberships.length > 0 && !nextPath) {
       setMe(cached);
@@ -102,13 +119,13 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
     setError(null);
     setBusy(true);
     try {
-      await authApi.requestOtp({ destination: target });
+      await authApi.requestOtp({ destination: target, locale: lang });
       setDestination(target);
       setCode('');
       setStep('code');
       setResendIn(RESEND_SECONDS);
     } catch (err) {
-      setError(errorMessageRo(err));
+      setError(errorMessage(err, i18n));
     } finally {
       setBusy(false);
     }
@@ -121,13 +138,13 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
     if (method === 'phone') {
       target = normalizePhone(rawDestination);
       if (!isValidPhone(target)) {
-        setFieldError('Scrie numărul complet, de exemplu 0722 123 456 sau +40 722 123 456.');
+        setFieldError(t('auth.login.phoneInvalid'));
         return;
       }
     } else {
       target = normalizeEmail(rawDestination);
       if (!isValidEmail(target)) {
-        setFieldError('Adresa de email nu pare corectă.');
+        setFieldError(t('auth.login.emailInvalid'));
         return;
       }
     }
@@ -137,9 +154,20 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
 
   function routeAfterLogin(session: MeDto) {
     const memberships = session.memberships;
-    // Invite links work before the person has any membership.
-    if (nextPath?.startsWith('/join/')) {
+    // Invite links and operator signup work before the person has any membership.
+    if (
+      nextPath?.startsWith('/join/') ||
+      nextPath === '/start' ||
+      nextPath?.startsWith('/start/')
+    ) {
       router.replace(nextPath);
+      return;
+    }
+    if (
+      session.user.isPlatformAdmin &&
+      (memberships.length === 0 || nextPath?.startsWith('/admin'))
+    ) {
+      router.replace(nextPath?.startsWith('/admin') ? nextPath : '/admin');
       return;
     }
     if (memberships.length === 0) {
@@ -147,9 +175,9 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
       setStep('tenant');
       return;
     }
-    if (nextPath && (nextPath.startsWith('/a') || nextPath.startsWith('/o'))) {
-      const area = nextPath.startsWith('/a') ? 'affiliate' : 'operator';
-      const membership = pickMembership(memberships, area, getTenantId());
+    const nextArea = nextPath ? areaForPath(nextPath) : null;
+    if (nextPath && nextArea) {
+      const membership = pickMembership(memberships, nextArea, getTenantId());
       if (membership) {
         setTenantId(membership.tenantId);
         router.replace(nextPath);
@@ -159,11 +187,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
     if (memberships.length === 1) {
       const only = memberships[0]!;
       setTenantId(only.tenantId);
-      router.replace(
-        nextPath && !nextPath.startsWith('/a') && !nextPath.startsWith('/o')
-          ? nextPath
-          : homePathForRole(only.role),
-      );
+      router.replace(nextPath && !nextArea ? nextPath : homePathForRole(only.role));
       return;
     }
     setMe(session);
@@ -175,7 +199,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
     stopOtpListener();
     const clean = code.replace(/\D/g, '');
     if (clean.length !== 6) {
-      setFieldError('Codul are 6 cifre.');
+      setFieldError(t('auth.login.codeLength'));
       return;
     }
     setFieldError(null);
@@ -190,8 +214,8 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
       // The API answers 401 for a wrong or expired code, 400 for a malformed one.
       const message =
         isApiError(err) && (err.status === 401 || err.status === 400)
-          ? 'Codul nu este corect sau a expirat. Verifică cifrele sau cere un cod nou.'
-          : errorMessageRo(err);
+          ? t('auth.login.codeWrong')
+          : errorMessage(err, i18n);
       setError(message);
       setBusy(false);
     }
@@ -213,14 +237,17 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
       className="page-x mx-auto flex min-h-dvh w-full max-w-md flex-col py-6"
       style={{ paddingTop: 'max(1.5rem, var(--safe-top))' }}
     >
-      <Link href="/" className="mb-8 flex min-h-12 items-center gap-2 self-start text-lg font-bold">
-        <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
-        {APP_NAME}
-      </Link>
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
+          <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
+          {t('common.appName')}
+        </Link>
+        <LanguageSwitcher />
+      </div>
 
       {reason === 'no-access' && step === 'destination' ? (
-        <Alert tone="warning" className="mb-6" title="Contul nu are acces">
-          Contul tău nu este încă legat de niciun operator. Cere operatorului o invitație.
+        <Alert tone="warning" className="mb-6" title={t('auth.login.noAccessTitle')}>
+          {t('auth.login.noAccessBody')}
         </Alert>
       ) : null}
 
@@ -232,14 +259,12 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
           className="flex flex-col gap-5"
         >
           <div>
-            <h1 className="text-3xl font-bold">Intră în cont</h1>
-            <p className="mt-2 text-muted">
-              Îți trimitem un cod de 6 cifre. Nu ai nevoie de parolă.
-            </p>
+            <h1 className="text-3xl font-bold">{t('auth.login.title')}</h1>
+            <p className="mt-2 text-muted">{t('auth.login.intro')}</p>
           </div>
 
           <ChoiceGroup<Method>
-            legend="Primește codul prin"
+            legend={t('auth.login.methodLegend')}
             name="method"
             value={method}
             onChange={(m) => {
@@ -249,16 +274,16 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
             }}
             gridClassName="grid grid-cols-2 gap-2"
             options={[
-              { value: 'phone', label: 'SMS' },
-              { value: 'email', label: 'Email' },
+              { value: 'phone', label: t('auth.login.methodSms') },
+              { value: 'email', label: t('auth.login.methodEmail') },
             ]}
           />
 
           {method === 'phone' ? (
             <Field
               key="phone"
-              label="Număr de telefon"
-              hint="De exemplu 0722 123 456 sau +40 722 123 456"
+              label={t('auth.login.phoneLabel')}
+              hint={t('auth.login.phoneHint')}
               name="phone"
               type="tel"
               inputMode="tel"
@@ -273,7 +298,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
           ) : (
             <Field
               key="email"
-              label="Adresa de email"
+              label={t('auth.login.emailLabel')}
               name="email"
               type="email"
               inputMode="email"
@@ -291,8 +316,14 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
 
           {error ? <Alert tone="error">{error}</Alert> : null}
 
-          <Button type="submit" size="lg" block loading={busy} loadingText="Se trimite…">
-            Trimite codul
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={busy}
+            loadingText={t('auth.login.sending')}
+          >
+            {t('auth.login.sendCode')}
           </Button>
         </form>
       ) : null}
@@ -306,16 +337,17 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
           className="flex flex-col gap-5"
         >
           <div>
-            <h1 className="text-3xl font-bold">Scrie codul</h1>
+            <h1 className="text-3xl font-bold">{t('auth.login.codeTitle')}</h1>
             <p className="mt-2 text-muted">
-              Am trimis un cod de 6 cifre la{' '}
-              <strong className="text-fg">{maskDestination(destination)}</strong>.
+              {t('auth.login.codeSentBefore')}{' '}
+              <strong className="text-fg">{maskDestination(destination)}</strong>
+              {t('auth.login.codeSentAfter')}
             </p>
           </div>
 
           <Field
-            label="Codul primit"
-            hint="Codul este valabil câteva minute."
+            label={t('auth.login.codeLabel')}
+            hint={t('auth.login.codeHint')}
             name="code"
             type="text"
             inputMode="numeric"
@@ -340,8 +372,14 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
 
           {error ? <Alert tone="error">{error}</Alert> : null}
 
-          <Button type="submit" size="lg" block loading={busy} loadingText="Se verifică…">
-            Intră în cont
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={busy}
+            loadingText={t('auth.login.verifying')}
+          >
+            {t('auth.login.submit')}
           </Button>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -355,7 +393,7 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
                 setFieldError(null);
               }}
             >
-              {method === 'phone' ? 'Alt număr' : 'Alt email'}
+              {method === 'phone' ? t('auth.login.otherPhone') : t('auth.login.otherEmail')}
             </Button>
             <Button
               variant="ghost"
@@ -365,7 +403,9 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
                 void requestCode(destination);
               }}
             >
-              {resendIn > 0 ? `Retrimite în ${resendIn} s` : 'Retrimite codul'}
+              {resendIn > 0
+                ? t('auth.login.resendIn', { seconds: resendIn })
+                : t('auth.login.resend')}
             </Button>
           </div>
         </form>
@@ -375,12 +415,14 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
         <div className="flex flex-col gap-5">
           <div>
             <h1 className="text-3xl font-bold">
-              {me.memberships.length > 0 ? 'Alege contul' : 'Niciun acces încă'}
+              {me.memberships.length > 0
+                ? t('auth.login.chooseTitle')
+                : t('auth.login.noMembershipTitle')}
             </h1>
             <p className="mt-2 text-muted">
               {me.memberships.length > 0
-                ? 'Lucrezi cu mai mulți operatori. Alege cu care continui; poți schimba oricând.'
-                : 'Contul tău nu este încă legat de niciun operator. Deschide linkul de invitație primit de la operator.'}
+                ? t('auth.login.chooseIntro')
+                : t('auth.login.noMembershipBody')}
             </p>
           </div>
           {me.memberships.length > 0 ? (
@@ -395,10 +437,10 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{m.tenantName}</span>
                       <span className="block text-sm text-muted">
-                        {ROLE_LABELS_RO[m.role]} ·{' '}
-                        {areaForRole(m.role) === 'affiliate'
-                          ? 'aplicația de afiliat'
-                          : 'administrare'}
+                        {t('auth.login.membershipLine', {
+                          role: roleLabel(i18n, m.role),
+                          area: areaLabel(i18n, areaForRole(m.role)),
+                        })}
                       </span>
                     </span>
                     <IconChevronRight className="shrink-0 text-muted" />
@@ -407,8 +449,16 @@ export function LoginFlow({ next, reason }: { next: string | null; reason: strin
               ))}
             </ul>
           ) : null}
+          {me.user.isPlatformAdmin ? (
+            <ButtonLink href="/admin" variant="secondary">
+              {t('auth.login.platformAdmin')}
+            </ButtonLink>
+          ) : null}
+          {me.memberships.length === 0 ? (
+            <ButtonLink href="/start">{t('auth.login.openOperator')}</ButtonLink>
+          ) : null}
           <Button variant="secondary" onClick={() => void useAnotherAccount()}>
-            Folosește alt cont
+            {t('auth.useAnotherAccount')}
           </Button>
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import { intlLocale } from './format';
+import { DEFAULT_LANG, type Lang } from './i18n';
 
 /**
  * Calendar helpers. Departures are instants (ISO strings); people think in the operator's local
@@ -54,7 +55,10 @@ export function isoWeekday(dateKey: string): number {
 }
 
 /** Short label of a calendar day: "mie. 14 oct." / "Wed 14 Oct". */
-export function formatDayLabel(dateKey: string, lang = 'ro'): { weekday: string; day: string } {
+export function formatDayLabel(
+  dateKey: string,
+  lang: Lang = DEFAULT_LANG,
+): { weekday: string; day: string } {
   const [y, m, d] = dateKey.split('-').map(Number) as [number, number, number];
   const date = new Date(Date.UTC(y, m - 1, d, 12));
   const locale = intlLocale(lang);
@@ -68,7 +72,7 @@ export function formatDayLabel(dateKey: string, lang = 'ro'): { weekday: string;
 }
 
 /** Long date of a calendar day: "miercuri, 14 octombrie". */
-export function formatDayLong(dateKey: string, lang = 'ro'): string {
+export function formatDayLong(dateKey: string, lang: Lang = DEFAULT_LANG): string {
   const [y, m, d] = dateKey.split('-').map(Number) as [number, number, number];
   const date = new Date(Date.UTC(y, m - 1, d, 12));
   return new Intl.DateTimeFormat(intlLocale(lang), {
@@ -80,7 +84,7 @@ export function formatDayLong(dateKey: string, lang = 'ro'): string {
 }
 
 /** "10:30" in the tenant timezone. */
-export function formatTime(iso: string, tz?: string | null, lang = 'ro'): string {
+export function formatTime(iso: string, tz?: string | null, lang: Lang = DEFAULT_LANG): string {
   return new Intl.DateTimeFormat(intlLocale(lang), {
     timeZone: safeTz(tz),
     hour: '2-digit',
@@ -90,7 +94,7 @@ export function formatTime(iso: string, tz?: string | null, lang = 'ro'): string
 }
 
 /** "mie. 14 oct., 10:30" in the tenant timezone. */
-export function formatDateTime(iso: string, tz?: string | null, lang = 'ro'): string {
+export function formatDateTime(iso: string, tz?: string | null, lang: Lang = DEFAULT_LANG): string {
   return new Intl.DateTimeFormat(intlLocale(lang), {
     timeZone: safeTz(tz),
     weekday: 'short',
@@ -103,7 +107,7 @@ export function formatDateTime(iso: string, tz?: string | null, lang = 'ro'): st
 }
 
 /** "14 oct. 2026" in the tenant timezone. */
-export function formatDate(iso: string, tz?: string | null, lang = 'ro'): string {
+export function formatDate(iso: string, tz?: string | null, lang: Lang = DEFAULT_LANG): string {
   return new Intl.DateTimeFormat(intlLocale(lang), {
     timeZone: safeTz(tz),
     day: 'numeric',
@@ -133,7 +137,7 @@ export function shiftPeriod(period: string, months: number): string {
 }
 
 /** "octombrie 2026". */
-export function formatPeriod(period: string, lang = 'ro'): string {
+export function formatPeriod(period: string, lang: Lang = DEFAULT_LANG): string {
   const [y, m] = period.split('-').map(Number) as [number, number];
   return new Intl.DateTimeFormat(intlLocale(lang), {
     month: 'long',
@@ -142,8 +146,11 @@ export function formatPeriod(period: string, lang = 'ro'): string {
   }).format(new Date(Date.UTC(y, m - 1, 15)));
 }
 
-/** Greeting for the local hour. */
-export function greetingRo(now: Date = new Date(), tz?: string | null): string {
+/** Greeting for the local hour: morning, afternoon or evening. */
+export function greetingKey(
+  now: Date = new Date(),
+  tz?: string | null,
+): 'labels.greeting.morning' | 'labels.greeting.afternoon' | 'labels.greeting.evening' {
   const hour = Number(
     new Intl.DateTimeFormat('en-GB', {
       timeZone: safeTz(tz),
@@ -151,7 +158,7 @@ export function greetingRo(now: Date = new Date(), tz?: string | null): string {
       hourCycle: 'h23',
     }).format(now),
   );
-  if (hour < 11) return 'Bună dimineața';
-  if (hour < 18) return 'Bună ziua';
-  return 'Bună seara';
+  if (hour < 11) return 'labels.greeting.morning';
+  if (hour < 18) return 'labels.greeting.afternoon';
+  return 'labels.greeting.evening';
 }

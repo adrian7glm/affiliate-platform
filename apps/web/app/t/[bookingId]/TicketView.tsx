@@ -3,41 +3,36 @@
 import type { TicketDto } from '@ap/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from '@/components/Alert';
-import { Button } from '@/components/Button';
+import { Button, ButtonLink } from '@/components/Button';
+import { useT } from '@/components/I18nProvider';
+import { IconDownload } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
-import { PublicMessage, PublicShell } from '@/components/public/PublicShell';
+import { PublicFrame, PublicMessage } from '@/components/public/PublicFrame';
 import { QrCode } from '@/components/QrCode';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip, type Tone } from '@/components/StatusChip';
 import { isApiError } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
 import { publicApi } from '@/lib/endpoints';
-import { getT, type Lang, type MessageKey } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/i18n';
 import { readJson, writeJson } from '@/lib/storage';
 import { useWakeLock } from '@/lib/useWakeLock';
 
 const POLL_MS = 3000;
 
 const STATUS: Record<TicketDto['status'], { label: MessageKey; text?: MessageKey; tone: Tone }> = {
-  valid: { label: 'statusValid', tone: 'success' },
-  checked_in: { label: 'statusCheckedIn', text: 'checkedInText', tone: 'neutral' },
-  void: { label: 'statusVoid', text: 'voidText', tone: 'danger' },
-  pending_payment: { label: 'statusPending', text: 'pendingText', tone: 'warning' },
+  valid: { label: 'ticket.statusValid', tone: 'success' },
+  checked_in: { label: 'ticket.statusCheckedIn', text: 'ticket.checkedInText', tone: 'neutral' },
+  void: { label: 'ticket.statusVoid', text: 'ticket.voidText', tone: 'danger' },
+  pending_payment: { label: 'ticket.statusPending', text: 'ticket.pendingText', tone: 'warning' },
 };
 
 /** Copy of the ticket kept on the phone, shown when the network is gone (at sea, in a basement). */
 const cacheKey = (bookingId: string) => `ap.ticket.${bookingId}`;
 
-export function TicketView({
-  bookingId,
-  ticketKey,
-  lang,
-}: {
-  bookingId: string;
-  ticketKey: string;
-  lang: Lang;
-}) {
-  const t = getT(lang);
+export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticketKey: string }) {
+  const t = useT();
+  const { lang } = t;
   const [ticket, setTicket] = useState<TicketDto | null>(null);
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState<'not_found' | 'network' | 'other' | null>(null);
@@ -108,43 +103,41 @@ export function TicketView({
     Boolean(ticket?.qrToken) && (ticket?.status === 'valid' || ticket?.status === 'checked_in');
   useWakeLock(ticket?.status === 'valid');
 
-  const path = `/t/${encodeURIComponent(bookingId)}?k=${encodeURIComponent(ticketKey)}`;
-
   if (!ticket) {
     return (
-      <PublicShell lang={lang} path={path}>
+      <PublicFrame>
         {loading ? (
-          <LoadingBlock label={t.t('loading')} />
+          <LoadingBlock label={t.t('common.loading')} />
         ) : (
           <PublicMessage
             title={
               error === 'not_found'
-                ? t.t('ticketNotFound')
+                ? t.t('ticket.notFound')
                 : error === 'network'
-                  ? t.t('errorNetwork')
-                  : t.t('errorGeneric')
+                  ? t.t('common.errorNetwork')
+                  : t.t('common.errorGeneric')
             }
           >
             {error !== 'not_found' ? (
               <Button variant="secondary" onClick={() => void load()}>
-                {t.t('retry')}
+                {t.t('common.retry')}
               </Button>
             ) : null}
           </PublicMessage>
         )}
-      </PublicShell>
+      </PublicFrame>
     );
   }
 
   const status = STATUS[ticket.status];
 
   return (
-    <PublicShell lang={lang} path={path} tenantName={ticket.tenantName}>
+    <PublicFrame tenantName={ticket.tenantName} branding={ticket.branding}>
       <div className="mx-auto flex max-w-md flex-col gap-5 pt-5">
-        {offline ? <Alert tone="warning">{t.t('offlineTicket')}</Alert> : null}
+        {offline ? <Alert tone="warning">{t.t('ticket.offline')}</Alert> : null}
 
         <header className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-bold">{t.t('ticketTitle')}</h1>
+          <h1 className="text-2xl font-bold">{t.t('ticket.title')}</h1>
           <StatusChip tone={status.tone}>{t.t(status.label)}</StatusChip>
         </header>
 
@@ -159,19 +152,21 @@ export function TicketView({
               >
                 <QrCode
                   value={ticket.qrToken}
-                  label={`${t.t('ticketTitle')} ${ticket.bookingReference}`}
+                  label={t.t('ticket.qrLabel', { reference: ticket.bookingReference })}
                   level="M"
                 />
               </div>
               <p className="text-lg font-semibold">
-                {ticket.status === 'valid' ? t.t('showAtBoarding') : t.t('checkedInText')}
+                {ticket.status === 'valid'
+                  ? t.t('ticket.showAtBoarding')
+                  : t.t('ticket.checkedInText')}
               </p>
             </>
           ) : status.text ? (
             <p className="py-6 text-lg">{t.t(status.text)}</p>
           ) : null}
           <p className="text-sm text-muted">
-            {t.t('reference')}:{' '}
+            {t.t('ticket.referenceLabel')}{' '}
             <span className="font-mono text-base font-semibold text-fg">
               {ticket.bookingReference}
             </span>
@@ -184,7 +179,7 @@ export function TicketView({
             <dd className="text-lg font-semibold">{ticket.productName}</dd>
           </div>
           <div className="col-span-2">
-            <dt className="text-sm text-muted">{t.t('when')}</dt>
+            <dt className="text-sm text-muted">{t.t('ticket.when')}</dt>
             <dd className="text-lg font-semibold">
               <time dateTime={ticket.startsAt}>
                 {formatDateTime(ticket.startsAt, ticket.timezone, lang)}
@@ -193,26 +188,26 @@ export function TicketView({
           </div>
           {ticket.meetingPoint ? (
             <div className="col-span-2">
-              <dt className="text-sm text-muted">{t.t('meetingPoint')}</dt>
+              <dt className="text-sm text-muted">{t.t('public.meetingPoint')}</dt>
               <dd className="font-semibold">{ticket.meetingPoint}</dd>
             </div>
           ) : null}
           <div>
-            <dt className="text-sm text-muted">{t.t('guests')}</dt>
-            <dd className="font-semibold">{t.tp('guestCount', ticket.seats)}</dd>
+            <dt className="text-sm text-muted">{t.t('ticket.guests')}</dt>
+            <dd className="font-semibold">{t.tp('ticket.guestCount', ticket.seats)}</dd>
           </div>
           <div>
-            <dt className="text-sm text-muted">{t.t('bookedBy')}</dt>
+            <dt className="text-sm text-muted">{t.t('ticket.bookedBy')}</dt>
             <dd className="font-semibold">{ticket.customerName}</dd>
           </div>
           {ticket.items.length > 0 ? (
             <div className="col-span-2">
-              <dt className="text-sm text-muted">{t.t('tickets')}</dt>
+              <dt className="text-sm text-muted">{t.t('ticket.tickets')}</dt>
               <dd>
                 <ul>
                   {ticket.items.map((item) => (
                     <li key={item.label}>
-                      {item.quantity} × {item.label}
+                      {t.t('ticket.items', { quantity: item.quantity, label: item.label })}
                     </li>
                   ))}
                 </ul>
@@ -223,7 +218,7 @@ export function TicketView({
           ticket.paymentMode === 'on_site' &&
           ticket.amountDueOnSiteMinor > 0 ? (
             <div className="col-span-2 border-t border-line pt-3">
-              <dt className="text-sm text-muted">{t.t('dueOnSite')}</dt>
+              <dt className="text-sm text-muted">{t.t('ticket.dueOnSite')}</dt>
               <dd className="text-xl font-bold">
                 <MoneyText
                   amountMinor={ticket.amountDueOnSiteMinor}
@@ -236,15 +231,32 @@ export function TicketView({
           {(ticket.status === 'valid' || ticket.status === 'checked_in') &&
           ticket.paymentMode === 'online' ? (
             <div className="col-span-2 border-t border-line pt-3">
-              <dt className="visually-hidden">{t.t('total')}</dt>
-              <dd className="font-semibold text-success-fg">{t.t('paidOnline')}</dd>
+              <dt className="visually-hidden">{t.t('common.total')}</dt>
+              <dd className="font-semibold text-success-fg">{t.t('ticket.paidOnline')}</dd>
             </div>
           ) : null}
         </dl>
 
-        {ticket.status === 'valid' ? <AddToHome lang={lang} /> : null}
+        {ticket.status === 'valid' && ticket.qrToken && !offline ? (
+          <div className="flex flex-col gap-2">
+            <ButtonLink
+              external
+              href={publicApi.ticketPdfUrl(bookingId, ticketKey, lang, true)}
+              download
+              variant="secondary"
+              size="lg"
+              block
+              icon={<IconDownload />}
+            >
+              {t.t('ticket.downloadPdf')}
+            </ButtonLink>
+            <p className="text-center text-sm text-muted">{t.t('ticket.downloadPdfHint')}</p>
+          </div>
+        ) : null}
+
+        {ticket.status === 'valid' ? <AddToHome /> : null}
       </div>
-    </PublicShell>
+    </PublicFrame>
   );
 }
 
@@ -254,8 +266,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 /** Suggests keeping the ticket on the home screen (native install prompt where available). */
-function AddToHome({ lang }: { lang: Lang }) {
-  const t = getT(lang);
+function AddToHome() {
+  const t = useT();
   const [mode, setMode] = useState<'hidden' | 'ios' | 'other'>('hidden');
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
 
@@ -289,7 +301,7 @@ function AddToHome({ lang }: { lang: Lang }) {
       className="no-print flex flex-col gap-2 rounded-3xl bg-surface-2 p-5"
     >
       <h2 id="a2hs-title" className="font-semibold">
-        {t.t('addToHomeTitle')}
+        {t.t('ticket.addToHomeTitle')}
       </h2>
       {installEvent ? (
         <Button
@@ -301,10 +313,12 @@ function AddToHome({ lang }: { lang: Lang }) {
             if (choice?.outcome === 'accepted') setMode('hidden');
           }}
         >
-          {t.t('install')}
+          {t.t('ticket.install')}
         </Button>
       ) : (
-        <p className="text-muted">{mode === 'ios' ? t.t('addToHomeIos') : t.t('addToHomeOther')}</p>
+        <p className="text-muted">
+          {mode === 'ios' ? t.t('ticket.addToHomeIos') : t.t('ticket.addToHomeOther')}
+        </p>
       )}
     </section>
   );

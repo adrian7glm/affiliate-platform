@@ -1,15 +1,19 @@
 import {
   Controller,
-  ForbiddenException,
   Get,
   HttpCode,
+  HttpStatus,
   Inject,
   Param,
   ParseUUIDPipe,
   Post,
   Query,
+  Req,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   type AssistedBookingBody,
   type BookingDto,
@@ -27,6 +31,7 @@ import {
   checkInBody,
   publicCheckoutBody,
 } from '@ap/contracts';
+import type { Request } from 'express';
 import {
   type AuthUser,
   AuthGuard,
@@ -40,11 +45,12 @@ import {
 import { CatalogService } from '../catalog/catalog.service';
 import { Clock } from '../common/clock';
 import { checkTicketLinkKey } from '../common/crypto';
-import { NotFound } from '../common/errors';
+import { DomainError, NotFound } from '../common/errors';
 import { parseDateParam } from '../common/period';
 import { TenantsService } from '../common/tenants';
 import { ZodBody } from '../common/validation';
 import { APP_CONFIG, type AppConfig } from '../config';
+import { I18nService } from '../i18n/i18n.service';
 import { Outbox } from '../outbox/outbox';
 import { BookingService } from './booking.service';
 import { TicketsService } from './tickets.service';
@@ -117,6 +123,28 @@ export class PublicBookingController {
     return this.tickets.view(bookingId, typeof key === 'string' ? key : '');
   }
 
+  /** The ticket as a PDF the customer can save on the phone. */
+  @Get('tickets/:bookingId/pdf')
+  async ticketPdf(
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+    @Query('k') key: unknown,
+    @Query('lang') lang: unknown,
+    @Query('download') download: unknown,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.tickets.pdf(
+      bookingId,
+      typeof key === 'string' ? key : '',
+      typeof lang === 'string' ? lang : null,
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    return new StreamableFile(pdf.content, {
+      type: 'application/pdf',
+      disposition: `${download === '1' ? 'attachment' : 'inline'}; filename="${pdf.filename}"`,
+      length: pdf.content.length,
+    });
+  }
+
   /** Public key that verifies ticket QR codes, for offline scanners. */
   @Get('ticket-key')
   ticketKey(): { algorithm: 'Ed25519'; publicKeyPem: string } {
@@ -132,7 +160,7 @@ export class PublicBookingController {
   ): Promise<void> {
     if (this.config.PAYMENTS_PROVIDER !== 'fake') throw new NotFound('page');
     if (typeof key !== 'string' || !checkTicketLinkKey(this.config.APP_SECRET, bookingId, key)) {
-      throw new ForbiddenException('invalid payment link');
+      throw new DomainError('errors.booking.invalidPaymentLink', HttpStatus.FORBIDDEN);
     }
     await this.bookingService.confirmPayment(bookingId, `fake_pi_${bookingId}`);
     if (this.config.WORKER_ENABLED) void this.outbox.drain();
@@ -181,6 +209,7 @@ export class OperatorBookingController {
     private readonly tickets: TicketsService,
     private readonly outbox: Outbox,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly i18n: I18nService,
   ) {}
 
   @Get('bookings')
@@ -209,14 +238,22 @@ export class OperatorBookingController {
     return result;
   }
 
+  /** Boarding scan. Scanner accounts reach only this route of the operator API. */
   @Post('tickets/check-in')
   @HttpCode(200)
+  @Roles('owner', 'staff', 'scanner')
   async checkIn(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthUser,
     @ZodBody(checkInBody) body: CheckInBody,
+    @Req() request: Request,
   ): Promise<CheckInResultDto> {
-    const result = await this.tickets.checkIn(tenant.tenantId, body.token, user.id);
+    const result = await this.tickets.checkIn(
+      tenant.tenantId,
+      body.token,
+      user.id,
+      this.i18n.langOf(request),
+    );
     if (this.config.WORKER_ENABLED) void this.outbox.drain();
     return result;
   }

@@ -1,5 +1,7 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
 import { AffiliatesModule } from './affiliates/affiliates.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { BoardingModule } from './boarding/boarding.module';
 import { BookingModule } from './booking/booking.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { CommissionsModule } from './commissions/commissions.module';
@@ -7,10 +9,14 @@ import { CommonModule } from './common/common.module';
 import { APP_CONFIG, type AppConfig } from './config';
 import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health.controller';
+import { I18nModule } from './i18n/i18n.module';
 import { IdentityModule } from './identity/identity.module';
 import { JobsModule } from './jobs/jobs.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SettingsModule } from './settings/settings.module';
+import { PlatformModule } from './platform/platform.module';
 import { SourcesModule } from './sources/sources.module';
 import { TrackingModule } from './tracking/tracking.module';
 
@@ -40,6 +46,8 @@ export class AppModule {
         DatabaseModule,
         OutboxModule,
         CommonModule,
+        I18nModule,
+        NotificationsModule,
         IdentityModule,
         AffiliatesModule,
         TrackingModule,
@@ -47,7 +55,11 @@ export class AppModule {
         CatalogModule,
         PaymentsModule,
         BookingModule,
+        BoardingModule,
         CommissionsModule,
+        AnalyticsModule,
+        SettingsModule,
+        PlatformModule,
         JobsModule,
       ],
       controllers: [HealthController],
