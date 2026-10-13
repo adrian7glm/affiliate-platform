@@ -4,6 +4,8 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Language files are loaded one by one from @ap/i18n's source (see lib/i18n.ts).
+  transpilePackages: ['@ap/i18n'],
   // The monorepo root (one pnpm lockfile for every package).
   outputFileTracingRoot: path.join(__dirname, '..', '..'),
   // Linting is not part of this package's pipeline (typecheck + tests are).

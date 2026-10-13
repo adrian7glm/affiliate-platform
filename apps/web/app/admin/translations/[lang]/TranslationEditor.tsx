@@ -1,6 +1,6 @@
 'use client';
 
-import { checkTranslation, placeholders } from '@ap/i18n';
+import { checkTranslation, placeholders } from '@ap/i18n/core';
 import type {
   AdminTranslationsDto,
   SaveTranslationsResultDto,

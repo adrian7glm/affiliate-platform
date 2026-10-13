@@ -3,13 +3,18 @@ import {
   bundledLanguages,
   createTranslator,
   intlLocale,
+  isBundled,
+  isLoaded,
   matchAcceptLanguage,
   matchLanguage,
+  registerLocale,
   type LanguageInfo,
   type MessageKey,
   type Messages,
   type Vars,
-} from '@ap/i18n';
+} from '@ap/i18n/core';
+import { LOCALE_LOADERS } from '@ap/i18n/loaders';
+import ro from '@ap/i18n/locales/ro.json';
 
 /**
  * Translations for every screen. Texts live in packages/i18n/src/locales/<lang>.json; the
@@ -18,7 +23,13 @@ import {
  *
  * Language choice: `?lang=` (public pages), then the language the person picked before
  * (cookie + localStorage), then the browser language, then the default.
+ *
+ * Only English (the reference) and Romanian (the default of the staff screens) are in the
+ * main bundle; every other language is a separate chunk loaded when it is first shown
+ * (`loadLanguage`), so a phone downloads one language, not all of them.
  */
+
+registerLocale('ro', ro);
 
 export type { LanguageInfo, MessageKey, Messages, Vars };
 export { intlLocale };
@@ -92,6 +103,39 @@ export interface Translator {
 }
 
 const cache = new Map<string, Translator>();
+
+const loading = new Map<string, Promise<void>>();
+
+/** Whether the texts of `lang` are here (languages added by the admin have no file: always). */
+export function isLangReady(lang: Lang): boolean {
+  return isLoaded(lang) || !isBundled(lang);
+}
+
+/** Downloads the language file of `lang` once; the promise never rejects. */
+export function loadLanguage(lang: Lang): Promise<void> {
+  if (isLangReady(lang)) return Promise.resolve();
+  let pending = loading.get(lang);
+  if (!pending) {
+    const load = LOCALE_LOADERS[lang];
+    pending = (load ? load() : Promise.resolve(null))
+      .then((mod) => {
+        if (mod) addLanguageFile(lang, mod.default);
+      })
+      .catch(() => {
+        // Offline or blocked: English texts are shown until the next try.
+        loading.delete(lang);
+      });
+    loading.set(lang, pending);
+  }
+  return pending;
+}
+
+/** Adds a language file received another way (server-rendered public pages pass theirs). */
+export function addLanguageFile(lang: Lang, tree: unknown): void {
+  if (isLoaded(lang)) return;
+  registerLocale(lang, tree);
+  for (const key of [...cache.keys()]) if (key === lang) cache.delete(key);
+}
 
 /**
  * Bound helpers for one language. `overrides` are the admin's texts per language

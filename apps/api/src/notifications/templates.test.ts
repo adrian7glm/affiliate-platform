@@ -22,7 +22,7 @@ const ticket: TemplateParams['ticket'] = {
 
 describe('message templates', () => {
   it('renders in the language of the translator, falling back to English', () => {
-    expect(render('login_code', createTranslator('de'), { code: '1', webHost: 'h' }).subject).toBe(
+    expect(render('login_code', createTranslator('nl'), { code: '1', webHost: 'h' }).subject).toBe(
       'Your sign-in code: 1',
     );
     expect(render('ticket', ro, ticket).html).toContain('<html lang="ro">');

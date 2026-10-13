@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { getT } from './i18n';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { LANGS, getT, loadLanguage } from './i18n';
 import {
   DEFAULT_KIT_COLOR,
   KIT_FORMATS,
@@ -82,8 +82,10 @@ describe('displayUrl', () => {
 });
 
 describe('kit texts', () => {
+  beforeAll(() => Promise.all(LANGS.map(loadLanguage)));
+
   it('names every format in each language', () => {
-    for (const lang of ['ro', 'en']) {
+    for (const lang of LANGS) {
       const t = getT(lang);
       for (const spec of KIT_FORMATS) {
         const texts = kitFormatTexts(spec, t);

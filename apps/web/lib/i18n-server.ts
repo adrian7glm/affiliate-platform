@@ -1,3 +1,4 @@
+import { localeFile } from '@ap/i18n';
 import { cookies, headers } from 'next/headers';
 import { cache } from 'react';
 import {
@@ -7,6 +8,7 @@ import {
   getT,
   langFromAcceptLanguage,
   langFromTag,
+  addLanguageFile,
   type Lang,
   type LanguageInfo,
   type Messages,
@@ -14,7 +16,7 @@ import {
 } from './i18n';
 import { SERVER_API_URL } from './server-api';
 
-/** Translations for server components and route handlers. */
+/** Translations for server components and route handlers (every language file is loaded). */
 
 const REVALIDATE_SECONDS = 60;
 
@@ -62,8 +64,15 @@ export async function serverLang(
   );
 }
 
+/** The language file to hand to the browser with a server-rendered page (null: in the bundle). */
+export function serverLanguageFile(lang: Lang): Readonly<Record<string, unknown>> | null {
+  return lang === 'en' || lang === 'ro' ? null : localeFile(lang);
+}
+
 /** Translator with the admin's overrides, for server-rendered pages. */
 export async function getServerT(lang: Lang): Promise<Translator> {
+  const file = localeFile(lang);
+  if (file) addLanguageFile(lang, file);
   const overrides = await serverOverrides(lang);
   return Object.keys(overrides).length ? getT(lang, { [lang]: overrides }) : getT(lang);
 }

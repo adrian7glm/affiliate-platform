@@ -94,33 +94,33 @@ describe.skipIf(!databaseUrl)('translations (needs TEST_DATABASE_URL)', () => {
 
   it('adds a language, hidden until it is switched on', async () => {
     const created = await as(admin, 'post', '/admin/i18n/languages')
-      .send({ code: 'DE', name: 'Deutsch', englishName: 'German' })
+      .send({ code: 'NL', name: 'Nederlands', englishName: 'Dutch' })
       .expect(201);
     expect(created.body as AdminLanguageDto).toMatchObject({
-      code: 'de',
+      code: 'nl',
       enabled: false,
       bundled: false,
       translated: 0,
     });
     await as(admin, 'post', '/admin/i18n/languages')
-      .send({ code: 'de', name: 'Deutsch', englishName: 'German' })
+      .send({ code: 'nl', name: 'Nederlands', englishName: 'Dutch' })
       .expect(409);
-    await h.http.get('/i18n/messages/de').expect(404);
+    await h.http.get('/i18n/messages/nl').expect(404);
 
-    await as(admin, 'put', '/admin/i18n/languages/de/texts')
-      .send({ values: { 'public.book': 'Buchen', 'public.seatsLeft_one': 'Noch 1 Platz' } })
+    await as(admin, 'put', '/admin/i18n/languages/nl/texts')
+      .send({ values: { 'public.book': 'Boeken', 'public.seatsLeft_one': 'Nog 1 plaats' } })
       .expect(200);
-    await as(admin, 'patch', '/admin/i18n/languages/de').send({ enabled: true }).expect(200);
+    await as(admin, 'patch', '/admin/i18n/languages/nl').send({ enabled: true }).expect(200);
 
     const languages = (await h.http.get('/i18n/languages').expect(200)).body as PublicLanguagesDto;
-    expect(languages.languages.map((l) => l.code)).toContain('de');
-    const de = (await h.http.get('/i18n/messages/de').expect(200)).body as PublicMessagesDto;
-    expect(de.messages['public.book']).toBe('Buchen');
+    expect(languages.languages.map((l) => l.code)).toContain('nl');
+    const nl = (await h.http.get('/i18n/messages/nl').expect(200)).body as PublicMessagesDto;
+    expect(nl.messages['public.book']).toBe('Boeken');
 
-    // Errors come back in German where translated, English otherwise.
+    // Errors come back in Dutch where translated, English otherwise.
     const i18n = h.app.get(I18nService);
-    expect(i18n.pick('de-AT,de;q=0.9')).toBe('de');
-    expect(i18n.translator('de').t('public.noProducts')).toBe('No trips are available right now.');
+    expect(i18n.pick('nl-BE,nl;q=0.9')).toBe('nl');
+    expect(i18n.translator('nl').t('public.noProducts')).toBe('No trips are available right now.');
   });
 
   it('hides and deletes languages, but never removes English or a language file', async () => {
@@ -131,9 +131,9 @@ describe.skipIf(!databaseUrl)('translations (needs TEST_DATABASE_URL)', () => {
     expect(hidden.languages.map((l) => l.code)).not.toContain('ro');
     await as(admin, 'patch', '/admin/i18n/languages/ro').send({ enabled: true }).expect(200);
 
-    await as(admin, 'delete', '/admin/i18n/languages/de').expect(204);
+    await as(admin, 'delete', '/admin/i18n/languages/nl').expect(204);
     const list = (await as(admin, 'get', '/admin/i18n/languages').expect(200))
       .body as AdminLanguageDto[];
-    expect(list.map((l) => l.code)).toEqual(['ro', 'en']);
+    expect(list.map((l) => l.code)).toEqual(['ro', 'en', 'fr', 'de', 'it', 'pt', 'ru', 'es', 'uk']);
   });
 });

@@ -9,7 +9,7 @@ import { z } from 'zod';
 // Shared
 // ---------------------------------------------------------------------------------------------
 
-export const localeSchema = z.enum(['ro', 'en', 'de', 'fr', 'it']);
+export const localeSchema = z.enum(['ro', 'en', 'de', 'fr', 'es', 'it', 'pt', 'ru', 'uk']);
 export type Locale = z.infer<typeof localeSchema>;
 
 export interface Money {

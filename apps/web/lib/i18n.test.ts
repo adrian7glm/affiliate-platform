@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  LANGS,
   formatDuration,
   getT,
+  isLangReady,
+  loadLanguage,
   langFromAcceptLanguage,
   langFromTag,
   pickLang,
@@ -74,5 +77,29 @@ describe('translations', () => {
     expect(formatDuration(45, 'ro')).toBe('45 min');
     expect(formatDuration(120, 'en')).toBe('2 h');
     expect(formatDuration(90, 'en')).toBe('1 h 30 min');
+  });
+});
+
+describe('language files', () => {
+  it('ships every language, loading all but Romanian and English on demand', async () => {
+    expect([...LANGS].sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'pt', 'ro', 'ru', 'uk']);
+    expect(isLangReady('ro')).toBe(true);
+    expect(isLangReady('de')).toBe(false);
+    expect(getT('de').t('common.retry')).toBe('Try again');
+    await loadLanguage('de');
+    expect(isLangReady('de')).toBe(true);
+    expect(getT('de').t('common.retry')).not.toBe('Try again');
+    // Languages added from the admin have no file: their texts come from the API.
+    expect(isLangReady('nl')).toBe(true);
+  });
+
+  it('uses each language’s plural forms', async () => {
+    await Promise.all(LANGS.map(loadLanguage));
+    for (const lang of LANGS) {
+      const { tp } = getT(lang);
+      for (const n of [1, 2, 5, 21, 1000000]) {
+        expect(tp('public.seatsLeft', n)).toContain(String(n));
+      }
+    }
   });
 });

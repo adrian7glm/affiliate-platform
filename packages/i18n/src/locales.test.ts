@@ -10,7 +10,7 @@ import {
 } from './index';
 
 /** Languages that must be complete: the platform ships with them. */
-const COMPLETE = ['ro', 'en'];
+const COMPLETE = ['ro', 'en', 'de', 'fr', 'es', 'it', 'pt', 'ru', 'uk'];
 const reference = bundledMessages(REFERENCE_LANG);
 const referenceBases = new Set(Object.keys(reference).map(baseKey));
 const pluralBases = new Set(
