@@ -182,6 +182,10 @@
       "morning": "Bonjour",
       "afternoon": "Bon après-midi",
       "evening": "Bonsoir"
+    },
+    "platformPlan": {
+      "start": "Pour les petits opérateurs : jusqu'à 15 affiliés.",
+      "pro": "Affiliés illimités et frais de plateforme réduits."
     }
   },
   "errors": {

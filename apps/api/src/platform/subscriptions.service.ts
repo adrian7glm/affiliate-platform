@@ -116,6 +116,7 @@ export class SubscriptionsService {
       .filter((p) => p.isActive)
       .map((p) => ({
         id: p.id,
+        code: p.code,
         name: p.name,
         description: p.description,
         monthlyPriceMinor: p.monthlyPriceMinor,

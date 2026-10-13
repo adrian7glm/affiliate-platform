@@ -230,6 +230,7 @@ export interface SignupOptionsDto {
   plans: Pick<
     PlatformPlanDto,
     | 'id'
+    | 'code'
     | 'name'
     | 'description'
     | 'monthlyPriceMinor'

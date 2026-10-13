@@ -180,6 +180,10 @@
       "morning": "Good morning",
       "afternoon": "Good afternoon",
       "evening": "Good evening"
+    },
+    "platformPlan": {
+      "start": "For small operators: up to 15 affiliates.",
+      "pro": "Unlimited affiliates and a lower platform fee."
     }
   },
   "errors": {

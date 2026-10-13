@@ -17,7 +17,7 @@ import { isApiError } from '@/lib/api';
 import { authApi } from '@/lib/endpoints';
 import { formatBps, formatMoney, slugify } from '@/lib/format';
 import { signupApi } from '@/lib/platform-endpoints';
-import { CURRENCIES } from '@/lib/platform-labels';
+import { CURRENCIES, planDescription } from '@/lib/platform-labels';
 import { clearSession, getCachedMe, getToken, setCachedMe, setTenantId } from '@/lib/session';
 import { errorMessage, useApi } from '@/lib/useApi';
 
@@ -300,7 +300,8 @@ function StartContent({
 }
 
 function PlanCards({ plans }: { plans: Plan[] }) {
-  const { t } = useT();
+  const tr = useT();
+  const { t } = tr;
   if (plans.length === 0) return null;
   return (
     <ul className="grid gap-3 sm:grid-cols-2">
@@ -315,8 +316,8 @@ function PlanCards({ plans }: { plans: Plan[] }) {
                 </span>
               ) : null}
             </div>
-            {plan.description ? (
-              <p className="mb-3 text-sm text-muted">{plan.description}</p>
+            {planDescription(tr, plan) ? (
+              <p className="mb-3 text-sm text-muted">{planDescription(tr, plan)}</p>
             ) : null}
             <PlanSummary plan={plan} feeBps={plan.platformFeeBps} trialDays={plan.trialDays} />
           </Card>

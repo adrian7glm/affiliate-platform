@@ -182,6 +182,10 @@
       "morning": "Bom dia",
       "afternoon": "Boa tarde",
       "evening": "Boa noite"
+    },
+    "platformPlan": {
+      "start": "Para pequenos operadores: até 15 afiliados.",
+      "pro": "Afiliados ilimitados e uma taxa da plataforma mais baixa."
     }
   },
   "errors": {

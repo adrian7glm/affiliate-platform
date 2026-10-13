@@ -65,3 +65,23 @@ export const CURRENCIES = ['RON', 'EUR', 'BGN', 'HUF', 'USD', 'GBP'] as const;
 export function daysUntil(iso: string, now: Date = new Date()): number {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - now.getTime()) / 86_400_000));
 }
+
+/** The descriptions the starting plans were created with (migration 0003), in Romanian. */
+const BUILT_IN_PLAN_DESCRIPTIONS: Record<string, string> = {
+  start: 'Pentru operatori mici: până la 15 afiliați.',
+  pro: 'Afiliați nelimitați și comision de platformă redus.',
+};
+
+/**
+ * A platform plan's description in the page language. The starting plans' own descriptions are
+ * translated; one the platform owner rewrote in the admin area is shown as written.
+ */
+export function planDescription(
+  t: Translator,
+  plan: { code: string; description: string | null },
+): string | null {
+  if (plan.description && BUILT_IN_PLAN_DESCRIPTIONS[plan.code] === plan.description) {
+    return t.tk(`labels.platformPlan.${plan.code}`);
+  }
+  return plan.description;
+}

@@ -180,6 +180,10 @@
       "morning": "Guten Morgen",
       "afternoon": "Guten Tag",
       "evening": "Guten Abend"
+    },
+    "platformPlan": {
+      "start": "Für kleine Anbieter: bis zu 15 Affiliates.",
+      "pro": "Unbegrenzt viele Affiliates und eine niedrigere Plattformgebühr."
     }
   },
   "errors": {
@@ -404,7 +408,7 @@
         "role": {
           "admin": "Plattform-Admin",
           "owner": "Inhaber (Anbieter)",
-          "affiliate": "Partner",
+          "affiliate": "Affiliate",
           "scanner": "Mitarbeiter beim Einsteigen"
         },
         "what": {

@@ -182,6 +182,10 @@
       "morning": "Bună dimineața",
       "afternoon": "Bună ziua",
       "evening": "Bună seara"
+    },
+    "platformPlan": {
+      "start": "Pentru operatori mici: până la 15 afiliați.",
+      "pro": "Afiliați nelimitați și comision de platformă redus."
     }
   },
   "errors": {

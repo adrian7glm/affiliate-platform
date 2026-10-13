@@ -15,7 +15,7 @@ import { StatusChip } from '@/components/StatusChip';
 import { formatDate } from '@/lib/dates';
 import { formatBps } from '@/lib/format';
 import { operatorPlatformApi } from '@/lib/platform-endpoints';
-import { daysUntil, subscriptionStatus } from '@/lib/platform-labels';
+import { daysUntil, planDescription, subscriptionStatus } from '@/lib/platform-labels';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
 import { Rich, slots } from '@/components/Rich';
@@ -241,8 +241,8 @@ function BillingContent({
                           <StatusChip tone="brand">{t('operator.billing.yourPlan')}</StatusChip>
                         ) : null}
                       </div>
-                      {plan.description ? (
-                        <p className="text-sm text-muted">{plan.description}</p>
+                      {planDescription(tr, plan) ? (
+                        <p className="text-sm text-muted">{planDescription(tr, plan)}</p>
                       ) : null}
                       <p>
                         <MoneyText
