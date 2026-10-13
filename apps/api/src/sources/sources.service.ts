@@ -24,6 +24,7 @@ import { openSecret, sealSecret } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx, type Tx } from '../database/database.module';
+import { publicFetch } from './public-fetch';
 
 type Source = typeof availabilitySources.$inferSelect;
 type Product = typeof products.$inferSelect;
@@ -493,7 +494,9 @@ export class SourcesService {
   }
 
   private restProvider(baseUrl: string, token: string | undefined): AvailabilityProvider {
-    return new RestProvider({ baseUrl, token });
+    // In production the operator's system must be on the public internet (see public-fetch.ts).
+    const fetchImpl = this.config.NODE_ENV === 'production' ? publicFetch : undefined;
+    return new RestProvider({ baseUrl, token, fetch: fetchImpl });
   }
 
   private unavailable(source: Source, error: unknown): DomainError {

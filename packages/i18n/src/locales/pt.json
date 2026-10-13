@@ -320,6 +320,9 @@
     },
     "contact": {
       "tooMany": "Já nos enviou várias mensagens. Responderemos em breve."
+    },
+    "limits": {
+      "tooManyRequests": "demasiadas tentativas a partir desta ligação; aguarda alguns minutos e tenta novamente"
     }
   },
   "auth": {

@@ -12,6 +12,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 const OTP_TTL_MS = 10 * 60_000;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_MAX_PER_HOUR = 5;
+/** With 5 tries per code, at most 50 guesses a day at one account's 1,000,000 codes. */
+const OTP_MAX_PER_DAY = 10;
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 60;
 
 export const isEmail = (destination: string) => destination.includes('@');
@@ -27,16 +29,20 @@ export class IdentityService {
 
   async requestOtp(destination: string, locale = 'en'): Promise<void> {
     const now = this.clock.now();
+    const hourAgo = new Date(now.getTime() - 3_600_000);
     const [recent] = await this.db
-      .select({ count: sql<number>`count(*)::int` })
+      .select({
+        day: sql<number>`count(*)::int`,
+        hour: sql<number>`(count(*) filter (where ${otpCodes.createdAt} > ${hourAgo.toISOString()}::timestamptz))::int`,
+      })
       .from(otpCodes)
       .where(
         and(
           eq(otpCodes.destination, destination),
-          gt(otpCodes.createdAt, new Date(now.getTime() - 3_600_000)),
+          gt(otpCodes.createdAt, new Date(now.getTime() - 86_400_000)),
         ),
       );
-    if ((recent?.count ?? 0) >= OTP_MAX_PER_HOUR) {
+    if ((recent?.hour ?? 0) >= OTP_MAX_PER_HOUR || (recent?.day ?? 0) >= OTP_MAX_PER_DAY) {
       throw new DomainError('errors.auth.tooManyCodes', HttpStatus.TOO_MANY_REQUESTS);
     }
     const code = generateOtp();
@@ -44,6 +50,7 @@ export class IdentityService {
       destination,
       codeHash: hashOtp(this.config.APP_SECRET, destination, code),
       expiresAt: new Date(now.getTime() + OTP_TTL_MS),
+      createdAt: now,
     });
     await this.notifications.sendNow({
       to: destination,

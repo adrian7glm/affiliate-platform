@@ -46,6 +46,11 @@ const schema = z.object({
   /** manual: subscriptions are invoiced by hand. stripe: Stripe Billing charges operators' cards. */
   BILLING_PROVIDER: z.enum(['manual', 'stripe']).default('manual'),
   STRIPE_BILLING_WEBHOOK_SECRET: z.string().optional(),
+  /** Per-IP limits on login codes and checkouts (common/rate-limit.ts). Off only in tests. */
+  RATE_LIMITS: z
+    .enum(['on', 'off'])
+    .default('on')
+    .transform((v) => v === 'on'),
 });
 
 export type AppConfig = z.infer<typeof schema>;
@@ -96,6 +101,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error(
       'in production, set EMAIL_PROVIDER and SMS_PROVIDER to a real provider or to disabled',
     );
+  }
+  if (config.NODE_ENV === 'production' && config.APP_SECRET.length < 32) {
+    throw new Error('in production, APP_SECRET must be at least 32 random characters');
+  }
+  if (config.NODE_ENV === 'production' && !config.RATE_LIMITS) {
+    throw new Error('rate limits cannot be turned off in production');
   }
   return config;
 }

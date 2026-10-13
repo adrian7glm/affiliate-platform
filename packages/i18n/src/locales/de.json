@@ -316,6 +316,9 @@
     },
     "contact": {
       "tooMany": "Sie haben uns bereits mehrere Nachrichten gesendet. Wir antworten Ihnen bald."
+    },
+    "limits": {
+      "tooManyRequests": "zu viele Versuche von dieser Verbindung; warte ein paar Minuten und versuche es erneut"
     }
   },
   "auth": {

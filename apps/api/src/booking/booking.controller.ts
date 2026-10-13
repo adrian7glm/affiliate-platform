@@ -51,6 +51,7 @@ import { checkTicketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
 import { parseDateParam } from '../common/period';
 import { TenantsService } from '../common/tenants';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodBody } from '../common/validation';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { I18nService } from '../i18n/i18n.service';
@@ -113,7 +114,10 @@ export class PublicBookingController {
     );
   }
 
+  /** Each checkout holds seats until it expires: capped per IP so nobody can block a trip. */
   @Post('tenants/:slug/checkout')
+  @UseGuards(RateLimitGuard)
+  @RateLimit('checkout', { limit: 20, windowMs: 10 * 60_000 })
   checkout(
     @Param('slug') slug: string,
     @ZodBody(publicCheckoutBody) body: PublicCheckoutBody,

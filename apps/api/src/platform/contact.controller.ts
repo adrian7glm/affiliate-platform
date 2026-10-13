@@ -7,6 +7,7 @@ import {
   setContactHandledBody,
 } from '@ap/contracts';
 import { AuthGuard } from '../common/auth';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodBody } from '../common/validation';
 import { ContactService } from './contact.service';
 import { PlatformAdminGuard } from './platform-admin.guard';
@@ -18,6 +19,8 @@ export class PublicContactController {
 
   @Post()
   @HttpCode(204)
+  @UseGuards(RateLimitGuard)
+  @RateLimit('contact', { limit: 5, windowMs: 60 * 60_000 })
   async submit(@ZodBody(contactRequestBody) body: ContactRequestBody): Promise<void> {
     await this.contact.submit(body);
   }

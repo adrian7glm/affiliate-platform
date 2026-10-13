@@ -9,6 +9,7 @@ import {
 } from '@ap/contracts';
 import type { Request } from 'express';
 import { type AuthUser, AuthGuard, CurrentUser } from '../common/auth';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit';
 import { ZodBody } from '../common/validation';
 import { I18nService } from '../i18n/i18n.service';
 import { IdentityService } from './identity.service';
@@ -20,8 +21,11 @@ export class IdentityController {
     private readonly i18n: I18nService,
   ) {}
 
+  /** Each code is an SMS or email we pay for: capped per IP against SMS pumping. */
   @Post('auth/otp/request')
   @HttpCode(204)
+  @UseGuards(RateLimitGuard)
+  @RateLimit('otp-request', { limit: 10, windowMs: 15 * 60_000 })
   async requestOtp(
     @ZodBody(requestOtpBody) body: RequestOtpBody,
     @Req() request: Request,
@@ -31,8 +35,11 @@ export class IdentityController {
     await this.identity.requestOtp(body.destination, locale);
   }
 
+  /** Capped per IP so codes cannot be guessed across many phone numbers at once. */
   @Post('auth/otp/verify')
   @HttpCode(200)
+  @UseGuards(RateLimitGuard)
+  @RateLimit('otp-verify', { limit: 30, windowMs: 15 * 60_000 })
   verifyOtp(@ZodBody(verifyOtpBody) body: VerifyOtpBody): Promise<SessionDto> {
     return this.identity.verifyOtp(body.destination, body.code);
   }
