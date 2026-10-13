@@ -57,6 +57,13 @@
       "when": 1791853143250,
       "tag": "0007_integrations",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791854121865,
+      "tag": "0008_security_2fa",
+      "breakpoints": true
     }
   ]
 }

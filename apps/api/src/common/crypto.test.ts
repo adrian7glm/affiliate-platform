@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   TicketSigner,
+  base32Decode,
+  base32Encode,
+  matchTotp,
+  signMfaChallenge,
+  totpCode,
+  verifyMfaChallenge,
   checkTicketLinkKey,
   openSecret,
   randomCode,
@@ -21,6 +27,35 @@ describe('crypto helpers', () => {
     const [v, , s] = token.split('.');
     const forged = `${v}.${Buffer.from(JSON.stringify({ sub: 'admin', exp: 9e9 })).toString('base64url')}.${s}`;
     expect(verifySession(secret, forged, 1_000_000)).toBeNull();
+  });
+
+  it('carries the session version, and keeps login challenges apart from sessions', () => {
+    expect(verifySession(secret, signSession(secret, 'u', 60, 1_000_000, 3), 1_000_000)?.sv).toBe(
+      3,
+    );
+    const challenge = signMfaChallenge(secret, 'u', 60, 1_000_000);
+    expect(verifyMfaChallenge(secret, challenge, 1_000_000)?.sub).toBe('u');
+    expect(verifySession(secret, challenge, 1_000_000)).toBeNull();
+    expect(
+      verifyMfaChallenge(secret, signSession(secret, 'u', 60, 1_000_000), 1_000_000),
+    ).toBeNull();
+  });
+
+  it('computes authenticator codes like RFC 6238 and refuses a code twice', () => {
+    const key = base32Encode(Buffer.from('12345678901234567890'));
+    expect(key).toBe('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ');
+    expect(base32Decode(key).toString()).toBe('12345678901234567890');
+    // RFC 6238 test vectors (SHA-1), last 6 of the 8 digits.
+    expect(totpCode(key, Math.floor(59 / 30))).toBe('287082');
+    expect(totpCode(key, Math.floor(1111111109 / 30))).toBe('081804');
+    expect(totpCode(key, Math.floor(1234567890 / 30))).toBe('005924');
+    const now = 1111111109_000;
+    const step = matchTotp(key, '081804', now, null);
+    expect(step).toBe(Math.floor(1111111109 / 30));
+    expect(matchTotp(key, '081804', now, step)).toBeNull();
+    // One step of clock drift either way is accepted.
+    expect(matchTotp(key, '081804', now + 30_000, null)).toBe(step);
+    expect(matchTotp(key, '081804', now + 90_000, null)).toBeNull();
   });
 
   it('signs ticket tokens that only verify with the same key', () => {

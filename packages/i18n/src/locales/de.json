@@ -220,7 +220,8 @@
       "notAffiliate": "Sie sind kein Affiliate dieses Anbieters",
       "tooManyCodes": "zu viele Codes angefordert, versuchen Sie es später erneut",
       "codeExpired": "der Code ist abgelaufen, fordern Sie einen neuen an",
-      "wrongCode": "falscher Code"
+      "wrongCode": "falscher Code",
+      "ownerOnly": "nur der Administrator des Anbieters kann Provisionen und Auszahlungen ändern"
     },
     "webhooks": {
       "invalidSignature": "ungültige Stripe-Signatur",
@@ -311,7 +312,8 @@
       "checkedIn": "Willkommen an Bord.",
       "alreadyCheckedIn": "Dieses Ticket wurde bereits gescannt.",
       "notValid": "Dieses Ticket ist ungültig (storniert, erstattet oder unbezahlt).",
-      "otherOperator": "Dieser QR-Code ist kein Ticket dieses Anbieters."
+      "otherOperator": "Dieser QR-Code ist kein Ticket dieses Anbieters.",
+      "wrongDay": "Dieses Ticket gilt für einen anderen Tag."
     },
     "ticket": {
       "noPdf": "dieses Ticket ist ungültig und hat daher kein PDF",
@@ -325,6 +327,15 @@
     },
     "limits": {
       "tooManyRequests": "zu viele Versuche von dieser Verbindung; warte ein paar Minuten und versuche es erneut"
+    },
+    "account": {
+      "challengeExpired": "die Anmeldung hat zu lange gedauert; beginnen Sie von vorn",
+      "twoFactorNotOn": "die Zwei-Faktor-Authentifizierung ist für dieses Konto nicht aktiviert",
+      "twoFactorLocked": "zu viele falsche Codes; warten Sie 15 Minuten und versuchen Sie es erneut",
+      "twoFactorWrongCode": "der Code ist falsch; geben Sie die 6 Ziffern ein, die die Authenticator-App gerade anzeigt",
+      "twoFactorAlreadyOn": "die Zwei-Faktor-Authentifizierung ist bereits aktiviert",
+      "twoFactorNoSetup": "starten Sie die Einrichtung erneut",
+      "contactTaken": "diese Telefonnummer oder E-Mail-Adresse gehört bereits zu einem anderen Konto"
     }
   },
   "auth": {
@@ -397,6 +408,19 @@
       "forBefore": "Diese Einladung gilt für ",
       "forAfter": ". Melden Sie sich mit Ihrer Telefonnummer oder E-Mail an, um sie anzunehmen.",
       "continue": "Weiter"
+    },
+    "mfa": {
+      "title": "Zwei-Faktor-Authentifizierung",
+      "intro": "Öffnen Sie Ihre Authenticator-App und geben Sie den 6-stelligen Code ein, den sie für dieses Konto anzeigt.",
+      "recoveryIntro": "Geben Sie einen der Wiederherstellungscodes ein, die Sie beim Aktivieren der Zwei-Faktor-Authentifizierung gespeichert haben. Jeder Code funktioniert nur einmal.",
+      "codeLabel": "Code aus der Authenticator-App",
+      "codeHint": "Der Code ändert sich alle 30 Sekunden.",
+      "recoveryLabel": "Wiederherstellungscode",
+      "recoveryHint": "Zum Beispiel K7PQ2-XM9TA",
+      "recoveryInvalid": "Ein Wiederherstellungscode hat 10 Buchstaben und Ziffern.",
+      "useRecovery": "Ich habe mein Handy nicht dabei",
+      "useApp": "Authenticator-App verwenden",
+      "startOver": "Von vorn beginnen"
     }
   },
   "public": {
@@ -1672,6 +1696,16 @@
       "company": "Unternehmen",
       "action": "Alle Anfragen ansehen",
       "sms": "{topic} von {name}: {contact}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "Ihrem Konto wurde eine neue Anmeldemöglichkeit hinzugefügt",
+      "contactAdded": "{contact} kann jetzt für die Anmeldung bei Ihrem Konto verwendet werden.",
+      "twoFactorOnSubject": "Die Zwei-Faktor-Authentifizierung ist aktiviert",
+      "twoFactorOn": "Für Ihr Konto wurde die Zwei-Faktor-Authentifizierung mit einer Authenticator-App aktiviert.",
+      "twoFactorOffSubject": "Die Zwei-Faktor-Authentifizierung wurde deaktiviert",
+      "twoFactorOff": "Die Zwei-Faktor-Authentifizierung wurde für Ihr Konto deaktiviert.",
+      "notYou": "Wenn Sie das nicht waren, öffnen Sie Ihr Konto und melden Sie die anderen Geräte ab: {url}",
+      "action": "Mein Konto öffnen"
     }
   },
   "catalog": {
@@ -2008,7 +2042,8 @@
         "checkedIn": "Einstieg bestätigt",
         "alreadyCheckedIn": "Ticket bereits verwendet",
         "notValid": "Ticket ungültig",
-        "error": "Wir konnten das Ticket nicht prüfen"
+        "error": "Wir konnten das Ticket nicht prüfen",
+        "wrongDay": "Ticket für einen anderen Tag"
       },
       "reasonUnknown": "Dieser Code gehört zu keinem Ihrer Tickets oder ist beschädigt.",
       "reasonUnpaid": "Die Buchung wurde nicht bezahlt.",
@@ -2027,7 +2062,9 @@
       "usedAt": "Gescannt {when}",
       "usedAtBy": "Gescannt {when} von {who}",
       "usedToday": "heute um {time}",
-      "usedOnDay": "{day} um {time}"
+      "usedOnDay": "{day} um {time}",
+      "wrongDay": "Dieses Ticket gilt am {day} um {time}. Es wurde nicht verwendet.",
+      "boardAnyway": "Trotzdem einsteigen lassen"
     },
     "app": {
       "title": "Ticket-Scanner",
@@ -2228,6 +2265,67 @@
       "name": "Abfahrten",
       "title": "{trip} · {booked}/{capacity}",
       "description": "Buchungen: {bookings}\nBelegte Plätze: {booked} von {capacity}\nFreie Plätze: {free}\n\n{url}"
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "Mein Konto"
+    },
+    "link": "Mein Konto",
+    "back": "Zurück",
+    "title": "Mein Konto",
+    "contact": {
+      "title": "So melden Sie sich an",
+      "intro": "Sie erhalten den Anmeldecode per SMS oder E-Mail. Fügen Sie beides hinzu, damit Sie sich auch dann anmelden können, wenn eines davon nicht mehr funktioniert.",
+      "phone": "Telefonnummer",
+      "email": "E-Mail",
+      "none": "Nicht hinzugefügt",
+      "change": "Ändern",
+      "add": "Hinzufügen",
+      "phoneTitle": "Telefonnummer für die Anmeldung",
+      "emailTitle": "E-Mail für die Anmeldung",
+      "dialogIntro": "Wir senden einen Code an die neue Nummer bzw. Adresse, um zu prüfen, dass sie Ihnen gehört.",
+      "save": "Bestätigen",
+      "phoneSaved": "Ihre Telefonnummer ist gespeichert. Ab jetzt können Sie sich damit anmelden.",
+      "emailSaved": "Ihre E-Mail-Adresse ist gespeichert. Ab jetzt können Sie sich damit anmelden."
+    },
+    "twoFactor": {
+      "title": "Zwei-Faktor-Authentifizierung",
+      "intro": "Optional, für zusätzliche Sicherheit: Nach dem Code per SMS oder E-Mail geben Sie zusätzlich einen Code aus einer Authenticator-App auf Ihrem Handy ein (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "Die Zwei-Faktor-Authentifizierung ist aktiviert",
+      "onSince": "Seit {date}.",
+      "codesLeft": "Verbleibende Wiederherstellungscodes: {count}.",
+      "codesLow": "Sie haben nur noch wenige Wiederherstellungscodes. Erstellen Sie neue und bewahren Sie sie an einem sicheren Ort auf.",
+      "newCodes": "Neue Wiederherstellungscodes",
+      "turnOff": "Deaktivieren",
+      "offBody": "Die Zwei-Faktor-Authentifizierung ist deaktiviert. Wer Ihren Code per SMS oder E-Mail erhält, kann sich anmelden.",
+      "turnOn": "Zwei-Faktor-Authentifizierung aktivieren",
+      "turnOffTitle": "Zwei-Faktor-Authentifizierung deaktivieren",
+      "newCodesTitle": "Neue Wiederherstellungscodes",
+      "turnOffIntro": "Geben Sie zur Bestätigung den Code aus Ihrer Authenticator-App (oder einen Wiederherstellungscode) ein.",
+      "newCodesIntro": "Geben Sie den Code aus Ihrer Authenticator-App ein. Ihre alten Wiederherstellungscodes funktionieren dann nicht mehr.",
+      "turnedOff": "Die Zwei-Faktor-Authentifizierung ist deaktiviert.",
+      "codesTitle": "Speichern Sie Ihre Wiederherstellungscodes",
+      "setupTitle": "Zwei-Faktor-Authentifizierung aktivieren",
+      "step1": "Installieren Sie eine Authenticator-App auf Ihrem Handy, falls Sie noch keine haben.",
+      "step2": "Fügen Sie in der App ein Konto hinzu und scannen Sie diesen QR-Code.",
+      "step3": "Geben Sie den 6-stelligen Code ein, den die App anzeigt.",
+      "qrLabel": "QR-Code für die Authenticator-App",
+      "cantScan": "Ich kann den Code nicht scannen",
+      "typeKey": "Wählen Sie in der App die Eingabe eines Schlüssels und geben Sie diesen ein:",
+      "codesIntro": "Wenn Sie Ihr Handy verlieren, können Sie sich mit diesen Codes anmelden. Jeder funktioniert nur einmal. Bewahren Sie sie an einem sicheren Ort auf; wir zeigen sie nicht noch einmal an. Ihre anderen Geräte wurden abgemeldet.",
+      "copy": "Codes kopieren",
+      "copied": "Kopiert",
+      "saved": "Ich habe die Codes gespeichert",
+      "codeOrRecovery": "Code aus der App oder Wiederherstellungscode"
+    },
+    "devices": {
+      "title": "Geräte",
+      "intro": "Handy verloren oder an einem gemeinsam genutzten Computer an der Rezeption angemeldet? Melden Sie sich überall ab, außer hier.",
+      "signOutOthers": "Andere Geräte abmelden",
+      "done": "Alle anderen Geräte wurden abgemeldet.",
+      "confirmTitle": "Andere Geräte abmelden?",
+      "confirmBody": "Alle anderen Handys und Computer, die bei Ihrem Konto angemeldet sind, müssen sich erneut anmelden. Hier bleiben Sie angemeldet."
     }
   }
 }

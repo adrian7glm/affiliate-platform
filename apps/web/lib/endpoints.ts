@@ -1,4 +1,13 @@
 import type {
+  AccountSecurityDto,
+  ContactChangeRequestBody,
+  ContactChangeVerifyBody,
+  NewSessionTokenDto,
+  RecoveryCodesDto,
+  TwoFactorEnabledDto,
+  TwoFactorSetupDto,
+  VerifyMfaBody,
+  VerifyOtpResultDto,
   ArchivePlanResultDto,
   CalendarFeedDto,
   CreateWebhookBody,
@@ -79,12 +88,53 @@ export const authApi = {
   requestOtp: (body: RequestOtpBody, o?: Opts) =>
     apiFetch<void>('/auth/otp/request', { ...o, method: 'POST', body, auth: false }),
   verifyOtp: (body: VerifyOtpBody, o?: Opts) =>
-    apiFetch<SessionDto>('/auth/otp/verify', { ...o, method: 'POST', body, auth: false }),
+    apiFetch<VerifyOtpResultDto>('/auth/otp/verify', { ...o, method: 'POST', body, auth: false }),
+  verifyMfa: (body: VerifyMfaBody, o?: Opts) =>
+    apiFetch<SessionDto>('/auth/mfa/verify', { ...o, method: 'POST', body, auth: false }),
   me: (o?: Opts) => apiFetch<MeDto>('/me', { ...o, tenant: false }),
   invitePreview: (token: string, o?: Opts) =>
     apiFetch<InvitePreviewDto>(`/invites/${enc(token)}`, { ...o, auth: false }),
   acceptInvite: (body: AcceptInviteBody, o?: Opts) =>
     apiFetch<MeDto>('/invites/accept', { ...o, method: 'POST', body, tenant: false }),
+};
+
+/** The signed-in person's own account (any role): contact details, two-step login, devices. */
+export const accountApi = {
+  security: (o?: Opts) =>
+    apiFetch<AccountSecurityDto>('/account/security', { ...o, tenant: false }),
+  startTwoFactor: (o?: Opts) =>
+    apiFetch<TwoFactorSetupDto>('/account/2fa/setup', { ...o, method: 'POST', tenant: false }),
+  enableTwoFactor: (code: string, o?: Opts) =>
+    apiFetch<TwoFactorEnabledDto>('/account/2fa/enable', {
+      ...o,
+      method: 'POST',
+      body: { code },
+      tenant: false,
+    }),
+  disableTwoFactor: (code: string, o?: Opts) =>
+    apiFetch<MeDto>('/account/2fa/disable', {
+      ...o,
+      method: 'POST',
+      body: { code },
+      tenant: false,
+    }),
+  newRecoveryCodes: (code: string, o?: Opts) =>
+    apiFetch<RecoveryCodesDto>('/account/2fa/recovery-codes', {
+      ...o,
+      method: 'POST',
+      body: { code },
+      tenant: false,
+    }),
+  signOutOtherDevices: (o?: Opts) =>
+    apiFetch<NewSessionTokenDto>('/account/sessions/sign-out-others', {
+      ...o,
+      method: 'POST',
+      tenant: false,
+    }),
+  requestContactChange: (body: ContactChangeRequestBody, o?: Opts) =>
+    apiFetch<void>('/account/contact/request', { ...o, method: 'POST', body, tenant: false }),
+  confirmContactChange: (body: ContactChangeVerifyBody, o?: Opts) =>
+    apiFetch<MeDto>('/account/contact/verify', { ...o, method: 'POST', body, tenant: false }),
 };
 
 export const affiliateApi = {

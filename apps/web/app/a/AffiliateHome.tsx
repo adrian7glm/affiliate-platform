@@ -17,6 +17,7 @@ import {
   IconLogout,
   IconPrinter,
   IconQr,
+  IconShield,
 } from '@/components/icons';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { MoneyText } from '@/components/MoneyText';
@@ -61,6 +62,14 @@ export function AffiliateHome() {
         </div>
         <div className="flex shrink-0 items-center">
           <LanguageSwitcher compact />
+          <Link
+            href="/account"
+            aria-label={t('account.link')}
+            title={t('account.link')}
+            className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl text-brand hover:bg-brand-soft"
+          >
+            <IconShield />
+          </Link>
           <Button
             variant="ghost"
             icon={<IconLogout />}

@@ -11,13 +11,32 @@ Errors: `{ statusCode, error, message, details? }`.
 
 ## Auth
 
-| Method | Path                | Body               | Response                                  |
-| ------ | ------------------- | ------------------ | ----------------------------------------- |
-| POST   | `/auth/otp/request` | `RequestOtpBody`   | 204 (always, to avoid revealing accounts) |
-| POST   | `/auth/otp/verify`  | `VerifyOtpBody`    | `SessionDto`                              |
-| GET    | `/me`               |                    | `MeDto`                                   |
-| GET    | `/invites/:token`   |                    | `InvitePreviewDto` (public)               |
-| POST   | `/invites/accept`   | `AcceptInviteBody` | `MeDto`                                   |
+| Method | Path                | Body               | Response                                                          |
+| ------ | ------------------- | ------------------ | ----------------------------------------------------------------- |
+| POST   | `/auth/otp/request` | `RequestOtpBody`   | 204 (always, to avoid revealing accounts)                         |
+| POST   | `/auth/otp/verify`  | `VerifyOtpBody`    | `SessionDto`, or `MfaChallengeDto` when two-step login is on      |
+| POST   | `/auth/mfa/verify`  | `VerifyMfaBody`    | `SessionDto` (code from the authenticator app or a recovery code) |
+| GET    | `/me`               |                    | `MeDto`                                                           |
+| GET    | `/invites/:token`   |                    | `InvitePreviewDto` (public)                                       |
+| POST   | `/invites/accept`   | `AcceptInviteBody` | `MeDto`                                                           |
+
+Login codes, checkouts, the contact form and second-step codes are rate limited per client IP
+(429 with `Retry-After`). Wrong second-step codes lock the second step for 15 minutes after 5 in
+a row. Session tokens carry the user's session version: signing out other devices or turning on
+two-step login invalidates every older token.
+
+## Own account (any signed-in user, no `X-Tenant-Id`)
+
+| Method | Path                                | Body                       | Response                           |
+| ------ | ----------------------------------- | -------------------------- | ---------------------------------- |
+| GET    | `/account/security`                 |                            | `AccountSecurityDto`               |
+| POST   | `/account/2fa/setup`                |                            | `TwoFactorSetupDto` (secret + QR)  |
+| POST   | `/account/2fa/enable`               | `TwoFactorCodeBody`        | `TwoFactorEnabledDto` (new token)  |
+| POST   | `/account/2fa/disable`              | `TwoFactorCodeBody`        | `MeDto`                            |
+| POST   | `/account/2fa/recovery-codes`       | `TwoFactorCodeBody`        | `RecoveryCodesDto`                 |
+| POST   | `/account/sessions/sign-out-others` |                            | `NewSessionTokenDto`               |
+| POST   | `/account/contact/request`          | `ContactChangeRequestBody` | 204 (code sent to the new contact) |
+| POST   | `/account/contact/verify`           | `ContactChangeVerifyBody`  | `MeDto`                            |
 
 ## Affiliate (role `affiliate`)
 
@@ -33,6 +52,9 @@ Errors: `{ statusCode, error, message, details? }`.
 | GET    | `/affiliate/bookings`           |                                  | `BookingDto[]`      |
 
 ## Operator (roles `owner`, `staff`)
+
+Commission plan changes, closing a payout period and marking payouts paid are `owner` only;
+staff can invite and edit affiliates but not set their commission.
 
 | Method | Path                                          | Body / query           | Response                            |
 | ------ | --------------------------------------------- | ---------------------- | ----------------------------------- |

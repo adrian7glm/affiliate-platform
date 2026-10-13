@@ -222,7 +222,8 @@
       "notAffiliate": "vous n'êtes pas affilié à cet opérateur",
       "tooManyCodes": "trop de codes demandés, réessayez plus tard",
       "codeExpired": "le code a expiré, demandez-en un nouveau",
-      "wrongCode": "code incorrect"
+      "wrongCode": "code incorrect",
+      "ownerOnly": "seul l'administrateur de l'opérateur peut modifier les commissions et les versements"
     },
     "webhooks": {
       "invalidSignature": "signature Stripe invalide",
@@ -315,7 +316,8 @@
       "checkedIn": "Bienvenue à bord.",
       "alreadyCheckedIn": "Ce billet a déjà été scanné.",
       "notValid": "Ce billet n'est pas valide (annulé, remboursé ou impayé).",
-      "otherOperator": "Ce QR code n'est pas un billet de cet opérateur."
+      "otherOperator": "Ce QR code n'est pas un billet de cet opérateur.",
+      "wrongDay": "Ce billet est valable pour un autre jour."
     },
     "ticket": {
       "noPdf": "ce billet n'est pas valide, il n'a donc pas de PDF",
@@ -329,6 +331,15 @@
     },
     "limits": {
       "tooManyRequests": "trop de tentatives depuis cette connexion ; attends quelques minutes et réessaie"
+    },
+    "account": {
+      "challengeExpired": "la connexion a pris trop de temps ; recommencez",
+      "twoFactorNotOn": "la validation en deux étapes n'est pas activée pour ce compte",
+      "twoFactorLocked": "trop de codes incorrects ; attendez 15 minutes et réessayez",
+      "twoFactorWrongCode": "le code est incorrect ; saisissez les 6 chiffres que l'appli d'authentification affiche maintenant",
+      "twoFactorAlreadyOn": "la validation en deux étapes est déjà activée",
+      "twoFactorNoSetup": "recommencez la configuration",
+      "contactTaken": "ce numéro de téléphone ou cet e-mail appartient déjà à un autre compte"
     }
   },
   "auth": {
@@ -401,6 +412,19 @@
       "forBefore": "Cette invitation est destinée à ",
       "forAfter": ". Connectez-vous avec votre numéro de téléphone ou votre e-mail pour l'accepter.",
       "continue": "Continuer"
+    },
+    "mfa": {
+      "title": "Validation en deux étapes",
+      "intro": "Ouvrez votre appli d'authentification et saisissez le code à 6 chiffres qu'elle affiche pour ce compte.",
+      "recoveryIntro": "Saisissez l'un des codes de récupération enregistrés lorsque vous avez activé la validation en deux étapes. Chaque code ne fonctionne qu'une fois.",
+      "codeLabel": "Code de l'appli d'authentification",
+      "codeHint": "Le code change toutes les 30 secondes.",
+      "recoveryLabel": "Code de récupération",
+      "recoveryHint": "Par exemple K7PQ2-XM9TA",
+      "recoveryInvalid": "Un code de récupération comporte 10 lettres et chiffres.",
+      "useRecovery": "Je n'ai pas mon téléphone",
+      "useApp": "Utiliser l'appli d'authentification",
+      "startOver": "Recommencer"
     }
   },
   "public": {
@@ -1733,6 +1757,16 @@
       "company": "Entreprise",
       "action": "Voir toutes les demandes",
       "sms": "{topic} de {name} : {contact}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "Un nouveau moyen de connexion a été ajouté à votre compte",
+      "contactAdded": "{contact} peut désormais être utilisé pour vous connecter à votre compte.",
+      "twoFactorOnSubject": "La validation en deux étapes est activée",
+      "twoFactorOn": "La validation en deux étapes avec une appli d'authentification a été activée pour votre compte.",
+      "twoFactorOffSubject": "La validation en deux étapes a été désactivée",
+      "twoFactorOff": "La validation en deux étapes a été désactivée pour votre compte.",
+      "notYou": "Si ce n'était pas vous, ouvrez votre compte et déconnectez les autres appareils : {url}",
+      "action": "Ouvrir mon compte"
     }
   },
   "catalog": {
@@ -2089,7 +2123,8 @@
         "checkedIn": "Embarquement confirmé",
         "alreadyCheckedIn": "Billet déjà utilisé",
         "notValid": "Billet non valide",
-        "error": "Nous n'avons pas pu vérifier le billet"
+        "error": "Nous n'avons pas pu vérifier le billet",
+        "wrongDay": "Billet pour un autre jour"
       },
       "reasonUnknown": "Ce code ne correspond à aucun de vos billets, ou il est endommagé.",
       "reasonUnpaid": "La réservation n'a pas été payée.",
@@ -2108,7 +2143,9 @@
       "usedAt": "Scanné {when}",
       "usedAtBy": "Scanné {when} par {who}",
       "usedToday": "aujourd'hui à {time}",
-      "usedOnDay": "le {day} à {time}"
+      "usedOnDay": "le {day} à {time}",
+      "wrongDay": "Ce billet est valable le {day} à {time}. Il n'a pas été utilisé.",
+      "boardAnyway": "Embarquer quand même"
     },
     "app": {
       "title": "Scanner de billets",
@@ -2310,6 +2347,67 @@
       "name": "Départs",
       "title": "{trip} · {booked}/{capacity}",
       "description": "Réservations : {bookings}\nPlaces occupées : {booked} sur {capacity}\nPlaces libres : {free}\n\n{url}"
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "Mon compte"
+    },
+    "link": "Mon compte",
+    "back": "Retour",
+    "title": "Mon compte",
+    "contact": {
+      "title": "Comment vous vous connectez",
+      "intro": "Vous recevez le code de connexion par SMS ou par e-mail. Ajoutez les deux, pour pouvoir vous connecter même si l'un d'eux ne fonctionne plus.",
+      "phone": "Numéro de téléphone",
+      "email": "E-mail",
+      "none": "Non ajouté",
+      "change": "Modifier",
+      "add": "Ajouter",
+      "phoneTitle": "Numéro de téléphone pour la connexion",
+      "emailTitle": "E-mail pour la connexion",
+      "dialogIntro": "Nous envoyons un code au nouveau contact, pour vérifier qu'il est bien à vous.",
+      "save": "Confirmer",
+      "phoneSaved": "Votre numéro de téléphone est enregistré. Vous pouvez désormais l'utiliser pour vous connecter.",
+      "emailSaved": "Votre e-mail est enregistré. Vous pouvez désormais l'utiliser pour vous connecter."
+    },
+    "twoFactor": {
+      "title": "Validation en deux étapes",
+      "intro": "Facultatif, pour plus de sécurité : après le code reçu par SMS ou par e-mail, vous saisissez aussi un code provenant d'une appli d'authentification sur votre téléphone (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "La validation en deux étapes est activée",
+      "onSince": "Depuis le {date}.",
+      "codesLeft": "Codes de récupération restants : {count}.",
+      "codesLow": "Il vous reste peu de codes de récupération. Créez-en de nouveaux et conservez-les en lieu sûr.",
+      "newCodes": "Nouveaux codes de récupération",
+      "turnOff": "Désactiver",
+      "offBody": "La validation en deux étapes est désactivée. Toute personne qui obtient votre code reçu par SMS ou par e-mail peut se connecter.",
+      "turnOn": "Activer la validation en deux étapes",
+      "turnOffTitle": "Désactiver la validation en deux étapes",
+      "newCodesTitle": "Nouveaux codes de récupération",
+      "turnOffIntro": "Saisissez le code de votre appli d'authentification (ou un code de récupération) pour confirmer.",
+      "newCodesIntro": "Saisissez le code de votre appli d'authentification. Vos anciens codes de récupération ne fonctionneront plus.",
+      "turnedOff": "La validation en deux étapes est désactivée.",
+      "codesTitle": "Enregistrez vos codes de récupération",
+      "setupTitle": "Activer la validation en deux étapes",
+      "step1": "Installez une appli d'authentification sur votre téléphone, si vous n'en avez pas.",
+      "step2": "Dans l'appli, ajoutez un compte et scannez ce QR code.",
+      "step3": "Saisissez le code à 6 chiffres affiché par l'appli.",
+      "qrLabel": "QR code pour l'appli d'authentification",
+      "cantScan": "Je ne peux pas scanner le code",
+      "typeKey": "Dans l'appli, choisissez de saisir une clé et tapez celle-ci :",
+      "codesIntro": "Si vous perdez votre téléphone, ces codes vous permettent de vous connecter. Chacun ne fonctionne qu'une fois. Conservez-les en lieu sûr ; nous ne les afficherons plus. Vos autres appareils ont été déconnectés.",
+      "copy": "Copier les codes",
+      "copied": "Copiés",
+      "saved": "J'ai enregistré les codes",
+      "codeOrRecovery": "Code de l'appli ou code de récupération"
+    },
+    "devices": {
+      "title": "Appareils",
+      "intro": "Vous avez perdu un téléphone ou vous vous êtes connecté sur un ordinateur partagé à la réception ? Déconnectez-vous partout sauf ici.",
+      "signOutOthers": "Déconnecter les autres appareils",
+      "done": "Tous les autres appareils ont été déconnectés.",
+      "confirmTitle": "Déconnecter les autres appareils ?",
+      "confirmBody": "Tous les autres téléphones et ordinateurs connectés à votre compte devront se reconnecter. Vous restez connecté ici."
     }
   }
 }

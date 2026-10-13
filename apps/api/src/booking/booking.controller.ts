@@ -299,6 +299,7 @@ export class OperatorBookingController {
       body.token,
       user.id,
       this.i18n.langOf(request),
+      body.allowOtherDay ?? false,
     );
     if (this.config.WORKER_ENABLED) void this.outbox.drain();
     return result;

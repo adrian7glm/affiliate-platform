@@ -3,8 +3,11 @@ import {
   type MeDto,
   type RequestOtpBody,
   type SessionDto,
+  type VerifyMfaBody,
   type VerifyOtpBody,
+  type VerifyOtpResultDto,
   requestOtpBody,
+  verifyMfaBody,
   verifyOtpBody,
 } from '@ap/contracts';
 import type { Request } from 'express';
@@ -40,8 +43,17 @@ export class IdentityController {
   @HttpCode(200)
   @UseGuards(RateLimitGuard)
   @RateLimit('otp-verify', { limit: 30, windowMs: 15 * 60_000 })
-  verifyOtp(@ZodBody(verifyOtpBody) body: VerifyOtpBody): Promise<SessionDto> {
+  verifyOtp(@ZodBody(verifyOtpBody) body: VerifyOtpBody): Promise<VerifyOtpResultDto> {
     return this.identity.verifyOtp(body.destination, body.code);
+  }
+
+  /** Second step for people with two-step login on: a code from their authenticator app. */
+  @Post('auth/mfa/verify')
+  @HttpCode(200)
+  @UseGuards(RateLimitGuard)
+  @RateLimit('mfa-verify', { limit: 30, windowMs: 15 * 60_000 })
+  verifyMfa(@ZodBody(verifyMfaBody) body: VerifyMfaBody): Promise<SessionDto> {
+    return this.identity.verifyMfa(body.mfaToken, body.code);
   }
 
   @Get('me')
