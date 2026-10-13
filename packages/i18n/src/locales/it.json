@@ -206,7 +206,8 @@
       "product": "prodotto non trovato",
       "ticket": "biglietto non trovato",
       "user": "utente non trovato",
-      "scannerAccount": "account scanner non trovato"
+      "scannerAccount": "account scanner non trovato",
+      "contactRequest": "messaggio non trovato"
     },
     "auth": {
       "signInAgain": "accedi di nuovo",
@@ -236,7 +237,8 @@
       "closed": "questa partenza non è più prenotabile",
       "seatsLeft_one": "è rimasto solo {count} posto su questa partenza",
       "seatsLeft_many": "sono rimasti solo {count} posti su questa partenza",
-      "seatsLeft_other": "sono rimasti solo {count} posti su questa partenza"
+      "seatsLeft_other": "sono rimasti solo {count} posti su questa partenza",
+      "alreadyStarted": "questa partenza è già avvenuta, quindi non può più essere annullata"
     },
     "catalog": {
       "duplicatePriceCode": "ogni prezzo deve avere un codice diverso",
@@ -310,10 +312,14 @@
       "otherOperator": "Questo codice QR non è un biglietto di questo operatore."
     },
     "ticket": {
-      "noPdf": "questo biglietto non è valido, quindi non ha un PDF"
+      "noPdf": "questo biglietto non è valido, quindi non ha un PDF",
+      "noCalendar": "questo biglietto non è valido, quindi non può essere aggiunto a un calendario"
     },
     "scanners": {
       "exists": "questa persona ha già un account scanner"
+    },
+    "contact": {
+      "tooMany": "Ci hai già inviato diversi messaggi. Ti risponderemo presto."
     }
   },
   "auth": {
@@ -484,7 +490,47 @@
         "recommend": "Loro consigliano con il codice QR o prenotano per il turista.",
         "pay": "Il turista paga online; la commissione si calcola da sola."
       },
-      "copyright": "© {year} {name}"
+      "copyright": "© {year} {name}",
+      "requestDemo": "Richiedi una demo"
+    },
+    "policy": {
+      "title": "Condizioni di cancellazione",
+      "default": "Se {tenant} annulla l'escursione (ad esempio per il maltempo), ricevi automaticamente il rimborso completo. Per annullare o modificare tu stesso la prenotazione, contatta {tenant}."
+    },
+    "contactOperator": "Domande? Contatta {tenant}",
+    "acceptTerms": "Accetto le {terms} e l'{privacy}.",
+    "termsLink": "condizioni di prenotazione",
+    "privacyLink": "informativa sulla privacy",
+    "errorTerms": "Spunta la casella per accettare le condizioni di prenotazione prima di pagare.",
+    "site": {
+      "contact": "Contatti",
+      "terms": "Condizioni di prenotazione",
+      "privacy": "Privacy",
+      "footerNav": "Informazioni"
+    },
+    "contact": {
+      "title": "Parla con noi",
+      "intro": "Organizzi gite in barca, tour o esperienze? Raccontaci qualcosa della tua attività e ti mostriamo come funziona una rete di venditori tutta tua.",
+      "topic": "Cosa ti serve?",
+      "topicDemo": "Una demo",
+      "topicDemoHint": "Ti mostriamo la piattaforma con le tue escursioni.",
+      "topicQuestion": "Fare una domanda",
+      "topicQuestionHint": "Su prezzi, configurazione o altro.",
+      "name": "Il tuo nome",
+      "company": "Nome dell'attività",
+      "phoneHint": "Se preferisci che ti chiamiamo.",
+      "message": "Messaggio",
+      "messageDemoHint": "Ad esempio: quante barche o escursioni gestisci e quanti hotel vendono per te.",
+      "errName": "Inserisci il tuo nome.",
+      "errEmail": "Inserisci un indirizzo email a cui possiamo rispondere, es. nome@example.com.",
+      "errMessage": "Scrivi la tua domanda.",
+      "tooMany": "Ci hai già inviato diversi messaggi. Ti risponderemo presto.",
+      "sending": "Invio in corso…",
+      "sendDemo": "Richiedi la demo",
+      "send": "Invia",
+      "privacyNote": "Usiamo i tuoi dati solo per risponderti. Leggi l'{privacy}.",
+      "sentTitle": "Grazie, abbiamo ricevuto il tuo messaggio",
+      "sentText": "Ti risponderemo a {email}."
     }
   },
   "ticket": {
@@ -518,7 +564,11 @@
     "referenceLabel": "Codice prenotazione:",
     "qrLabel": "Codice QR del biglietto {reference}",
     "tickets": "Biglietti",
-    "items": "{quantity} × {label}"
+    "items": "{quantity} × {label}",
+    "addToCalendar": "Aggiungi al calendario",
+    "googleCalendar": "Google Calendar",
+    "otherCalendar": "Apple, Outlook, altro",
+    "calendarDetails": "Prenotazione {reference}. Il tuo biglietto: {url}"
   },
   "affiliate": {
     "meta": {
@@ -1150,7 +1200,8 @@
       "operators": "Operatori",
       "plans": "Piani e tariffe",
       "invites": "Inviti",
-      "translations": "Traduzioni"
+      "translations": "Traduzioni",
+      "contact": "Messaggi"
     },
     "shell": {
       "loadError": "Non siamo riusciti a caricare il tuo account",
@@ -1402,6 +1453,17 @@
         "reasonError": "Inserisci il motivo (almeno 3 caratteri).",
         "submit": "Sospendi"
       }
+    },
+    "contact": {
+      "title": "Messaggi dalla pagina contatti",
+      "description": "Richieste di demo e domande degli operatori. Ricevi anche ognuna via email.",
+      "openTitle": "Da rispondere ({count})",
+      "noneOpen": "Niente a cui rispondere. I nuovi messaggi compaiono qui.",
+      "doneTitle": "Con risposta",
+      "demo": "Demo",
+      "question": "Domanda",
+      "markHandled": "Segna come risposto",
+      "reopen": "Rimetti tra quelli da rispondere"
     }
   },
   "signup": {
@@ -1606,14 +1668,21 @@
       "action": "Apri il biglietto",
       "qrFileName": "biglietto-qr",
       "sms": "{tenant}: biglietto {reference} per {product}, {when}, {seats}. Mostra il codice QR all'imbarco: {url}",
-      "smsDue": "{tenant}: biglietto {reference} per {product}, {when}, {seats}, da pagare all'imbarco {due}. Mostra il codice QR all'imbarco: {url}"
+      "smsDue": "{tenant}: biglietto {reference} per {product}, {when}, {seats}, da pagare all'imbarco {due}. Mostra il codice QR all'imbarco: {url}",
+      "calendarAttached": "L'escursione è allegata anche come evento di calendario: aprilo per aggiungerlo al tuo calendario.",
+      "addToGoogle": "Aggiungi a Google Calendar"
     },
     "bookingCancelled": {
       "subject": "La prenotazione {reference} è stata annullata",
       "cancelled": "La tua prenotazione {reference} per {product} ({when}) è stata annullata da {tenant}. Il biglietto non è più valido.",
       "refunded": "Il rimborso è in corso sulla tua carta. Possono servire 5-10 giorni lavorativi perché compaia.",
       "sms": "{tenant}: la prenotazione {reference} ({product}, {when}) è stata annullata.",
-      "smsRefunded": "{tenant}: la prenotazione {reference} ({product}, {when}) è stata annullata. Il rimborso arriva sulla tua carta in 5-10 giorni lavorativi."
+      "smsRefunded": "{tenant}: la prenotazione {reference} ({product}, {when}) è stata annullata. Il rimborso arriva sulla tua carta in 5-10 giorni lavorativi.",
+      "weather": "L'escursione non può svolgersi a causa del maltempo. La tua sicurezza viene prima di tutto.",
+      "message": "Messaggio dell'operatore: {message}",
+      "sorry": "Ci dispiace per il cambio di programma e speriamo di averti a bordo un'altra volta.",
+      "smsWeather": "{tenant}: a causa del maltempo, la prenotazione {reference} ({product}, {when}) è stata annullata. Ci dispiace!",
+      "smsWeatherRefunded": "{tenant}: a causa del maltempo, la prenotazione {reference} ({product}, {when}) è stata annullata. Il rimborso arriva sulla tua carta in 5-10 giorni lavorativi. Ci dispiace!"
     },
     "scannerInvite": {
       "subject": "{tenant}: il tuo account per la scansione dei biglietti",
@@ -1635,6 +1704,21 @@
       "onlineTicket": "Biglietto online",
       "keepOnPhone": "Non serve stamparlo: tienilo sul telefono.",
       "fileName": "biglietto-{reference}.pdf"
+    },
+    "calendar": {
+      "description": "Prenotazione {reference}. Il tuo biglietto: {url}"
+    },
+    "contactRequest": {
+      "demo": "Richiesta di demo",
+      "question": "Domanda",
+      "subject": "{topic} da {name}",
+      "intro": "{name} ha scritto dalla pagina contatti ({topic}).",
+      "name": "Nome",
+      "email": "Email",
+      "phone": "Telefono",
+      "company": "Azienda",
+      "action": "Vedi tutte le richieste",
+      "sms": "{topic} da {name}: {contact}"
     }
   },
   "catalog": {
@@ -1797,7 +1881,32 @@
       "deleting": "Eliminazione…",
       "deleted": "La partenza è stata eliminata.",
       "closedInstead": "La partenza ha delle prenotazioni, quindi è stata chiusa invece che eliminata.",
-      "deleteSlot": "Elimina la partenza"
+      "deleteSlot": "Elimina la partenza",
+      "cancelDay": "Annulla",
+      "cancelDayTitle": "Annullare le escursioni di {day}?",
+      "cancelSlotTitle": "Annullare l'escursione di {day}, {time}?",
+      "cancelAndRefund": "Annulla le escursioni e rimborsa",
+      "cancelSlot": "Annulla e rimborsa",
+      "cancelExplain_one": "È prenotato {count} posto. La prenotazione viene annullata, l'importo pagato online torna sulla carta e il cliente riceve un'email o un SMS con il motivo.",
+      "cancelExplain_many": "Sono prenotati {count} posti. Tutte le prenotazioni vengono annullate, gli importi pagati online tornano sulle carte e ogni cliente riceve un'email o un SMS con il motivo.",
+      "cancelExplain_other": "Sono prenotati {count} posti. Tutte le prenotazioni vengono annullate, gli importi pagati online tornano sulle carte e ogni cliente riceve un'email o un SMS con il motivo.",
+      "cancelReason": "Motivo, comunicato ai clienti",
+      "reasonWeather": "Maltempo",
+      "reasonOther": "Altro motivo",
+      "cancelMessage": "Messaggio per i clienti",
+      "cancelMessageHint": "Ad esempio: \"Rispondi a questa email e ti spostiamo a un altro giorno.\"",
+      "keepDepartures": "Non annullare",
+      "cancellingDepartures": "Annullamento e rimborso in corso…",
+      "confirmCancel": "Annulla e rimborsa",
+      "cancelledBookings_one": "{count} prenotazione annullata.",
+      "cancelledBookings_many": "{count} prenotazioni annullate.",
+      "cancelledBookings_other": "{count} prenotazioni annullate.",
+      "cancelledRefunded_one": "{count} cliente riceve il rimborso.",
+      "cancelledRefunded_many": "{count} clienti ricevono il rimborso.",
+      "cancelledRefunded_other": "{count} clienti ricevono il rimborso.",
+      "cancelledFailed_one": "{count} prenotazione non è stata annullata: riprova.",
+      "cancelledFailed_many": "{count} prenotazioni non sono state annullate: riprova.",
+      "cancelledFailed_other": "{count} prenotazioni non sono state annullate: riprova."
     },
     "settings": {
       "title": "Impostazioni e aspetto",
@@ -1862,7 +1971,16 @@
       "sampleTicket": "Biglietto · {name}",
       "sampleSlot": "Sabato, 18:00 · 2 adulti",
       "sampleValid": "Valido",
-      "previewSr": "Anteprima: la pagina di prenotazione e il biglietto, con il nome, il logo e il colore scelti."
+      "previewSr": "Anteprima: la pagina di prenotazione e il biglietto, con il nome, il logo e il colore scelti.",
+      "customersTitle": "Per i tuoi clienti",
+      "customersDescription": "Mostrato nella pagina di prenotazione prima del pagamento e su ogni biglietto.",
+      "contactPhone": "Telefono per i clienti",
+      "contactPhoneHint": "I clienti possono chiamarti dal loro biglietto. Lascia vuoto per nasconderlo.",
+      "contactEmail": "Email per i clienti",
+      "cancellationPolicy": "Condizioni di cancellazione",
+      "cancellationPolicyHint": "Quando i clienti possono annullare e ricevere il rimborso. Lascia vuoto per usare il testo mostrato nel campo.",
+      "errContactEmail": "Controlla l'indirizzo email, es. nome@example.com.",
+      "errContactPhone": "Inserisci il numero con il prefisso internazionale, es. +40 722 123 456."
     },
     "sources": {
       "title": "Il tuo sistema di prenotazione",
@@ -2010,5 +2128,84 @@
       "howTo": "La persona apre il link, accede con il codice ricevuto via SMS o email e va direttamente allo scanner."
     },
     "noName": "Senza nome"
+  },
+  "legal": {
+    "updated": "Ultimo aggiornamento: {date}",
+    "terms": {
+      "title": "Condizioni di prenotazione",
+      "intro": "Queste condizioni si applicano quando prenoti un'escursione o un'esperienza tramite {app}. Leggile prima di pagare.",
+      "sections": {
+        "who": {
+          "title": "Con chi prenoti",
+          "text": "L'escursione è offerta e gestita dall'operatore indicato nella pagina di prenotazione e sul tuo biglietto. Il contratto per l'escursione è con quell'operatore.\n\n{app} fornisce la tecnologia per prenotazioni, pagamenti e biglietti per conto dell'operatore. Se qualcuno (ad esempio la reception del tuo hotel) ti ha consigliato l'escursione o l'ha prenotata per te, lo ha fatto come partner dell'operatore."
+        },
+        "booking": {
+          "title": "Prenotazione e pagamento",
+          "text": "I prezzi sono indicati nella valuta dell'operatore e includono l'IVA. I tuoi posti restano riservati per qualche minuto mentre paghi; la prenotazione è confermata quando il pagamento va a buon fine e ricevi poi il biglietto via email o SMS.\n\nI pagamenti con carta sono gestiti da Stripe. Né l'operatore né {app} vedono o conservano i dati della tua carta. Se l'operatore lo consente, un partner può prenotare per te con pagamento all'imbarco; in questo caso paghi l'operatore quando sali a bordo."
+        },
+        "ticket": {
+          "title": "Il tuo biglietto",
+          "text": "Il biglietto è valido per la data, l'orario e il numero di persone indicati. Il suo codice QR viene scansionato all'imbarco e può essere usato una sola volta. Tienilo sul telefono o salva il PDF; non serve stamparlo."
+        },
+        "yourCancel": {
+          "title": "Se vuoi annullare o modificare",
+          "text": "Si applicano le condizioni di cancellazione dell'operatore, mostrate nella pagina di prenotazione prima del pagamento e sul tuo biglietto. Per annullare o modificare la prenotazione, contatta l'operatore usando i recapiti sul biglietto."
+        },
+        "operatorCancel": {
+          "title": "Se l'operatore annulla",
+          "text": "Le escursioni in mare e all'aperto dipendono dal meteo e dalla sicurezza. Se l'operatore annulla la tua escursione, ricevi un avviso via email o SMS e l'intero importo pagato online torna sulla carta che hai usato, di solito entro 5-10 giorni lavorativi. L'operatore può anche proporti un'altra data."
+        },
+        "onTheDay": {
+          "title": "Il giorno dell'escursione",
+          "text": "Arriva al punto d'incontro indicato sul biglietto un po' prima dell'orario di partenza. Segui le istruzioni di sicurezza dell'equipaggio. L'operatore può rifiutare l'imbarco per garantire la sicurezza dei passeggeri."
+        },
+        "liability": {
+          "title": "Responsabilità e reclami",
+          "text": "L'operatore è responsabile dello svolgimento dell'escursione. Invia eventuali reclami sull'escursione prima di tutto all'operatore. Queste condizioni non limitano i diritti che hai come consumatore secondo la legge del tuo paese."
+        },
+        "contact": {
+          "title": "Contatti",
+          "text": "Per la tua prenotazione, contatta l'operatore usando i recapiti sul biglietto. Per domande su {app}, usa la nostra pagina contatti."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Informativa sulla privacy",
+      "intro": "Come vengono usati i tuoi dati personali quando prenoti tramite {app} o ci scrivi.",
+      "sections": {
+        "controller": {
+          "title": "Chi è responsabile",
+          "text": "Per una prenotazione, l'operatore con cui prenoti è responsabile dei tuoi dati (titolare del trattamento). {app} tratta i dati per conto dell'operatore, solo per fornire il servizio di prenotazione, pagamento e biglietti.\n\nPer i messaggi che invii dalla nostra pagina contatti, il titolare del trattamento è {app}."
+        },
+        "data": {
+          "title": "Quali dati",
+          "text": "Il tuo nome, l'indirizzo email o il numero di telefono, la lingua scelta, l'escursione, la data e i biglietti prenotati, lo stato del pagamento e, se qualcuno ha prenotato per te, il numero della tua camera d'albergo, se indicato. I dati della carta sono raccolti da Stripe e non arrivano mai all'operatore né a {app}.\n\nSe sei arrivato tramite il link o il codice QR di un partner, conserviamo un codice che identifica quel partner, per poterne calcolare la commissione."
+        },
+        "purposes": {
+          "title": "Perché vengono usati",
+          "text": "Per effettuare e gestire la tua prenotazione (il contratto che richiedi): inviarti il biglietto, controllarlo all'imbarco, informarti di modifiche o cancellazioni ed effettuare i rimborsi. Per pagare la commissione al partner che ti ha consigliato l'escursione e per tenere le registrazioni contabili richieste dalla legge.\n\nNon usiamo i tuoi dati per la pubblicità e non li vendiamo."
+        },
+        "recipients": {
+          "title": "Chi li riceve",
+          "text": "L'operatore e il suo personale. Il partner che ti ha consigliato l'escursione o l'ha prenotata per te vede la prenotazione e il tuo nome. I fornitori di servizi che lavorano per noi sotto contratto: Stripe per i pagamenti, i fornitori di email e SMS per inviarti il biglietto e il fornitore di hosting che conserva i dati."
+        },
+        "retention": {
+          "title": "Per quanto tempo vengono conservati",
+          "text": "Per il tempo necessario a fornire l'escursione e a gestire eventuali domande, e successivamente per il tempo richiesto dalla normativa contabile e fiscale per le registrazioni dei pagamenti."
+        },
+        "rights": {
+          "title": "I tuoi diritti",
+          "text": "Puoi chiedere una copia dei tuoi dati, la loro rettifica o cancellazione, la limitazione del loro uso, opporti al loro uso e riceverli in un formato portabile. Scrivi all'operatore usando i recapiti sul biglietto. Puoi anche presentare un reclamo all'autorità nazionale per la protezione dei dati (in Romania: ANSPDCP, dataprotection.ro)."
+        },
+        "cookies": {
+          "title": "Cookie",
+          "text": "Usiamo solo i cookie necessari al servizio: uno ricorda la lingua che hai scelto e, se sei arrivato tramite il link o il codice QR di un partner, alcuni ricordano quale partner ti ha consigliato l'escursione (con un codice di visita casuale, così i clic ripetuti contano una volta sola), in modo che la prenotazione venga attribuita a lui. Non ci sono cookie pubblicitari né tracciamento su altri siti web."
+        },
+        "contact": {
+          "title": "Contatti",
+          "text": "Per i dati della tua prenotazione, scrivi all'operatore usando i recapiti sul biglietto. Per qualsiasi questione su {app} o sulla pagina contatti, usa la nostra pagina contatti."
+        }
+      }
+    }
   }
 }

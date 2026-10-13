@@ -206,7 +206,8 @@
       "product": "produto não encontrado",
       "ticket": "bilhete não encontrado",
       "user": "utilizador não encontrado",
-      "scannerAccount": "conta de leitura não encontrada"
+      "scannerAccount": "conta de leitura não encontrada",
+      "contactRequest": "mensagem não encontrada"
     },
     "auth": {
       "signInAgain": "inicie sessão novamente",
@@ -236,7 +237,8 @@
       "closed": "esta partida já não pode ser reservada",
       "seatsLeft_one": "resta apenas {count} lugar nesta partida",
       "seatsLeft_many": "restam apenas {count} lugares nesta partida",
-      "seatsLeft_other": "restam apenas {count} lugares nesta partida"
+      "seatsLeft_other": "restam apenas {count} lugares nesta partida",
+      "alreadyStarted": "esta partida já saiu, por isso já não pode ser cancelada"
     },
     "catalog": {
       "duplicatePriceCode": "cada preço precisa de um código diferente",
@@ -310,10 +312,14 @@
       "otherOperator": "Este código QR não é um bilhete deste operador."
     },
     "ticket": {
-      "noPdf": "este bilhete não é válido, por isso não tem PDF"
+      "noPdf": "este bilhete não é válido, por isso não tem PDF",
+      "noCalendar": "este bilhete não é válido, por isso não pode ser adicionado a um calendário"
     },
     "scanners": {
       "exists": "esta pessoa já tem uma conta de leitura"
+    },
+    "contact": {
+      "tooMany": "Já nos enviou várias mensagens. Responderemos em breve."
     }
   },
   "auth": {
@@ -484,7 +490,47 @@
         "recommend": "Eles recomendam com o código QR ou reservam pelo turista.",
         "pay": "O turista paga online; a comissão é calculada sozinha."
       },
-      "copyright": "© {year} {name}"
+      "copyright": "© {year} {name}",
+      "requestDemo": "Pedir uma demonstração"
+    },
+    "policy": {
+      "title": "Política de cancelamento",
+      "default": "Se {tenant} cancelar o passeio (por exemplo, devido ao tempo), recebe automaticamente todo o seu dinheiro de volta. Para cancelar ou alterar a reserva por sua iniciativa, contacte {tenant}."
+    },
+    "contactOperator": "Dúvidas? Contacte {tenant}",
+    "acceptTerms": "Aceito as {terms} e a {privacy}.",
+    "termsLink": "condições de reserva",
+    "privacyLink": "política de privacidade",
+    "errorTerms": "Assinale a caixa para aceitar as condições de reserva antes de pagar.",
+    "site": {
+      "contact": "Contacto",
+      "terms": "Condições de reserva",
+      "privacy": "Privacidade",
+      "footerNav": "Informações"
+    },
+    "contact": {
+      "title": "Fale connosco",
+      "intro": "Organiza passeios de barco, excursões ou experiências? Fale-nos um pouco do seu negócio e mostramos-lhe como funciona a sua própria rede de vendedores.",
+      "topic": "O que pretende?",
+      "topicDemo": "Uma demonstração",
+      "topicDemoHint": "Mostramos-lhe a plataforma com os seus próprios passeios.",
+      "topicQuestion": "Fazer uma pergunta",
+      "topicQuestionHint": "Sobre preços, configuração ou outro assunto.",
+      "name": "O seu nome",
+      "company": "Nome da empresa",
+      "phoneHint": "Se preferir que lhe liguemos.",
+      "message": "Mensagem",
+      "messageDemoHint": "Por exemplo: quantos barcos ou passeios tem e quantos hotéis vendem para si.",
+      "errName": "Escreva o seu nome.",
+      "errEmail": "Escreva um endereço de email para onde possamos responder, por ex. nome@exemplo.com.",
+      "errMessage": "Escreva a sua pergunta.",
+      "tooMany": "Já nos enviou várias mensagens. Responderemos em breve.",
+      "sending": "A enviar…",
+      "sendDemo": "Pedir a demonstração",
+      "send": "Enviar",
+      "privacyNote": "Usamos os seus dados apenas para lhe responder. Consulte a {privacy}.",
+      "sentTitle": "Obrigado, recebemos a sua mensagem",
+      "sentText": "Vamos responder para {email}."
     }
   },
   "ticket": {
@@ -518,7 +564,11 @@
     "referenceLabel": "Referência da reserva:",
     "qrLabel": "Código QR do bilhete {reference}",
     "tickets": "Bilhetes",
-    "items": "{quantity} × {label}"
+    "items": "{quantity} × {label}",
+    "addToCalendar": "Adicionar ao calendário",
+    "googleCalendar": "Google Calendar",
+    "otherCalendar": "Apple, Outlook, outro",
+    "calendarDetails": "Reserva {reference}. O seu bilhete: {url}"
   },
   "affiliate": {
     "meta": {
@@ -1150,7 +1200,8 @@
       "operators": "Operadores",
       "plans": "Planos e taxas",
       "invites": "Convites",
-      "translations": "Traduções"
+      "translations": "Traduções",
+      "contact": "Mensagens"
     },
     "shell": {
       "loadError": "Não foi possível carregar a sua conta",
@@ -1402,6 +1453,17 @@
         "reasonError": "Introduza o motivo (pelo menos 3 caracteres).",
         "submit": "Suspender"
       }
+    },
+    "contact": {
+      "title": "Mensagens da página de contacto",
+      "description": "Pedidos de demonstração e perguntas de operadores. Também recebe cada uma por email.",
+      "openTitle": "Por responder ({count})",
+      "noneOpen": "Nada por responder. As novas mensagens aparecem aqui.",
+      "doneTitle": "Respondidas",
+      "demo": "Demonstração",
+      "question": "Pergunta",
+      "markHandled": "Marcar como respondida",
+      "reopen": "Voltar a pôr por responder"
     }
   },
   "signup": {
@@ -1606,14 +1668,21 @@
       "action": "Abrir o bilhete",
       "qrFileName": "bilhete-qr",
       "sms": "{tenant}: bilhete {reference} para {product}, {when}, {seats}. Mostre o código QR no embarque: {url}",
-      "smsDue": "{tenant}: bilhete {reference} para {product}, {when}, {seats}, a pagar no embarque {due}. Mostre o código QR no embarque: {url}"
+      "smsDue": "{tenant}: bilhete {reference} para {product}, {when}, {seats}, a pagar no embarque {due}. Mostre o código QR no embarque: {url}",
+      "calendarAttached": "O passeio também segue em anexo como evento de calendário: abra-o para o adicionar ao seu calendário.",
+      "addToGoogle": "Adicionar ao Google Calendar"
     },
     "bookingCancelled": {
       "subject": "A reserva {reference} foi cancelada",
       "cancelled": "A sua reserva {reference} para {product} ({when}) foi cancelada por {tenant}. O bilhete já não é válido.",
       "refunded": "O seu dinheiro está a ser reembolsado para o cartão. Pode demorar 5-10 dias úteis a aparecer.",
       "sms": "{tenant}: a reserva {reference} ({product}, {when}) foi cancelada.",
-      "smsRefunded": "{tenant}: a reserva {reference} ({product}, {when}) foi cancelada. O dinheiro é reembolsado para o seu cartão em 5-10 dias úteis."
+      "smsRefunded": "{tenant}: a reserva {reference} ({product}, {when}) foi cancelada. O dinheiro é reembolsado para o seu cartão em 5-10 dias úteis.",
+      "weather": "O passeio não se pode realizar devido ao tempo. A sua segurança está em primeiro lugar.",
+      "message": "Mensagem do operador: {message}",
+      "sorry": "Lamentamos a mudança de planos e esperamos vê-lo a bordo noutra ocasião.",
+      "smsWeather": "{tenant}: devido ao tempo, a reserva {reference} ({product}, {when}) foi cancelada. Lamentamos!",
+      "smsWeatherRefunded": "{tenant}: devido ao tempo, a reserva {reference} ({product}, {when}) foi cancelada. O dinheiro é reembolsado para o seu cartão em 5-10 dias úteis. Lamentamos!"
     },
     "scannerInvite": {
       "subject": "{tenant}: a sua conta de leitura de bilhetes",
@@ -1635,6 +1704,21 @@
       "onlineTicket": "Bilhete online",
       "keepOnPhone": "Não precisa de o imprimir: guarde-o no telefone.",
       "fileName": "bilhete-{reference}.pdf"
+    },
+    "calendar": {
+      "description": "Reserva {reference}. O seu bilhete: {url}"
+    },
+    "contactRequest": {
+      "demo": "Pedido de demonstração",
+      "question": "Pergunta",
+      "subject": "{topic} de {name}",
+      "intro": "{name} escreveu através da página de contacto ({topic}).",
+      "name": "Nome",
+      "email": "Email",
+      "phone": "Telefone",
+      "company": "Empresa",
+      "action": "Ver todos os pedidos",
+      "sms": "{topic} de {name}: {contact}"
     }
   },
   "catalog": {
@@ -1797,7 +1881,32 @@
       "deleting": "A eliminar…",
       "deleted": "A partida foi eliminada.",
       "closedInstead": "A partida tem reservas, por isso foi fechada em vez de eliminada.",
-      "deleteSlot": "Eliminar a partida"
+      "deleteSlot": "Eliminar a partida",
+      "cancelDay": "Cancelar passeios",
+      "cancelDayTitle": "Cancelar os passeios de {day}?",
+      "cancelSlotTitle": "Cancelar o passeio de {day}, {time}?",
+      "cancelAndRefund": "Cancelar os passeios e reembolsar",
+      "cancelSlot": "Cancelar e reembolsar",
+      "cancelExplain_one": "Há {count} lugar reservado. A reserva é cancelada, o dinheiro pago online volta para o cartão e o cliente recebe um email ou SMS a explicar o motivo.",
+      "cancelExplain_many": "Há {count} lugares reservados. Todas as reservas são canceladas, o dinheiro pago online volta para os cartões e cada cliente recebe um email ou SMS a explicar o motivo.",
+      "cancelExplain_other": "Há {count} lugares reservados. Todas as reservas são canceladas, o dinheiro pago online volta para os cartões e cada cliente recebe um email ou SMS a explicar o motivo.",
+      "cancelReason": "Motivo, comunicado aos clientes",
+      "reasonWeather": "Mau tempo",
+      "reasonOther": "Outro motivo",
+      "cancelMessage": "Mensagem para os clientes",
+      "cancelMessageHint": "Por exemplo: “Responda a este email e passamos a sua reserva para outro dia.”",
+      "keepDepartures": "Não cancelar",
+      "cancellingDepartures": "A cancelar e reembolsar…",
+      "confirmCancel": "Cancelar e reembolsar",
+      "cancelledBookings_one": "{count} reserva cancelada.",
+      "cancelledBookings_many": "{count} reservas canceladas.",
+      "cancelledBookings_other": "{count} reservas canceladas.",
+      "cancelledRefunded_one": "{count} cliente recebe o dinheiro de volta.",
+      "cancelledRefunded_many": "{count} clientes recebem o dinheiro de volta.",
+      "cancelledRefunded_other": "{count} clientes recebem o dinheiro de volta.",
+      "cancelledFailed_one": "Não foi possível cancelar {count} reserva: tente novamente.",
+      "cancelledFailed_many": "Não foi possível cancelar {count} reservas: tente novamente.",
+      "cancelledFailed_other": "Não foi possível cancelar {count} reservas: tente novamente."
     },
     "settings": {
       "title": "Definições e aspeto",
@@ -1862,7 +1971,16 @@
       "sampleTicket": "Bilhete · {name}",
       "sampleSlot": "Sábado, 18:00 · 2 adultos",
       "sampleValid": "Válido",
-      "previewSr": "Pré-visualização: a página de reserva e o bilhete, com o nome, o logótipo e a cor escolhidos."
+      "previewSr": "Pré-visualização: a página de reserva e o bilhete, com o nome, o logótipo e a cor escolhidos.",
+      "customersTitle": "Para os seus clientes",
+      "customersDescription": "Aparece na página de reserva antes do pagamento e em cada bilhete.",
+      "contactPhone": "Telefone para clientes",
+      "contactPhoneHint": "Os clientes podem ligar-lhe a partir do bilhete. Deixe vazio para o ocultar.",
+      "contactEmail": "Email para clientes",
+      "cancellationPolicy": "Política de cancelamento",
+      "cancellationPolicyHint": "Quando os clientes podem cancelar e receber o dinheiro de volta. Deixe vazio para usar o texto mostrado na caixa.",
+      "errContactEmail": "Verifique o endereço de email, por ex. nome@exemplo.com.",
+      "errContactPhone": "Escreva o número com o indicativo do país, por ex. +40 722 123 456."
     },
     "sources": {
       "title": "O seu sistema de reservas",
@@ -2010,5 +2128,84 @@
       "howTo": "A pessoa abre o link, inicia sessão com o código do SMS ou do email e vai diretamente para o leitor."
     },
     "noName": "Sem nome"
+  },
+  "legal": {
+    "updated": "Última atualização: {date}",
+    "terms": {
+      "title": "Condições de reserva",
+      "intro": "Estas condições aplicam-se quando reserva um passeio ou uma experiência através de {app}. Leia-as antes de pagar.",
+      "sections": {
+        "who": {
+          "title": "Com quem reserva",
+          "text": "O passeio é oferecido e realizado pelo operador indicado na página de reserva e no seu bilhete. O seu contrato relativo ao passeio é celebrado com esse operador.\n\n{app} fornece a tecnologia de reserva, pagamento e emissão de bilhetes em nome do operador. Se alguém (por exemplo, a receção do seu hotel) lhe recomendou o passeio ou o reservou por si, fê-lo como parceiro do operador."
+        },
+        "booking": {
+          "title": "Reserva e pagamento",
+          "text": "Os preços são apresentados na moeda do operador e incluem IVA. Os seus lugares ficam guardados durante alguns minutos enquanto paga; a reserva fica confirmada quando o pagamento é bem-sucedido e recebe então o seu bilhete por email ou SMS.\n\nOs pagamentos com cartão são processados pela Stripe. Nem o operador nem {app} veem ou guardam os dados do seu cartão. Se o operador o permitir, um parceiro pode reservar por si com pagamento no embarque; nesse caso, paga ao operador quando embarcar."
+        },
+        "ticket": {
+          "title": "O seu bilhete",
+          "text": "O seu bilhete é válido para a data, a hora e o número de pessoas nele indicados. O código QR é lido no embarque e só pode ser usado uma vez. Guarde-o no telefone ou guarde o PDF; não precisa de o imprimir."
+        },
+        "yourCancel": {
+          "title": "Se quiser cancelar ou alterar",
+          "text": "Aplica-se a política de cancelamento do operador. É apresentada na página de reserva antes de pagar e no seu bilhete. Para cancelar ou alterar a reserva, contacte o operador através dos dados indicados no bilhete."
+        },
+        "operatorCancel": {
+          "title": "Se o operador cancelar",
+          "text": "Os passeios na água e ao ar livre dependem do tempo e da segurança. Se o operador cancelar o seu passeio, é avisado por email ou SMS e o valor total que pagou online é devolvido para o cartão que usou, normalmente em 5 a 10 dias úteis. O operador pode também propor-lhe outra data."
+        },
+        "onTheDay": {
+          "title": "No dia",
+          "text": "Chegue ao ponto de encontro indicado no bilhete um pouco antes da hora de partida. Siga as instruções de segurança da tripulação. O operador pode recusar o embarque para garantir a segurança dos passageiros."
+        },
+        "liability": {
+          "title": "Responsabilidade e reclamações",
+          "text": "O operador é responsável pela realização do passeio. Envie primeiro ao operador qualquer reclamação sobre o passeio. Estas condições não limitam os direitos que tem enquanto consumidor ao abrigo da lei do seu país."
+        },
+        "contact": {
+          "title": "Contacto",
+          "text": "Para questões sobre a sua reserva, contacte o operador através dos dados indicados no bilhete. Para uma pergunta sobre {app} em si, use a nossa página de contacto."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Política de privacidade",
+      "intro": "Como são usados os seus dados pessoais quando reserva através de {app} ou nos escreve.",
+      "sections": {
+        "controller": {
+          "title": "Quem é o responsável",
+          "text": "Numa reserva, o operador com quem reserva é o responsável pelos seus dados (responsável pelo tratamento). {app} trata os dados em nome do operador, apenas para prestar o serviço de reserva, pagamento e emissão de bilhetes.\n\nPara as mensagens que envia através da nossa página de contacto, {app} é o responsável pelo tratamento."
+        },
+        "data": {
+          "title": "Que dados",
+          "text": "O seu nome, endereço de email ou número de telefone, o idioma que escolheu, o passeio, a data e os bilhetes que reservou, o estado do pagamento e, se alguém reservou por si, o número do seu quarto de hotel, quando indicado. Os dados do cartão são recolhidos pela Stripe e nunca chegam ao operador nem a {app}.\n\nSe chegou através do link ou do código QR de um parceiro, guardamos um código que identifica esse parceiro, para que a sua comissão possa ser calculada."
+        },
+        "purposes": {
+          "title": "Para que são usados",
+          "text": "Para fazer e gerir a sua reserva (o contrato que solicita): enviar o seu bilhete, validá-lo no embarque, informá-lo de alterações ou cancelamentos e efetuar reembolsos. Para pagar a comissão ao parceiro que recomendou o passeio e manter os registos contabilísticos exigidos por lei.\n\nNão usamos os seus dados para publicidade e não os vendemos."
+        },
+        "recipients": {
+          "title": "Quem os recebe",
+          "text": "O operador e a sua equipa. O parceiro que recomendou o passeio ou o reservou por si vê a reserva e o seu nome. Prestadores de serviços que trabalham para nós ao abrigo de contrato: a Stripe para pagamentos, fornecedores de email e SMS para enviar o seu bilhete e o fornecedor de alojamento que guarda os dados."
+        },
+        "retention": {
+          "title": "Durante quanto tempo são guardados",
+          "text": "Durante o tempo necessário para realizar o passeio e tratar de eventuais questões sobre ele e, depois disso, durante o tempo exigido pela legislação contabilística e fiscal para os registos de pagamento."
+        },
+        "rights": {
+          "title": "Os seus direitos",
+          "text": "Pode pedir uma cópia dos seus dados, a sua retificação ou eliminação, a limitação do seu tratamento, opor-se ao seu tratamento e recebê-los num formato portável. Escreva ao operador através dos dados indicados no bilhete. Pode também apresentar uma reclamação à autoridade nacional de proteção de dados (na Roménia: ANSPDCP, dataprotection.ro)."
+        },
+        "cookies": {
+          "title": "Cookies",
+          "text": "Usamos apenas os cookies de que o serviço precisa: um memoriza o idioma que escolheu e, se chegou através do link ou do código QR de um parceiro, alguns memorizam o parceiro que recomendou o passeio (com um código de visita aleatório, para que cliques repetidos contem uma só vez), para que a reserva lhe seja atribuída. Não há cookies de publicidade nem rastreio noutros sites."
+        },
+        "contact": {
+          "title": "Contacto",
+          "text": "Para os dados da sua reserva, escreva ao operador através dos dados indicados no bilhete. Para qualquer assunto sobre {app} em si ou sobre a página de contacto, use a nossa página de contacto."
+        }
+      }
+    }
   }
 }

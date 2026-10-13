@@ -204,7 +204,8 @@
       "product": "Produkt nicht gefunden",
       "ticket": "Ticket nicht gefunden",
       "user": "Benutzer nicht gefunden",
-      "scannerAccount": "Scanner-Konto nicht gefunden"
+      "scannerAccount": "Scanner-Konto nicht gefunden",
+      "contactRequest": "Nachricht nicht gefunden"
     },
     "auth": {
       "signInAgain": "bitte erneut anmelden",
@@ -233,7 +234,8 @@
     "departures": {
       "closed": "diese Abfahrt kann nicht mehr gebucht werden",
       "seatsLeft_one": "nur noch {count} Platz frei bei dieser Abfahrt",
-      "seatsLeft_other": "nur noch {count} Plätze frei bei dieser Abfahrt"
+      "seatsLeft_other": "nur noch {count} Plätze frei bei dieser Abfahrt",
+      "alreadyStarted": "diese Abfahrt hat bereits stattgefunden und kann nicht mehr abgesagt werden"
     },
     "catalog": {
       "duplicatePriceCode": "jeder Preis braucht einen eigenen Code",
@@ -306,10 +308,14 @@
       "otherOperator": "Dieser QR-Code ist kein Ticket dieses Anbieters."
     },
     "ticket": {
-      "noPdf": "dieses Ticket ist ungültig und hat daher kein PDF"
+      "noPdf": "dieses Ticket ist ungültig und hat daher kein PDF",
+      "noCalendar": "dieses Ticket ist ungültig und kann daher nicht zu einem Kalender hinzugefügt werden"
     },
     "scanners": {
       "exists": "diese Person hat bereits ein Scanner-Konto"
+    },
+    "contact": {
+      "tooMany": "Sie haben uns bereits mehrere Nachrichten gesendet. Wir antworten Ihnen bald."
     }
   },
   "auth": {
@@ -478,7 +484,47 @@
         "recommend": "Sie empfehlen per QR-Code oder buchen für den Touristen.",
         "pay": "Der Tourist bezahlt online; die Provision wird automatisch berechnet."
       },
-      "copyright": "© {year} {name}"
+      "copyright": "© {year} {name}",
+      "requestDemo": "Demo anfragen"
+    },
+    "policy": {
+      "title": "Stornierungsbedingungen",
+      "default": "Wenn {tenant} die Tour absagt (zum Beispiel wegen des Wetters), erhalten Sie Ihr Geld automatisch vollständig zurück. Um Ihre Buchung selbst zu stornieren oder zu ändern, wenden Sie sich an {tenant}."
+    },
+    "contactOperator": "Fragen? Kontaktieren Sie {tenant}",
+    "acceptTerms": "Ich stimme den {terms} und der {privacy} zu.",
+    "termsLink": "Buchungsbedingungen",
+    "privacyLink": "Datenschutzerklärung",
+    "errorTerms": "Setzen Sie das Häkchen, um den Buchungsbedingungen vor der Zahlung zuzustimmen.",
+    "site": {
+      "contact": "Kontakt",
+      "terms": "Buchungsbedingungen",
+      "privacy": "Datenschutz",
+      "footerNav": "Informationen"
+    },
+    "contact": {
+      "title": "Sprechen Sie mit uns",
+      "intro": "Sie bieten Bootstouren, Ausflüge oder Erlebnisse an? Erzählen Sie uns kurz von Ihrem Unternehmen, und wir zeigen Ihnen, wie Ihr eigenes Netzwerk von Verkäufern funktioniert.",
+      "topic": "Was möchten Sie?",
+      "topicDemo": "Eine Demo",
+      "topicDemoHint": "Wir zeigen Ihnen die Plattform mit Ihren eigenen Touren.",
+      "topicQuestion": "Eine Frage stellen",
+      "topicQuestionHint": "Zu Preisen, Einrichtung oder etwas anderem.",
+      "name": "Ihr Name",
+      "company": "Name des Unternehmens",
+      "phoneHint": "Falls Sie lieber angerufen werden möchten.",
+      "message": "Nachricht",
+      "messageDemoHint": "Zum Beispiel: wie viele Boote oder Touren Sie betreiben und wie viele Hotels für Sie verkaufen.",
+      "errName": "Geben Sie Ihren Namen ein.",
+      "errEmail": "Geben Sie eine E-Mail-Adresse ein, an die wir antworten können, z. B. name@example.com.",
+      "errMessage": "Geben Sie Ihre Frage ein.",
+      "tooMany": "Sie haben uns bereits mehrere Nachrichten gesendet. Wir antworten Ihnen bald.",
+      "sending": "Wird gesendet…",
+      "sendDemo": "Demo anfragen",
+      "send": "Senden",
+      "privacyNote": "Wir verwenden Ihre Angaben nur, um Ihnen zu antworten. Siehe {privacy}.",
+      "sentTitle": "Vielen Dank, Ihre Nachricht ist angekommen",
+      "sentText": "Wir antworten Ihnen an {email}."
     }
   },
   "ticket": {
@@ -511,7 +557,11 @@
     "referenceLabel": "Buchungsnummer:",
     "qrLabel": "Ticket-QR-Code {reference}",
     "tickets": "Tickets",
-    "items": "{quantity} × {label}"
+    "items": "{quantity} × {label}",
+    "addToCalendar": "Zum Kalender hinzufügen",
+    "googleCalendar": "Google Calendar",
+    "otherCalendar": "Apple, Outlook, andere",
+    "calendarDetails": "Buchung {reference}. Ihr Ticket: {url}"
   },
   "affiliate": {
     "meta": {
@@ -1112,7 +1162,8 @@
       "operators": "Anbieter",
       "plans": "Pläne und Gebühren",
       "invites": "Einladungen",
-      "translations": "Übersetzungen"
+      "translations": "Übersetzungen",
+      "contact": "Nachrichten"
     },
     "shell": {
       "loadError": "Wir konnten Ihr Konto nicht laden",
@@ -1351,6 +1402,17 @@
         "reasonError": "Geben Sie den Grund an (mindestens 3 Zeichen).",
         "submit": "Sperren"
       }
+    },
+    "contact": {
+      "title": "Nachrichten von der Kontaktseite",
+      "description": "Demo-Anfragen und Fragen von Anbietern. Sie erhalten jede auch per E-Mail.",
+      "openTitle": "Zu beantworten ({count})",
+      "noneOpen": "Nichts zu beantworten. Neue Nachrichten erscheinen hier.",
+      "doneTitle": "Beantwortet",
+      "demo": "Demo",
+      "question": "Frage",
+      "markHandled": "Als beantwortet markieren",
+      "reopen": "Wieder auf „Zu beantworten“ setzen"
     }
   },
   "signup": {
@@ -1545,14 +1607,21 @@
       "action": "Ticket öffnen",
       "qrFileName": "ticket-qr",
       "sms": "{tenant}: Ticket {reference} für {product}, {when}, {seats}. Zeigen Sie den QR-Code beim Einsteigen: {url}",
-      "smsDue": "{tenant}: Ticket {reference} für {product}, {when}, {seats}, beim Einsteigen zu zahlen: {due}. Zeigen Sie den QR-Code beim Einsteigen: {url}"
+      "smsDue": "{tenant}: Ticket {reference} für {product}, {when}, {seats}, beim Einsteigen zu zahlen: {due}. Zeigen Sie den QR-Code beim Einsteigen: {url}",
+      "calendarAttached": "Die Tour ist auch als Kalendertermin angehängt: Öffnen Sie ihn, um ihn zu Ihrem Kalender hinzuzufügen.",
+      "addToGoogle": "Zu Google Calendar hinzufügen"
     },
     "bookingCancelled": {
       "subject": "Die Buchung {reference} wurde storniert",
       "cancelled": "Ihre Buchung {reference} für {product} ({when}) wurde von {tenant} storniert. Das Ticket ist nicht mehr gültig.",
       "refunded": "Ihr Geld wird auf Ihre Karte erstattet. Es kann 5–10 Werktage dauern, bis es erscheint.",
       "sms": "{tenant}: Die Buchung {reference} ({product}, {when}) wurde storniert.",
-      "smsRefunded": "{tenant}: Die Buchung {reference} ({product}, {when}) wurde storniert. Ihr Geld wird innerhalb von 5–10 Werktagen auf Ihre Karte erstattet."
+      "smsRefunded": "{tenant}: Die Buchung {reference} ({product}, {when}) wurde storniert. Ihr Geld wird innerhalb von 5–10 Werktagen auf Ihre Karte erstattet.",
+      "weather": "Die Tour kann wegen des Wetters nicht stattfinden. Ihre Sicherheit geht vor.",
+      "message": "Nachricht des Anbieters: {message}",
+      "sorry": "Wir bedauern die Planänderung und hoffen, Sie ein anderes Mal an Bord begrüßen zu dürfen.",
+      "smsWeather": "{tenant}: Wegen des Wetters ist die Buchung {reference} ({product}, {when}) storniert. Das tut uns leid!",
+      "smsWeatherRefunded": "{tenant}: Wegen des Wetters ist die Buchung {reference} ({product}, {when}) storniert. Ihr Geld wird innerhalb von 5–10 Werktagen auf Ihre Karte erstattet. Das tut uns leid!"
     },
     "scannerInvite": {
       "subject": "{tenant}: Ihr Konto zum Scannen von Tickets",
@@ -1574,6 +1643,21 @@
       "onlineTicket": "Online-Ticket",
       "keepOnPhone": "Ausdrucken ist nicht nötig: Bewahren Sie es auf Ihrem Handy auf.",
       "fileName": "ticket-{reference}.pdf"
+    },
+    "calendar": {
+      "description": "Buchung {reference}. Ihr Ticket: {url}"
+    },
+    "contactRequest": {
+      "demo": "Demo-Anfrage",
+      "question": "Frage",
+      "subject": "{topic} von {name}",
+      "intro": "{name} hat über die Kontaktseite geschrieben ({topic}).",
+      "name": "Name",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "company": "Unternehmen",
+      "action": "Alle Anfragen ansehen",
+      "sms": "{topic} von {name}: {contact}"
     }
   },
   "catalog": {
@@ -1727,7 +1811,28 @@
       "deleting": "Wird gelöscht…",
       "deleted": "Die Abfahrt wurde gelöscht.",
       "closedInstead": "Die Abfahrt hat Buchungen und wurde daher geschlossen statt gelöscht.",
-      "deleteSlot": "Abfahrt löschen"
+      "deleteSlot": "Abfahrt löschen",
+      "cancelDay": "Absagen",
+      "cancelDayTitle": "Die Touren am {day} absagen?",
+      "cancelSlotTitle": "Die Tour am {day}, {time} absagen?",
+      "cancelAndRefund": "Touren absagen und erstatten",
+      "cancelSlot": "Absagen und erstatten",
+      "cancelExplain_one": "{count} Platz ist gebucht. Die Buchung wird storniert, online bezahltes Geld wird auf die Karte erstattet, und der Kunde erhält eine E-Mail oder SMS mit dem Grund.",
+      "cancelExplain_other": "{count} Plätze sind gebucht. Alle Buchungen werden storniert, online bezahltes Geld wird auf die Karten erstattet, und jeder Kunde erhält eine E-Mail oder SMS mit dem Grund.",
+      "cancelReason": "Grund (wird den Kunden mitgeteilt)",
+      "reasonWeather": "Schlechtes Wetter",
+      "reasonOther": "Anderer Grund",
+      "cancelMessage": "Nachricht an die Kunden",
+      "cancelMessageHint": "Zum Beispiel: „Antworten Sie auf diese E-Mail, und wir buchen Sie auf einen anderen Tag um.“",
+      "keepDepartures": "Nicht stornieren",
+      "cancellingDepartures": "Wird storniert und erstattet…",
+      "confirmCancel": "Stornieren und erstatten",
+      "cancelledBookings_one": "{count} Buchung storniert.",
+      "cancelledBookings_other": "{count} Buchungen storniert.",
+      "cancelledRefunded_one": "{count} Kunde erhält das Geld zurück.",
+      "cancelledRefunded_other": "{count} Kunden erhalten ihr Geld zurück.",
+      "cancelledFailed_one": "{count} Buchung konnte nicht storniert werden: Versuchen Sie es erneut.",
+      "cancelledFailed_other": "{count} Buchungen konnten nicht storniert werden: Versuchen Sie es erneut."
     },
     "settings": {
       "title": "Einstellungen und Aussehen",
@@ -1792,7 +1897,16 @@
       "sampleTicket": "Ticket · {name}",
       "sampleSlot": "Samstag, 18:00 · 2 Erwachsene",
       "sampleValid": "Gültig",
-      "previewSr": "Vorschau: die Buchungsseite und das Ticket mit dem gewählten Namen, Logo und der Farbe."
+      "previewSr": "Vorschau: die Buchungsseite und das Ticket mit dem gewählten Namen, Logo und der Farbe.",
+      "customersTitle": "Für Ihre Kunden",
+      "customersDescription": "Wird auf der Buchungsseite vor der Zahlung und auf jedem Ticket angezeigt.",
+      "contactPhone": "Telefon für Kunden",
+      "contactPhoneHint": "Kunden können Sie über ihr Ticket anrufen. Leer lassen, um es auszublenden.",
+      "contactEmail": "E-Mail für Kunden",
+      "cancellationPolicy": "Stornierungsbedingungen",
+      "cancellationPolicyHint": "Wann Kunden stornieren können und ihr Geld zurückerhalten. Leer lassen, um den im Feld angezeigten Text zu verwenden.",
+      "errContactEmail": "Prüfen Sie die E-Mail-Adresse, z. B. name@example.com.",
+      "errContactPhone": "Geben Sie die Telefonnummer mit Ländervorwahl ein, z. B. +40 722 123 456."
     },
     "sources": {
       "title": "Ihr Buchungssystem",
@@ -1932,5 +2046,84 @@
       "howTo": "Die Person öffnet den Link, meldet sich mit dem Code aus der SMS oder E-Mail an und gelangt direkt zum Scanner."
     },
     "noName": "Ohne Namen"
+  },
+  "legal": {
+    "updated": "Zuletzt aktualisiert: {date}",
+    "terms": {
+      "title": "Buchungsbedingungen",
+      "intro": "Diese Bedingungen gelten, wenn Sie über {app} eine Tour oder ein Erlebnis buchen. Bitte lesen Sie sie, bevor Sie bezahlen.",
+      "sections": {
+        "who": {
+          "title": "Bei wem Sie buchen",
+          "text": "Die Tour wird von dem Anbieter angeboten und durchgeführt, der auf der Buchungsseite und auf Ihrem Ticket genannt ist. Ihr Vertrag über die Tour besteht mit diesem Anbieter.\n\n{app} stellt im Auftrag des Anbieters die Technik für Buchung, Zahlung und Tickets bereit. Wenn jemand (zum Beispiel die Rezeption Ihres Hotels) Ihnen die Tour empfohlen oder sie für Sie gebucht hat, tat er dies als Partner des Anbieters."
+        },
+        "booking": {
+          "title": "Buchung und Zahlung",
+          "text": "Die Preise werden in der Währung des Anbieters angezeigt und enthalten die Mehrwertsteuer. Ihre Plätze werden für einige Minuten reserviert, während Sie bezahlen; die Buchung ist bestätigt, sobald die Zahlung erfolgreich ist, und Sie erhalten dann Ihr Ticket per E-Mail oder SMS.\n\nKartenzahlungen werden von Stripe abgewickelt. Weder der Anbieter noch {app} sieht oder speichert Ihre Kartendaten. Wenn der Anbieter es erlaubt, kann ein Partner für Sie mit Zahlung beim Einsteigen buchen; in diesem Fall bezahlen Sie den Anbieter beim Einsteigen."
+        },
+        "ticket": {
+          "title": "Ihr Ticket",
+          "text": "Ihr Ticket gilt für das Datum, die Uhrzeit und die Anzahl der Personen, die darauf angegeben sind. Sein QR-Code wird beim Einsteigen gescannt und kann nur einmal verwendet werden. Bewahren Sie es auf Ihrem Handy auf oder speichern Sie das PDF; ausdrucken ist nicht nötig."
+        },
+        "yourCancel": {
+          "title": "Wenn Sie stornieren oder ändern möchten",
+          "text": "Es gelten die Stornierungsbedingungen des Anbieters. Sie werden auf der Buchungsseite vor der Zahlung und auf Ihrem Ticket angezeigt. Um Ihre Buchung zu stornieren oder zu ändern, wenden Sie sich über die Kontaktdaten auf Ihrem Ticket an den Anbieter."
+        },
+        "operatorCancel": {
+          "title": "Wenn der Anbieter absagt",
+          "text": "Touren auf dem Wasser und im Freien hängen vom Wetter und von der Sicherheit ab. Wenn der Anbieter Ihre Tour absagt, werden Sie per E-Mail oder SMS informiert, und der volle online bezahlte Betrag wird auf die verwendete Karte erstattet, in der Regel innerhalb von 5 bis 10 Werktagen. Der Anbieter kann Ihnen auch einen anderen Termin anbieten."
+        },
+        "onTheDay": {
+          "title": "Am Tag der Tour",
+          "text": "Kommen Sie etwas vor der Abfahrtszeit zum Treffpunkt, der auf Ihrem Ticket angegeben ist. Befolgen Sie die Sicherheitsanweisungen der Crew. Der Anbieter kann das Einsteigen verweigern, um die Sicherheit der Passagiere zu gewährleisten."
+        },
+        "liability": {
+          "title": "Verantwortung und Beschwerden",
+          "text": "Der Anbieter ist für die Durchführung der Tour verantwortlich. Richten Sie Beschwerden über die Tour zuerst an den Anbieter. Diese Bedingungen schränken Ihre Rechte als Verbraucher nach dem Recht Ihres Landes nicht ein."
+        },
+        "contact": {
+          "title": "Kontakt",
+          "text": "Zu Ihrer Buchung wenden Sie sich über die Kontaktdaten auf Ihrem Ticket an den Anbieter. Für Fragen zu {app} selbst nutzen Sie unsere Kontaktseite."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "intro": "Wie Ihre personenbezogenen Daten verwendet werden, wenn Sie über {app} buchen oder uns schreiben.",
+      "sections": {
+        "controller": {
+          "title": "Wer verantwortlich ist",
+          "text": "Bei einer Buchung ist der Anbieter, bei dem Sie buchen, für Ihre Daten verantwortlich (der Verantwortliche). {app} verarbeitet die Daten im Auftrag des Anbieters, ausschließlich um den Buchungs-, Zahlungs- und Ticketservice bereitzustellen.\n\nFür Nachrichten, die Sie über unsere Kontaktseite senden, ist {app} der Verantwortliche."
+        },
+        "data": {
+          "title": "Welche Daten",
+          "text": "Ihr Name, Ihre E-Mail-Adresse oder Telefonnummer, die von Ihnen gewählte Sprache, die gebuchte Tour, das Datum und die Tickets, der Zahlungsstatus und, wenn jemand für Sie gebucht hat, Ihre Hotelzimmernummer, falls angegeben. Kartendaten werden von Stripe erfasst und gelangen nie zum Anbieter oder zu {app}.\n\nWenn Sie über den Link oder QR-Code eines Partners gekommen sind, speichern wir einen Code, der diesen Partner identifiziert, damit seine Provision berechnet werden kann."
+        },
+        "purposes": {
+          "title": "Wofür sie verwendet werden",
+          "text": "Um Ihre Buchung durchzuführen und zu verwalten (den von Ihnen gewünschten Vertrag): Ihr Ticket zu senden, es beim Einsteigen zu prüfen, Sie über Änderungen oder Stornierungen zu informieren und Erstattungen zu veranlassen. Um dem Partner, der die Tour empfohlen hat, seine Provision zu zahlen und die gesetzlich vorgeschriebenen Buchhaltungsunterlagen zu führen.\n\nWir verwenden Ihre Daten nicht für Werbung und verkaufen sie nicht."
+        },
+        "recipients": {
+          "title": "Wer sie erhält",
+          "text": "Der Anbieter und seine Mitarbeiter. Der Partner, der die Tour empfohlen oder für Sie gebucht hat, sieht die Buchung und Ihren Namen. Dienstleister, die vertraglich für uns arbeiten: Stripe für Zahlungen, E-Mail- und SMS-Anbieter für den Versand Ihres Tickets und der Hosting-Anbieter, der die Daten speichert."
+        },
+        "retention": {
+          "title": "Wie lange sie gespeichert werden",
+          "text": "So lange, wie es für die Durchführung der Tour und die Bearbeitung von Fragen dazu nötig ist, und danach so lange, wie das Buchhaltungs- und Steuerrecht es für die Zahlungsunterlagen vorschreibt."
+        },
+        "rights": {
+          "title": "Ihre Rechte",
+          "text": "Sie können eine Kopie Ihrer Daten verlangen, ihre Berichtigung oder Löschung, die Einschränkung ihrer Verwendung, der Verwendung widersprechen und die Daten in einem übertragbaren Format erhalten. Schreiben Sie dazu über die Kontaktdaten auf Ihrem Ticket an den Anbieter. Sie können sich auch bei Ihrer nationalen Datenschutzbehörde beschweren (in Rumänien: ANSPDCP, dataprotection.ro)."
+        },
+        "cookies": {
+          "title": "Cookies",
+          "text": "Wir verwenden nur die Cookies, die der Dienst benötigt: Eines merkt sich die von Ihnen gewählte Sprache, und wenn Sie über den Link oder QR-Code eines Partners gekommen sind, merken sich einige, welcher Partner die Tour empfohlen hat (mit einem zufälligen Besuchscode, damit wiederholte Klicks nur einmal zählen), damit die Buchung diesem Partner zugerechnet wird. Es gibt keine Werbe-Cookies und kein Tracking über andere Websites hinweg."
+        },
+        "contact": {
+          "title": "Kontakt",
+          "text": "Zu Ihren Buchungsdaten schreiben Sie über die Kontaktdaten auf Ihrem Ticket an den Anbieter. Für alles, was {app} selbst oder die Kontaktseite betrifft, nutzen Sie unsere Kontaktseite."
+        }
+      }
+    }
   }
 }

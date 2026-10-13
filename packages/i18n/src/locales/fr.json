@@ -206,7 +206,8 @@
       "product": "produit introuvable",
       "ticket": "billet introuvable",
       "user": "utilisateur introuvable",
-      "scannerAccount": "compte de scan introuvable"
+      "scannerAccount": "compte de scan introuvable",
+      "contactRequest": "message introuvable"
     },
     "auth": {
       "signInAgain": "reconnectez-vous",
@@ -236,7 +237,8 @@
       "closed": "ce départ ne peut plus être réservé",
       "seatsLeft_one": "plus que {count} place sur ce départ",
       "seatsLeft_many": "plus que {count} places sur ce départ",
-      "seatsLeft_other": "plus que {count} places sur ce départ"
+      "seatsLeft_other": "plus que {count} places sur ce départ",
+      "alreadyStarted": "ce départ a déjà eu lieu, il ne peut donc plus être annulé"
     },
     "catalog": {
       "duplicatePriceCode": "chaque prix doit avoir un code différent",
@@ -310,10 +312,14 @@
       "otherOperator": "Ce QR code n'est pas un billet de cet opérateur."
     },
     "ticket": {
-      "noPdf": "ce billet n'est pas valide, il n'a donc pas de PDF"
+      "noPdf": "ce billet n'est pas valide, il n'a donc pas de PDF",
+      "noCalendar": "ce billet n'est pas valide, il ne peut donc pas être ajouté à un agenda"
     },
     "scanners": {
       "exists": "cette personne a déjà un compte de scan"
+    },
+    "contact": {
+      "tooMany": "Vous nous avez déjà envoyé plusieurs messages. Nous vous répondrons bientôt."
     }
   },
   "auth": {
@@ -484,7 +490,47 @@
         "recommend": "Ils recommandent avec le QR code ou réservent pour le touriste.",
         "pay": "Le touriste paie en ligne ; la commission se calcule toute seule."
       },
-      "copyright": "© {year} {name}"
+      "copyright": "© {year} {name}",
+      "requestDemo": "Demander une démo"
+    },
+    "policy": {
+      "title": "Conditions d'annulation",
+      "default": "Si {tenant} annule la sortie (par exemple à cause de la météo), vous êtes remboursé intégralement et automatiquement. Pour annuler ou modifier vous-même votre réservation, contactez {tenant}."
+    },
+    "contactOperator": "Des questions ? Contactez {tenant}",
+    "acceptTerms": "J'accepte les {terms} et la {privacy}.",
+    "termsLink": "conditions de réservation",
+    "privacyLink": "politique de confidentialité",
+    "errorTerms": "Cochez la case pour accepter les conditions de réservation avant de payer.",
+    "site": {
+      "contact": "Contact",
+      "terms": "Conditions de réservation",
+      "privacy": "Confidentialité",
+      "footerNav": "Informations"
+    },
+    "contact": {
+      "title": "Parlons-en",
+      "intro": "Vous proposez des sorties en bateau, des excursions ou des expériences ? Parlez-nous un peu de votre activité et nous vous montrerons comment fonctionne votre propre réseau de vendeurs.",
+      "topic": "Que souhaitez-vous ?",
+      "topicDemo": "Une démo",
+      "topicDemoHint": "Nous vous présentons la plateforme avec vos propres sorties.",
+      "topicQuestion": "Poser une question",
+      "topicQuestionHint": "Sur les tarifs, la mise en place ou autre chose.",
+      "name": "Votre nom",
+      "company": "Nom de l'entreprise",
+      "phoneHint": "Si vous préférez que nous vous appelions.",
+      "message": "Message",
+      "messageDemoHint": "Par exemple : combien de bateaux ou de sorties vous proposez, et combien d'hôtels vendent pour vous.",
+      "errName": "Saisissez votre nom.",
+      "errEmail": "Saisissez une adresse e-mail à laquelle nous pouvons répondre, par ex. nom@exemple.com.",
+      "errMessage": "Saisissez votre question.",
+      "tooMany": "Vous nous avez déjà envoyé plusieurs messages. Nous vous répondrons bientôt.",
+      "sending": "Envoi…",
+      "sendDemo": "Demander la démo",
+      "send": "Envoyer",
+      "privacyNote": "Nous utilisons vos coordonnées uniquement pour vous répondre. Consultez la {privacy}.",
+      "sentTitle": "Merci, nous avons bien reçu votre message",
+      "sentText": "Nous vous répondrons à l'adresse {email}."
     }
   },
   "ticket": {
@@ -518,7 +564,11 @@
     "referenceLabel": "Référence de réservation :",
     "qrLabel": "QR code du billet {reference}",
     "tickets": "Billets",
-    "items": "{quantity} × {label}"
+    "items": "{quantity} × {label}",
+    "addToCalendar": "Ajouter à votre agenda",
+    "googleCalendar": "Google Calendar",
+    "otherCalendar": "Apple, Outlook, autre",
+    "calendarDetails": "Réservation {reference}. Votre billet : {url}"
   },
   "affiliate": {
     "meta": {
@@ -1150,7 +1200,8 @@
       "operators": "Opérateurs",
       "plans": "Formules et frais",
       "invites": "Invitations",
-      "translations": "Traductions"
+      "translations": "Traductions",
+      "contact": "Messages"
     },
     "shell": {
       "loadError": "Nous n'avons pas pu charger votre compte",
@@ -1402,6 +1453,17 @@
         "reasonError": "Saisissez le motif (au moins 3 caractères).",
         "submit": "Suspendre"
       }
+    },
+    "contact": {
+      "title": "Messages de la page de contact",
+      "description": "Demandes de démo et questions des opérateurs. Vous recevez aussi chacune par e-mail.",
+      "openTitle": "À traiter ({count})",
+      "noneOpen": "Rien à traiter. Les nouveaux messages apparaissent ici.",
+      "doneTitle": "Traités",
+      "demo": "Démo",
+      "question": "Question",
+      "markHandled": "Marquer comme traité",
+      "reopen": "Remettre à traiter"
     }
   },
   "signup": {
@@ -1606,14 +1668,21 @@
       "action": "Ouvrir votre billet",
       "qrFileName": "billet-qr",
       "sms": "{tenant} : billet {reference} pour {product}, {when}, {seats}. Montrez le QR code à l'embarquement : {url}",
-      "smsDue": "{tenant} : billet {reference} pour {product}, {when}, {seats}, à payer à l'embarquement : {due}. Montrez le QR code à l'embarquement : {url}"
+      "smsDue": "{tenant} : billet {reference} pour {product}, {when}, {seats}, à payer à l'embarquement : {due}. Montrez le QR code à l'embarquement : {url}",
+      "calendarAttached": "La sortie est aussi jointe sous forme d'événement : ouvrez-le pour l'ajouter à votre agenda.",
+      "addToGoogle": "Ajouter à Google Calendar"
     },
     "bookingCancelled": {
       "subject": "La réservation {reference} a été annulée",
       "cancelled": "Votre réservation {reference} pour {product} ({when}) a été annulée par {tenant}. Le billet n'est plus valide.",
       "refunded": "Votre argent est en cours de remboursement sur votre carte. Il peut s'écouler 5 à 10 jours ouvrés avant qu'il n'apparaisse.",
       "sms": "{tenant} : la réservation {reference} ({product}, {when}) a été annulée.",
-      "smsRefunded": "{tenant} : la réservation {reference} ({product}, {when}) a été annulée. Votre argent est remboursé sur votre carte sous 5 à 10 jours ouvrés."
+      "smsRefunded": "{tenant} : la réservation {reference} ({product}, {when}) a été annulée. Votre argent est remboursé sur votre carte sous 5 à 10 jours ouvrés.",
+      "weather": "La sortie ne peut pas avoir lieu à cause de la météo. Votre sécurité passe avant tout.",
+      "message": "Message de l'opérateur : {message}",
+      "sorry": "Nous sommes désolés pour ce changement de programme et espérons vous accueillir à bord une autre fois.",
+      "smsWeather": "{tenant} : à cause de la météo, la réservation {reference} ({product}, {when}) est annulée. Désolés !",
+      "smsWeatherRefunded": "{tenant} : à cause de la météo, la réservation {reference} ({product}, {when}) est annulée. Votre argent est remboursé sur votre carte sous 5 à 10 jours ouvrés. Désolés !"
     },
     "scannerInvite": {
       "subject": "{tenant} : votre compte de scan des billets",
@@ -1635,6 +1704,21 @@
       "onlineTicket": "Billet en ligne",
       "keepOnPhone": "Inutile de l'imprimer : gardez-le sur votre téléphone.",
       "fileName": "billet-{reference}.pdf"
+    },
+    "calendar": {
+      "description": "Réservation {reference}. Votre billet : {url}"
+    },
+    "contactRequest": {
+      "demo": "Demande de démo",
+      "question": "Question",
+      "subject": "{topic} de {name}",
+      "intro": "{name} a écrit depuis la page de contact ({topic}).",
+      "name": "Nom",
+      "email": "E-mail",
+      "phone": "Téléphone",
+      "company": "Entreprise",
+      "action": "Voir toutes les demandes",
+      "sms": "{topic} de {name} : {contact}"
     }
   },
   "catalog": {
@@ -1797,7 +1881,32 @@
       "deleting": "Suppression…",
       "deleted": "Le départ a été supprimé.",
       "closedInstead": "Le départ a des réservations, il a donc été fermé au lieu d'être supprimé.",
-      "deleteSlot": "Supprimer le départ"
+      "deleteSlot": "Supprimer le départ",
+      "cancelDay": "Annuler",
+      "cancelDayTitle": "Annuler les sorties du {day} ?",
+      "cancelSlotTitle": "Annuler la sortie du {day}, {time} ?",
+      "cancelAndRefund": "Annuler les sorties et rembourser",
+      "cancelSlot": "Annuler et rembourser",
+      "cancelExplain_one": "{count} place est réservée. La réservation est annulée, l'argent payé en ligne est remboursé sur la carte, et le client reçoit un e-mail ou un SMS expliquant pourquoi.",
+      "cancelExplain_many": "{count} places sont réservées. Toutes les réservations sont annulées, l'argent payé en ligne est remboursé sur les cartes, et chaque client reçoit un e-mail ou un SMS expliquant pourquoi.",
+      "cancelExplain_other": "{count} places sont réservées. Toutes les réservations sont annulées, l'argent payé en ligne est remboursé sur les cartes, et chaque client reçoit un e-mail ou un SMS expliquant pourquoi.",
+      "cancelReason": "Motif, communiqué aux clients",
+      "reasonWeather": "Mauvais temps",
+      "reasonOther": "Autre motif",
+      "cancelMessage": "Message pour les clients",
+      "cancelMessageHint": "Par exemple : « Répondez à cet e-mail et nous vous replaçons sur un autre jour. »",
+      "keepDepartures": "Ne pas annuler",
+      "cancellingDepartures": "Annulation et remboursement…",
+      "confirmCancel": "Annuler et rembourser",
+      "cancelledBookings_one": "{count} réservation annulée.",
+      "cancelledBookings_many": "{count} réservations annulées.",
+      "cancelledBookings_other": "{count} réservations annulées.",
+      "cancelledRefunded_one": "{count} client est remboursé.",
+      "cancelledRefunded_many": "{count} clients sont remboursés.",
+      "cancelledRefunded_other": "{count} clients sont remboursés.",
+      "cancelledFailed_one": "{count} réservation n'a pas pu être annulée : réessayez.",
+      "cancelledFailed_many": "{count} réservations n'ont pas pu être annulées : réessayez.",
+      "cancelledFailed_other": "{count} réservations n'ont pas pu être annulées : réessayez."
     },
     "settings": {
       "title": "Paramètres et apparence",
@@ -1862,7 +1971,16 @@
       "sampleTicket": "Billet · {name}",
       "sampleSlot": "Samedi, 18:00 · 2 adultes",
       "sampleValid": "Valide",
-      "previewSr": "Aperçu : la page de réservation et le billet, avec le nom, le logo et la couleur choisis."
+      "previewSr": "Aperçu : la page de réservation et le billet, avec le nom, le logo et la couleur choisis.",
+      "customersTitle": "Pour vos clients",
+      "customersDescription": "Affiché sur la page de réservation avant le paiement et sur chaque billet.",
+      "contactPhone": "Téléphone pour les clients",
+      "contactPhoneHint": "Les clients peuvent vous appeler depuis leur billet. Laissez vide pour le masquer.",
+      "contactEmail": "E-mail pour les clients",
+      "cancellationPolicy": "Conditions d'annulation",
+      "cancellationPolicyHint": "Quand les clients peuvent annuler et être remboursés. Laissez vide pour utiliser le texte affiché dans le champ.",
+      "errContactEmail": "Vérifiez l'adresse e-mail, par ex. nom@exemple.com.",
+      "errContactPhone": "Saisissez le numéro avec l'indicatif du pays, par ex. +40 722 123 456."
     },
     "sources": {
       "title": "Votre système de réservation",
@@ -2010,5 +2128,84 @@
       "howTo": "La personne ouvre le lien, se connecte avec le code reçu par SMS ou e-mail et arrive directement sur le scanner."
     },
     "noName": "Sans nom"
+  },
+  "legal": {
+    "updated": "Dernière mise à jour : {date}",
+    "terms": {
+      "title": "Conditions de réservation",
+      "intro": "Ces conditions s'appliquent lorsque vous réservez une sortie ou une expérience via {app}. Veuillez les lire avant de payer.",
+      "sections": {
+        "who": {
+          "title": "Avec qui vous réservez",
+          "text": "La sortie est proposée et assurée par l'opérateur indiqué sur la page de réservation et sur votre billet. Votre contrat pour la sortie est conclu avec cet opérateur.\n\n{app} fournit la technologie de réservation, de paiement et de billetterie pour le compte de l'opérateur. Si quelqu'un (par exemple la réception de votre hôtel) vous a recommandé la sortie ou l'a réservée pour vous, il l'a fait en tant que partenaire de l'opérateur."
+        },
+        "booking": {
+          "title": "Réservation et paiement",
+          "text": "Les prix sont affichés dans la devise de l'opérateur et incluent la TVA. Vos places sont bloquées pendant quelques minutes le temps du paiement ; la réservation est confirmée dès que le paiement aboutit, et vous recevez alors votre billet par e-mail ou par SMS.\n\nLes paiements par carte sont traités par Stripe. Ni l'opérateur ni {app} ne voient ni ne conservent les données de votre carte. Si l'opérateur l'autorise, un partenaire peut réserver pour vous avec paiement à l'embarquement ; dans ce cas, vous payez l'opérateur au moment d'embarquer."
+        },
+        "ticket": {
+          "title": "Votre billet",
+          "text": "Votre billet est valable pour la date, l'horaire et le nombre de personnes qui y figurent. Son QR code est scanné à l'embarquement et ne peut être utilisé qu'une seule fois. Gardez-le sur votre téléphone ou enregistrez le PDF ; inutile de l'imprimer."
+        },
+        "yourCancel": {
+          "title": "Si vous souhaitez annuler ou modifier",
+          "text": "Les conditions d'annulation de l'opérateur s'appliquent. Elles sont indiquées sur la page de réservation avant le paiement et sur votre billet. Pour annuler ou modifier votre réservation, contactez l'opérateur grâce aux coordonnées figurant sur votre billet."
+        },
+        "operatorCancel": {
+          "title": "Si l'opérateur annule",
+          "text": "Les sorties en mer et en plein air dépendent de la météo et de la sécurité. Si l'opérateur annule votre sortie, vous êtes prévenu par e-mail ou par SMS et la totalité du montant payé en ligne est remboursée sur la carte utilisée, généralement sous 5 à 10 jours ouvrés. L'opérateur peut aussi vous proposer une autre date."
+        },
+        "onTheDay": {
+          "title": "Le jour J",
+          "text": "Présentez-vous au point de rendez-vous indiqué sur votre billet un peu avant l'heure de départ. Suivez les consignes de sécurité de l'équipage. L'opérateur peut refuser l'embarquement pour garantir la sécurité des passagers."
+        },
+        "liability": {
+          "title": "Responsabilité et réclamations",
+          "text": "L'opérateur est responsable du déroulement de la sortie. Adressez d'abord toute réclamation concernant la sortie à l'opérateur. Ces conditions ne limitent pas les droits dont vous disposez en tant que consommateur en vertu de la loi de votre pays."
+        },
+        "contact": {
+          "title": "Contact",
+          "text": "Pour votre réservation, contactez l'opérateur grâce aux coordonnées figurant sur votre billet. Pour une question sur {app} lui-même, utilisez notre page de contact."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "intro": "Comment vos données personnelles sont utilisées lorsque vous réservez via {app} ou que vous nous écrivez.",
+      "sections": {
+        "controller": {
+          "title": "Qui est responsable",
+          "text": "Pour une réservation, l'opérateur auprès duquel vous réservez est responsable de vos données (le responsable du traitement). {app} traite les données pour le compte de l'opérateur, uniquement pour fournir le service de réservation, de paiement et de billetterie.\n\nPour les messages que vous envoyez depuis notre page de contact, {app} est le responsable du traitement."
+        },
+        "data": {
+          "title": "Quelles données",
+          "text": "Votre nom, votre adresse e-mail ou votre numéro de téléphone, la langue choisie, la sortie, la date et les billets réservés, le statut du paiement et, si quelqu'un a réservé pour vous, votre numéro de chambre d'hôtel s'il a été indiqué. Les données de carte sont collectées par Stripe et ne parviennent jamais à l'opérateur ni à {app}.\n\nSi vous êtes arrivé via le lien ou le QR code d'un partenaire, nous conservons un code qui identifie ce partenaire, afin de calculer sa commission."
+        },
+        "purposes": {
+          "title": "Pourquoi elles sont utilisées",
+          "text": "Pour effectuer et gérer votre réservation (le contrat que vous demandez) : envoyer votre billet, le contrôler à l'embarquement, vous informer des modifications ou annulations et effectuer les remboursements. Pour verser sa commission au partenaire qui a recommandé la sortie et tenir la comptabilité exigée par la loi.\n\nNous n'utilisons pas vos données à des fins publicitaires et nous ne les vendons pas."
+        },
+        "recipients": {
+          "title": "Qui les reçoit",
+          "text": "L'opérateur et son personnel. Le partenaire qui a recommandé la sortie ou l'a réservée pour vous voit la réservation et votre nom. Les prestataires qui travaillent pour nous sous contrat : Stripe pour les paiements, les prestataires d'e-mail et de SMS pour envoyer votre billet, et l'hébergeur qui stocke les données."
+        },
+        "retention": {
+          "title": "Durée de conservation",
+          "text": "Aussi longtemps que nécessaire pour assurer la sortie et traiter toute question à son sujet, puis aussi longtemps que la législation comptable et fiscale l'exige pour les données de paiement."
+        },
+        "rights": {
+          "title": "Vos droits",
+          "text": "Vous pouvez demander une copie de vos données, leur rectification ou leur effacement, la limitation de leur utilisation, vous opposer à leur utilisation et les recevoir dans un format portable. Écrivez à l'opérateur grâce aux coordonnées figurant sur votre billet. Vous pouvez aussi déposer une réclamation auprès de l'autorité de protection des données de votre pays (en Roumanie : ANSPDCP, dataprotection.ro)."
+        },
+        "cookies": {
+          "title": "Cookies",
+          "text": "Nous utilisons uniquement les cookies nécessaires au service : l'un mémorise la langue choisie et, si vous êtes arrivé via le lien ou le QR code d'un partenaire, quelques-uns mémorisent quel partenaire a recommandé la sortie (avec un code de visite aléatoire, pour que des clics répétés ne comptent qu'une fois) afin que la réservation lui soit attribuée. Il n'y a aucun cookie publicitaire ni aucun suivi sur d'autres sites."
+        },
+        "contact": {
+          "title": "Contact",
+          "text": "Pour les données de votre réservation, écrivez à l'opérateur grâce aux coordonnées figurant sur votre billet. Pour toute question sur {app} lui-même ou la page de contact, utilisez notre page de contact."
+        }
+      }
+    }
   }
 }
