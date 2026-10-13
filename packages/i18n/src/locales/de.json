@@ -217,7 +217,11 @@
       "notAffiliate": "Sie sind kein Affiliate dieses Anbieters",
       "tooManyCodes": "zu viele Codes angefordert, versuchen Sie es später erneut",
       "codeExpired": "der Code ist abgelaufen, fordern Sie einen neuen an",
-      "wrongCode": "falscher Code"
+      "wrongCode": "falscher Code",
+      "wrongPassword": "E-Mail oder Passwort falsch",
+      "tooManyAttempts": "zu viele falsche Passwörter, versuche es in 15 Minuten erneut oder lege ein neues Passwort fest",
+      "smsOff": "Anmeldung per SMS ist ausgeschaltet, melde dich mit deiner E-Mail an",
+      "googleOff": "Anmeldung mit Google ist nicht eingerichtet"
     },
     "webhooks": {
       "invalidSignature": "ungültige Stripe-Signatur"
@@ -337,12 +341,9 @@
     },
     "login": {
       "title": "Anmelden",
-      "intro": "Wir senden Ihnen einen 6-stelligen Code. Kein Passwort nötig.",
+      "intro": "Melde dich mit E-Mail und Passwort, mit Google oder mit einem Code per E-Mail an.",
       "noAccessTitle": "Dieses Konto hat keinen Zugriff",
       "noAccessBody": "Ihr Konto ist noch mit keinem Anbieter verknüpft. Bitten Sie den Anbieter um eine Einladung.",
-      "methodLegend": "Code erhalten per",
-      "methodSms": "SMS",
-      "methodEmail": "E-Mail",
       "phoneLabel": "Telefonnummer",
       "phoneHint": "Mit Ländervorwahl, z. B. +49 151 23456789 oder +40 722 123 456",
       "phoneInvalid": "Geben Sie die vollständige Nummer mit Ländervorwahl ein, z. B. +49 151 23456789.",
@@ -369,7 +370,50 @@
       "noMembershipBody": "Ihr Konto ist noch mit keinem Anbieter verknüpft. Wenn Sie Affiliate sind, öffnen Sie den Einladungslink, den der Anbieter Ihnen gesendet hat.",
       "membershipLine": "{role} · {area}",
       "platformAdmin": "Plattform-Admin",
-      "openOperator": "Anbieterkonto eröffnen"
+      "openOperator": "Anbieterkonto eröffnen",
+      "howLegend": "Wie möchtest du dich anmelden?",
+      "methodPassword": "Passwort",
+      "methodEmailCode": "Code per E-Mail",
+      "methodSmsCode": "Code per SMS",
+      "passwordLabel": "Passwort",
+      "passwordRequired": "Gib dein Passwort ein.",
+      "passwordWrong": "E-Mail oder Passwort stimmen nicht. Prüfe sie oder lege mit einem Code per E-Mail ein neues Passwort fest.",
+      "forgotPassword": "Passwort vergessen oder noch keins?",
+      "resetTitle": "Passwort festlegen",
+      "newPasswordLabel": "Neues Passwort",
+      "newPasswordHint": "Mindestens 8 Zeichen.",
+      "newPasswordShort": "Das Passwort braucht mindestens 8 Zeichen.",
+      "resetSubmit": "Passwort speichern und anmelden",
+      "or": "oder",
+      "google": "Weiter mit Google",
+      "googleError": {
+        "cancelled": "Die Anmeldung mit Google wurde abgebrochen.",
+        "expired": "Die Anmeldung mit Google hat zu lange gedauert. Versuche es noch einmal.",
+        "google": "Google hat nicht geantwortet. Versuche es noch einmal oder melde dich mit deinem Passwort an.",
+        "email": "Dieses Google-Konto hat keine bestätigte E-Mail-Adresse."
+      },
+      "demo": {
+        "title": "Demo-Konten",
+        "intro": "Nur zum Testen: Daten kopieren oder direkt anmelden. Sie werden zum Start entfernt.",
+        "email": "E-Mail",
+        "password": "Passwort",
+        "copy": "{what} kopieren",
+        "copyShort": "Kopieren",
+        "copied": "Kopiert",
+        "signIn": "Anmelden",
+        "role": {
+          "admin": "Plattform-Admin",
+          "owner": "Inhaber (Anbieter)",
+          "affiliate": "Partner",
+          "scanner": "Mitarbeiter beim Einsteigen"
+        },
+        "what": {
+          "admin": "Alle Anbieter, Tarife und Gebühren, Einstellungen",
+          "owner": "Delta Boats: Ausflüge, Partner, Provisionen",
+          "affiliate": "Ana: QR-Code, Buchungen, Einnahmen",
+          "scanner": "Scannt nur Tickets beim Einsteigen"
+        }
+      }
     },
     "join": {
       "cannotUse": "Diese Einladung kann nicht mehr verwendet werden.",
@@ -454,38 +498,138 @@
     "durationValue": "Dauer: {duration}",
     "numbered": "{number}. {title}",
     "landing": {
-      "tagline": "Für Anbieter von Ausflügen und Bootstouren",
-      "title": "Rezeptionisten verkaufen Ihre Touren. Sie zahlen nur Provision.",
-      "intro": "Bauen Sie Ihr eigenes Partnernetzwerk auf: Hotels, Pensionen und Guides, die Touristen Ihre Touren empfehlen – mit Links, QR-Codes und automatisch berechneten Provisionen.",
-      "startFree": "Kostenlos starten",
-      "howItWorks": "So funktioniert es",
-      "featuresTitle": "Was Sie bekommen",
-      "features": {
-        "qr": {
-          "title": "Ein QR-Code für jeden Affiliate",
-          "text": "Die Rezeption zeigt den Code, der Tourist scannt ihn und bucht selbst. Jeder Verkauf wird dem zugeordnet, der ihn empfohlen hat."
-        },
-        "fast": {
-          "title": "Buchung in 30 Sekunden",
-          "text": "Der Affiliate bucht direkt vom Handy, und der Kunde bezahlt per Code-Scan oder über den Link, den er per WhatsApp erhält."
-        },
-        "commission": {
-          "title": "Feste oder gestaffelte Provisionen",
-          "text": "Sie legen den Prozentsatz fest oder Stufen, die mit den Verkäufen steigen. Affiliates sehen ihre Einnahmen in Echtzeit."
-        },
-        "tickets": {
-          "title": "Tickets mit QR-Code beim Einsteigen",
-          "text": "Der Tourist erhält das Ticket aufs Handy; beim Einsteigen scannen Sie es mit der Kamera, ganz ohne zusätzliche Apps."
+      "hero": {
+        "eyebrow": "Für Bootstouren, Ausflüge & Erlebnisse",
+        "title": "Bauen Sie Ihr eigenes Netzwerk aus {emphasis} auf",
+        "titleEmphasis": "Promotern",
+        "lede": "Hotelrezeptionen, Reiseleiter und lokale Partner verkaufen Ihre Touren mit ihrem eigenen QR-Code. Sie gewinnen neue Kunden, Ihre Partner verdienen an jedem Verkauf mit. Und Sie sind nicht mehr nur von den großen Buchungsplattformen abhängig.",
+        "pills": {
+          "customers": "Mehr Kunden",
+          "realSales": "Zahlen nur für echte Verkäufe",
+          "anyPhone": "Läuft auf jedem Handy"
         }
       },
-      "steps": {
-        "products": "Sie fügen Ihre Touren, Preise und Abfahrten hinzu.",
-        "invite": "Sie laden Rezeptionisten, Concierges und Guides als Affiliates ein.",
-        "recommend": "Sie empfehlen per QR-Code oder buchen für den Touristen.",
-        "pay": "Der Tourist bezahlt online; die Provision wird automatisch berechnet."
+      "map": {
+        "label": "Ihr Unternehmen in der Mitte, rundherum Promoter, die Ihnen Kunden schicken",
+        "hub": "Ihre Touren",
+        "hubSub": "Buchungen kommen rein",
+        "nodes": {
+          "hotel": "Hotelrezeption",
+          "guide": "Reiseleiter",
+          "beachBar": "Strandbar",
+          "taxi": "Taxifahrer",
+          "apartment": "Ferienwohnung",
+          "shop": "Café & Laden"
+        }
       },
-      "copyright": "© {year} {name}",
-      "requestDemo": "Demo anfragen"
+      "how": {
+        "eyebrow": "So funktioniert's",
+        "title": "Vier Schritte. Ganz ohne Technikkenntnisse."
+      },
+      "who": {
+        "promoter": "Promoter",
+        "you": "Sie"
+      },
+      "person": {
+        "name": "Maria Popescu",
+        "first": "Maria"
+      },
+      "step1": {
+        "title": "Der Promoter legt ein Konto an",
+        "text": "Rezeptionisten, Reiseleiter oder lokale Partner melden sich in einer Minute per Handy an. Sie können sie auch per Link einladen.",
+        "mockTitle": "Werden Sie Promoter für Sea Breeze Boat Trips",
+        "name": "Name",
+        "where": "Arbeitsort",
+        "workplace": "Hotel Astoria, Rezeption",
+        "phone": "Telefon",
+        "send": "Anfrage senden"
+      },
+      "step2": {
+        "title": "Sie geben frei und bestimmen den Prozentsatz",
+        "text": "Geben Sie jedem Promoter einen fest ausgehandelten Prozentsatz – oder wählen Sie einen Standardplan, bei dem der Prozentsatz mit der Zahl der Verkäufe steigt. Die Stufen beginnen jeden Monat neu, so bleiben Ihre Promoter motiviert.",
+        "request": "Neue Anfrage · Hotel Astoria",
+        "fixed": "Feste Provision",
+        "fixedText": "Gleicher Prozentsatz bei jedem Verkauf, z. B. 18 %",
+        "standard": "Standardplan",
+        "tier1": "1–3 Verkäufe",
+        "tier2": "4–10 Verkäufe",
+        "tier3": "11+ Verkäufe",
+        "reset": "Beginnt jeden Monat wieder bei Stufe 1",
+        "approve": "Maria freigeben"
+      },
+      "step3": {
+        "title": "Der Promoter verkauft mit seinem eigenen QR-Code",
+        "text": "Jeder Promoter erhält seinen eigenen QR-Code und Link – fertig zum Ausdrucken als Tischaufsteller oder Karte. Der Gast scannt, wählt ein Datum und zahlt per Karte. Der Promoter kann auch direkt vor Ort für den Gast buchen.",
+        "qrLabel": "Marias QR-Code",
+        "scan": "Gast scannt",
+        "pick": "Wählt Datum & Plätze",
+        "pay": "Zahlt per Karte",
+        "ticket": "Ticket aufs Handy"
+      },
+      "step4": {
+        "title": "Sie gewinnen Kunden. Der Promoter verdient mit.",
+        "text": "Jeder Verkauf wird dem Promoter zugeordnet, der ihn gemacht hat. Die Provision wird automatisch berechnet, und am Monatsende erhalten Sie einen klaren Bericht, wer wie viel verdient hat.",
+        "trip": "Bootstour zum Sonnenuntergang",
+        "tripMeta": "2 Erwachsene · verkauft von Maria",
+        "forYou": "für Sie",
+        "sales": "Marias Verkäufe diesen Monat",
+        "earned": "Maria hat verdient",
+        "auto": "Automatisch berechnet, ganz ohne Tabellen"
+      },
+      "wins": {
+        "eyebrow": "Das Ergebnis",
+        "title": "Alle profitieren",
+        "owner": {
+          "title": "Sie, der Inhaber",
+          "text": "Mehr Kunden durch Menschen, die jeden Tag mit Touristen sprechen. Provision zahlen Sie nur, wenn eine Tour verkauft und bezahlt ist."
+        },
+        "promoter": {
+          "title": "Der Promoter",
+          "text": "Jeden Monat ein Zusatzverdienst – dank eines QR-Codes auf dem Tresen. Jeden Verkauf und den eigenen Verdienst sieht er live auf dem Handy."
+        },
+        "guest": {
+          "title": "Der Gast",
+          "text": "Eine vertrauenswürdige Empfehlung von Einheimischen, Buchung in einer Minute und das Ticket in der eigenen Sprache auf dem Handy."
+        }
+      },
+      "included": {
+        "eyebrow": "Schon inklusive",
+        "title": "Alles, was ein Ausflugsanbieter braucht",
+        "payments": {
+          "title": "Kartenzahlung",
+          "text": "Sichere Online-Zahlungen mit Stripe"
+        },
+        "tickets": {
+          "title": "PDF-Tickets",
+          "text": "Sofort verschickt, jedes mit eigenem QR-Code"
+        },
+        "scanner": {
+          "title": "Scanner beim Einstieg",
+          "text": "Ihre Crew scannt die Tickets; jedes gilt nur einmal"
+        },
+        "report": {
+          "title": "Monatlicher Provisionsbericht",
+          "text": "Wer was verkauft hat und wie viel zu zahlen ist"
+        },
+        "languages": {
+          "title": "9 Sprachen",
+          "text": "RO, EN, DE, FR, ES, IT, PT, RU, UK"
+        },
+        "phones": {
+          "title": "Fürs Handy gemacht",
+          "text": "Nichts zu installieren, läuft im Browser"
+        }
+      },
+      "closing": {
+        "eyebrow": "Ihre Touren. Ihre Verkäufer.",
+        "title": "Warten Sie nicht länger auf die großen Plattformen.",
+        "emphasis": "Bauen Sie Ihr eigenes Vertriebsteam auf.",
+        "text": "Beginnen Sie mit den Menschen, die Ihnen schon heute Gäste schicken. Zehn Promoter mit je einem QR-Code können Tag für Tag Plätze füllen."
+      },
+      "footnote": "Beispielzahlen zur Veranschaulichung. Provisionsstufen und Prozentsätze legt jedes Unternehmen selbst fest.",
+      "startFree": "Kostenlos starten",
+      "requestDemo": "Demo anfragen",
+      "copyright": "© {year} {name}"
     },
     "policy": {
       "title": "Stornierungsbedingungen",
@@ -1163,7 +1307,8 @@
       "plans": "Pläne und Gebühren",
       "invites": "Einladungen",
       "translations": "Übersetzungen",
-      "contact": "Nachrichten"
+      "contact": "Nachrichten",
+      "settings": "Einstellungen"
     },
     "shell": {
       "loadError": "Wir konnten Ihr Konto nicht laden",
@@ -1413,6 +1558,23 @@
       "question": "Frage",
       "markHandled": "Als beantwortet markieren",
       "reopen": "Wieder auf „Zu beantworten“ setzen"
+    },
+    "settings": {
+      "title": "Plattform-Einstellungen",
+      "description": "Wie sich Menschen bei der Plattform anmelden können.",
+      "on": "An",
+      "off": "Aus",
+      "smsTitle": "Anmeldecode per SMS",
+      "smsText": "Nutzer können einen Anmeldecode per SMS anfordern. Jede SMS kostet beim SMS-Anbieter. Solange es aus ist, meldet man sich mit E-Mail und Passwort, mit Google oder mit einem Code per E-Mail an. Lade Partner und Mitarbeiter deshalb per E-Mail ein.",
+      "smsUnavailable": "Auf dem Server ist kein SMS-Anbieter eingerichtet (SMS_PROVIDER=disabled), daher bleiben SMS-Codes aus.",
+      "smsTurnOn": "SMS-Codes einschalten",
+      "smsTurnOff": "SMS-Codes ausschalten",
+      "googleTitle": "Anmeldung mit Google",
+      "googleOn": "Die Schaltfläche „Weiter mit Google“ ist auf der Anmeldeseite.",
+      "googleOff": "Nicht eingerichtet. Es wird aktiv, sobald der Server GOOGLE_CLIENT_ID und GOOGLE_CLIENT_SECRET hat.",
+      "demoTitle": "Demo-Konten auf der Anmeldeseite",
+      "demoOn": "Sichtbar, mit Passwörtern (DEMO_MODE=true auf dem Server). Setze vor dem Start DEMO_MODE=false.",
+      "demoOff": "Ausgeblendet (DEMO_MODE=false auf dem Server)."
     }
   },
   "signup": {

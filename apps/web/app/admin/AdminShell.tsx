@@ -17,6 +17,7 @@ import {
   IconMail,
   IconMenu,
   IconPercent,
+  IconSettings,
 } from '@/components/icons';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LoadingBlock } from '@/components/Spinner';
@@ -32,6 +33,7 @@ const NAV: { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }
   { href: '/admin/invites', label: 'admin.nav.invites', icon: <IconLink /> },
   { href: '/admin/contact', label: 'admin.nav.contact', icon: <IconMail /> },
   { href: '/admin/translations', label: 'admin.nav.translations', icon: <IconGlobe /> },
+  { href: '/admin/settings', label: 'admin.nav.settings', icon: <IconSettings /> },
 ];
 
 const AdminContext = createContext<MeDto | null>(null);

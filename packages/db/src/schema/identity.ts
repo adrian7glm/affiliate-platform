@@ -60,6 +60,10 @@ export const users = pgTable(
     phone: text('phone').unique(),
     name: text('name'),
     isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
+    /** scrypt hash for email + password sign-in; null until the person sets a password. */
+    passwordHash: text('password_hash'),
+    /** Google account id ("sub") once the person has signed in with Google. */
+    googleSub: text('google_sub').unique(),
     createdAt: createdAt(),
   },
   (t) => [check('users_contact_present', sql`${t.email} is not null or ${t.phone} is not null`)],

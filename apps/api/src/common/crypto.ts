@@ -7,6 +7,8 @@ import {
   type KeyObject,
   randomBytes,
   randomInt,
+  scrypt,
+  type ScryptOptions,
   sign,
   timingSafeEqual,
   verify,
@@ -33,24 +35,26 @@ export interface SessionClaims {
   exp: number;
 }
 
-export function signSession(
+function signClaims(
   secret: string,
-  userId: string,
+  purpose: string,
+  sub: string,
   ttlSeconds: number,
-  now = Date.now(),
+  now: number,
 ): string {
-  const payload = b64(JSON.stringify({ sub: userId, exp: Math.floor(now / 1000) + ttlSeconds }));
-  return `v1.${payload}.${b64(hmac(secret, 'session', payload))}`;
+  const payload = b64(JSON.stringify({ sub, exp: Math.floor(now / 1000) + ttlSeconds }));
+  return `v1.${payload}.${b64(hmac(secret, purpose, payload))}`;
 }
 
-export function verifySession(
+function verifyClaims(
   secret: string,
+  purpose: string,
   token: string,
-  now = Date.now(),
+  now: number,
 ): SessionClaims | null {
   const [version, payload, signature] = token.split('.');
   if (version !== 'v1' || !payload || !signature) return null;
-  if (!safeEqual(signature, b64(hmac(secret, 'session', payload)))) return null;
+  if (!safeEqual(signature, b64(hmac(secret, purpose, payload)))) return null;
   try {
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString()) as SessionClaims;
     if (typeof claims.sub !== 'string' || typeof claims.exp !== 'number') return null;
@@ -58,6 +62,85 @@ export function verifySession(
   } catch {
     return null;
   }
+}
+
+export function signSession(
+  secret: string,
+  userId: string,
+  ttlSeconds: number,
+  now = Date.now(),
+): string {
+  return signClaims(secret, 'session', userId, ttlSeconds, now);
+}
+
+export function verifySession(
+  secret: string,
+  token: string,
+  now = Date.now(),
+): SessionClaims | null {
+  return verifyClaims(secret, 'session', token, now);
+}
+
+/**
+ * Short-lived signed values for one step of a sign-in: the Google `state` and the token the
+ * web app exchanges for a session after Google. The purpose keeps one from passing as another.
+ */
+export function signLoginStep(
+  secret: string,
+  purpose: 'google-state' | 'login-handoff',
+  value: string,
+  ttlSeconds: number,
+  now = Date.now(),
+): string {
+  return signClaims(secret, `login-step:${purpose}`, value, ttlSeconds, now);
+}
+
+export function verifyLoginStep(
+  secret: string,
+  purpose: 'google-state' | 'login-handoff',
+  token: string,
+  now = Date.now(),
+): string | null {
+  return verifyClaims(secret, `login-step:${purpose}`, token, now)?.sub ?? null;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Passwords: scrypt, `scrypt$<N>$<r>$<p>$<salt>$<hash>`.
+// ------------------------------------------------------------------------------------------------
+
+const SCRYPT = { N: 16_384, r: 8, p: 1, keyLength: 32 };
+
+function scryptAsync(
+  password: string,
+  salt: Buffer,
+  keyLength: number,
+  options: ScryptOptions,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) =>
+    scrypt(password.normalize('NFKC'), salt, keyLength, options, (err, key) =>
+      err ? reject(err) : resolve(key),
+    ),
+  );
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16);
+  const { N, r, p, keyLength } = SCRYPT;
+  const key = await scryptAsync(password, salt, keyLength, { N, r, p, maxmem: 64 * 1024 * 1024 });
+  return ['scrypt', N, r, p, b64(salt), b64(key)].join('$');
+}
+
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [scheme, n, r, p, salt, hash] = stored.split('$');
+  if (scheme !== 'scrypt' || !salt || !hash) return false;
+  const expected = Buffer.from(hash, 'base64url');
+  const key = await scryptAsync(password, Buffer.from(salt, 'base64url'), expected.length, {
+    N: Number(n),
+    r: Number(r),
+    p: Number(p),
+    maxmem: 64 * 1024 * 1024,
+  });
+  return key.length === expected.length && timingSafeEqual(key, expected);
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -46,9 +46,20 @@ const schema = z.object({
   /** manual: subscriptions are invoiced by hand. stripe: Stripe Billing charges operators' cards. */
   BILLING_PROVIDER: z.enum(['manual', 'stripe']).default('manual'),
   STRIPE_BILLING_WEBHOOK_SECRET: z.string().optional(),
+  /** Public URL of this API. Google sends people back to API_URL/auth/google/callback. */
+  API_URL: z.string().url().default('http://localhost:4000'),
+  /** "Sign in with Google": an OAuth client from Google Cloud Console. Hidden while empty. */
+  GOOGLE_CLIENT_ID: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
+  GOOGLE_CLIENT_SECRET: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
+  /**
+   * true: the sign-in page lists the demo accounts (admin, operator, affiliate, scanner) with
+   * their passwords. Defaults to true only for local development; turn it off before launch.
+   */
+  DEMO_MODE: z.enum(['true', 'false']).optional(),
 });
 
-export type AppConfig = z.infer<typeof schema>;
+type ParsedConfig = z.infer<typeof schema>;
+export type AppConfig = Omit<ParsedConfig, 'DEMO_MODE'> & { DEMO_MODE: boolean };
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
@@ -58,7 +69,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`invalid configuration: ${problems}`);
   }
-  const config = parsed.data;
+  const config: AppConfig = {
+    ...parsed.data,
+    DEMO_MODE: (parsed.data.DEMO_MODE ?? String(parsed.data.NODE_ENV === 'development')) === 'true',
+  };
+  if (Boolean(config.GOOGLE_CLIENT_ID) !== Boolean(config.GOOGLE_CLIENT_SECRET)) {
+    throw new Error('Sign in with Google needs both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET');
+  }
   if (
     config.PAYMENTS_PROVIDER === 'stripe' &&
     (!config.STRIPE_SECRET_KEY || !config.STRIPE_WEBHOOK_SECRET)

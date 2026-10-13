@@ -11,6 +11,7 @@ import type {
   OperatorBillingDto,
   OperatorInviteDto,
   OperatorInvitePreviewDto,
+  PlatformSettingsDto,
   PlatformPlanDto,
   SignupOptionsDto,
   SlugCheckDto,
@@ -19,6 +20,7 @@ import type {
   UpdatePlatformPlanBody,
   UpdateTenantBillingBody,
   UpdateTenantStatusBody,
+  UpdatePlatformSettingsBody,
 } from '@ap/contracts';
 import { apiFetch, type RequestOptions } from './api';
 
@@ -28,6 +30,14 @@ type Opts = Pick<RequestOptions, 'signal' | 'baseUrl'>;
 const enc = encodeURIComponent;
 
 export const adminApi = {
+  settings: (o?: Opts) => apiFetch<PlatformSettingsDto>('/admin/settings', { ...o, tenant: false }),
+  updateSettings: (body: UpdatePlatformSettingsBody, o?: Opts) =>
+    apiFetch<PlatformSettingsDto>('/admin/settings', {
+      ...o,
+      method: 'PATCH',
+      body,
+      tenant: false,
+    }),
   overview: (period: string | undefined, o?: Opts) =>
     apiFetch<AdminOverviewDto>('/admin/overview', { ...o, query: { period }, tenant: false }),
   tenant: (id: string, o?: Opts) =>

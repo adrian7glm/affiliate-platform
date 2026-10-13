@@ -9,6 +9,7 @@ import { ContactService } from './contact.service';
 import { OnboardingService } from './onboarding.service';
 import { OperatorPlatformController, SignupController } from './onboarding.controller';
 import { PlatformAdminGuard } from './platform-admin.guard';
+import { PlatformSettingsController } from './platform-settings.controller';
 import { SubscriptionsService } from './subscriptions.service';
 
 /**
@@ -37,6 +38,7 @@ import { SubscriptionsService } from './subscriptions.service';
     BillingWebhookController,
     PublicContactController,
     AdminContactController,
+    PlatformSettingsController,
   ],
   exports: [SubscriptionsService],
 })
