@@ -229,7 +229,9 @@
       "tripUnavailable": "this trip is not available any more",
       "unknownPrice": "unknown ticket type for this trip",
       "noSeats": "choose at least one seat",
-      "paymentsUnavailable": "payments are unavailable right now, try again in a minute"
+      "paymentsUnavailable": "payments are unavailable right now, try again in a minute",
+      "answerRequired": "please answer: {question}",
+      "invalidAnswer": "choose one of the offered answers for: {question}"
     },
     "departures": {
       "closed": "this departure can no longer be booked",
@@ -525,6 +527,12 @@
       "privacyNote": "We use your details only to answer you. See the {privacy}.",
       "sentTitle": "Thank you, we got your message",
       "sentText": "We will answer at {email}."
+    },
+    "goodToKnow": "Good to know",
+    "questions": {
+      "optional": "optional",
+      "choose": "Choose…",
+      "required": "Please answer this question."
     }
   },
   "ticket": {
@@ -725,7 +733,8 @@
       "booking": "Booking…",
       "submit": "Book · {total}",
       "slotWhen": "{day} at {time}",
-      "change": "Change"
+      "change": "Change",
+      "tripCommission": "Your commission on this trip: {rate}"
     },
     "result": {
       "created": "Booking created",
@@ -827,7 +836,8 @@
       "area": "Management",
       "sections": "Sections",
       "menu": "Menu",
-      "tenant": "Operator"
+      "tenant": "Operator",
+      "departures": "Passenger lists"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1116,7 +1126,8 @@
       "reasonPlaceholder": "e.g. Bad weather, the trip is not going ahead",
       "keep": "Keep the booking",
       "cancelling": "Cancelling…",
-      "confirmCancel": "Cancel the booking"
+      "confirmCancel": "Cancel the booking",
+      "csvAnswers": "Answers"
     },
     "billing": {
       "title": "Subscription",
@@ -1152,6 +1163,56 @@
       "planPrice": "/ month + {fee} / booking",
       "choose": "Choose {name}",
       "ownerOnly": "Only the account administrator can change the plan."
+    },
+    "departures": {
+      "title": "Passenger lists",
+      "description": "Who is on each departure, what they answered at booking and what is left to collect. Print it or download it for the crew.",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "pickDay": "Day",
+      "none": "No departures on {day}.",
+      "chooseDeparture": "Choose a departure to see its passengers.",
+      "passengersTitle": "Passengers",
+      "seatsOf": "{booked} of {capacity} seats booked",
+      "boardedOf": "{boarded} of {booked} on board",
+      "pendingPayment_one": "1 booking not paid yet",
+      "pendingPayment_other": "{count} bookings not paid yet",
+      "closed": "Closed to sales",
+      "downloadCsv": "Download CSV",
+      "noPassengers": "Nobody has booked this departure yet.",
+      "search": "Search",
+      "searchHint": "Name, reference, room or phone",
+      "toBoard_one": "1 booking still to board",
+      "toBoard_other": "{count} bookings still to board",
+      "noMatch": "Nobody matches the search.",
+      "notPaid": "Not paid",
+      "confirmed": "Confirmed",
+      "boardedAt": "On board at {time}",
+      "due": "To collect {amount}",
+      "room": "Room",
+      "soldBy": "Sold by",
+      "board": "Mark on board",
+      "boardTitle": "Mark on board?",
+      "boardBody": "{name} boards without their ticket being scanned. The ticket can no longer be used afterwards.",
+      "boardHint": "Use this when the customer has no phone with them or the QR code does not scan. It is recorded under your name.",
+      "confirmBoard": "Yes, on board",
+      "collectFirst": "Collect {amount} from the customer: they pay at boarding.",
+      "boardedNotice": "{name} is on board.",
+      "boardedCollect": "{name} is on board. Collect {amount}.",
+      "alreadyBoarded": "{name} was already on board.",
+      "csvName": "Name",
+      "csvReference": "Reference",
+      "csvSeats": "Seats",
+      "csvTickets": "Tickets",
+      "csvRoom": "Room",
+      "csvPhone": "Phone",
+      "csvAnswers": "Answers",
+      "csvDue": "To collect",
+      "csvCurrency": "Currency",
+      "csvAffiliate": "Affiliate",
+      "csvStatus": "Status",
+      "csvBoarded": "Boarded at",
+      "csvFile": "passengers-{date}-{time}.csv"
     }
   },
   "admin": {
@@ -1609,7 +1670,8 @@
       "sms": "{tenant}: ticket {reference} for {product}, {when}, {seats}. Show the QR code at boarding: {url}",
       "smsDue": "{tenant}: ticket {reference} for {product}, {when}, {seats}, to pay at boarding {due}. Show the QR code at boarding: {url}",
       "calendarAttached": "The trip is also attached as a calendar event: open it to add it to your calendar.",
-      "addToGoogle": "Add to Google Calendar"
+      "addToGoogle": "Add to Google Calendar",
+      "note": "Message from {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "Booking {reference} has been cancelled",
@@ -1642,7 +1704,8 @@
       "dueOnSite": "To pay at boarding",
       "onlineTicket": "Online ticket",
       "keepOnPhone": "No need to print it: keep it on your phone.",
-      "fileName": "ticket-{reference}.pdf"
+      "fileName": "ticket-{reference}.pdf",
+      "note": "Good to know"
     },
     "calendar": {
       "description": "Booking {reference}. Your ticket: {url}"
@@ -1832,7 +1895,8 @@
       "cancelledRefunded_one": "{count} customer gets the money back.",
       "cancelledRefunded_other": "{count} customers get their money back.",
       "cancelledFailed_one": "{count} booking could not be cancelled: try again.",
-      "cancelledFailed_other": "{count} bookings could not be cancelled: try again."
+      "cancelledFailed_other": "{count} bookings could not be cancelled: try again.",
+      "passengers": "View the passenger list"
     },
     "settings": {
       "title": "Settings and look",
@@ -1945,6 +2009,56 @@
       "token": "Access token",
       "connecting": "Connecting…",
       "connect": "Connect"
+    },
+    "extras": {
+      "heading": "For customers and affiliates",
+      "customerButton": "Message and questions",
+      "translationsButton": "Translations",
+      "commissionButton": "Commission",
+      "customerTitle": "Message and questions: {name}",
+      "translationsTitle": "Translations: {name}",
+      "commissionTitle": "Commission: {name}",
+      "commissionChip": "Own commission {rate}",
+      "translatedChip": "Translated: {languages}",
+      "questionsChip_one": "1 question",
+      "questionsChip_other": "{count} questions",
+      "note": "Message for customers",
+      "noteHint": "Shown on the trip page, on the ticket and in the confirmation email. E.g. “Come 15 minutes early, bring a towel.”",
+      "questionsLegend": "Questions on the booking form",
+      "questionsHelp": "Ask what you need to know before departure. Answers appear on the bookings and on the passenger list.",
+      "noQuestions": "No questions yet: customers only give their name and contact.",
+      "question": "Question {number}",
+      "questionHint": "E.g. “Which lunch menu would you like?” or “Hotel for pickup”.",
+      "removeQuestion": "Delete question {number}",
+      "answerKind": "Answer",
+      "kindText": "Typed by the customer",
+      "kindChoice": "Chosen from a list",
+      "required": "Answer required",
+      "options": "Choices",
+      "optionsHint": "One per line, e.g. Fish, Chicken, Vegetarian.",
+      "addQuestion": "Add a question",
+      "translateReminder": "If you change the message or the questions, check their translations too.",
+      "errQuestionLabel": "Write the question.",
+      "errOptionsMin": "Write at least two choices, one per line.",
+      "errOptionsMax": "At most {max} choices.",
+      "errOptionLength": "Each choice: at most 80 characters.",
+      "translationsHelp": "Customers see the trip in their language where you translated it. Language of your texts: {language}.",
+      "language": "Language",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "{done} of {total} texts translated",
+      "originalText": "Original: {text}",
+      "ticketNames": "Ticket names",
+      "questionText": "Question text",
+      "untranslatedNote": "Whatever you leave empty is shown in your language. The translations into all languages are saved together.",
+      "saveTranslations": "Save the translations",
+      "commissionLegend": "What affiliates earn on this trip",
+      "commissionPlan": "Each affiliate’s plan",
+      "commissionPlanHelp": "The rate of their commission plan, with its tiers.",
+      "commissionOwn": "A rate just for this trip",
+      "commissionOwnHelp": "The same percentage for every affiliate, e.g. for a trip with a smaller margin.",
+      "rate": "Commission (%)",
+      "errRate": "A percentage between 0 and 100, e.g. 12.5.",
+      "commissionNote": "Sales of this trip still count toward the tiers of each affiliate’s plan. Affiliates with a negotiated rate keep their rate."
     }
   },
   "charts": {

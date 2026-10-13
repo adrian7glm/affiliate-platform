@@ -1,6 +1,7 @@
 import {
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -12,6 +13,13 @@ import { createdAt, id } from './_common';
 import { tenants, users } from './identity';
 import { holds, productPrices, products, slots } from './catalog';
 import { affiliateLinks, affiliates } from './affiliates';
+
+/** An answer to a booking question, in the operator's language. */
+export interface BookingAnswer {
+  questionId: string;
+  label: string;
+  value: string;
+}
 
 export const bookingStatusEnum = pgEnum('booking_status', [
   'pending_payment',
@@ -60,6 +68,8 @@ export const bookings = pgTable(
     customerPhone: text('customer_phone'),
     customerLocale: text('customer_locale').notNull().default('en'),
     hotelRoom: text('hotel_room'),
+    /** Answers to the trip's booking questions, with the question as it was asked. */
+    answers: jsonb('answers').$type<BookingAnswer[]>().notNull().default([]),
     seats: integer('seats').notNull(),
     currency: text('currency').notNull(),
     totalMinor: integer('total_minor').notNull(),

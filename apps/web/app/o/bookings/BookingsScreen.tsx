@@ -17,6 +17,7 @@ import { downloadCsv, minorToCsvAmount, toCsv } from '@/lib/csv';
 import { addDays, dateKeyInTz, formatDateTime, formatDayLong, todayKey } from '@/lib/dates';
 import { operatorApi } from '@/lib/endpoints';
 import { currencyDigits } from '@/lib/format';
+import { answerLabel, answersText } from '@/lib/passengers';
 import { bookingChannel, bookingStatus } from '@/lib/labels';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
@@ -111,6 +112,7 @@ export function BookingsScreen() {
         t('operator.bookings.csvChannel'),
         t('operator.bookings.csvAffiliate'),
         t('operator.bookings.csvCreated'),
+        t('operator.bookings.csvAnswers'),
       ],
       visible.map((b) => [
         b.reference,
@@ -128,6 +130,7 @@ export function BookingsScreen() {
         bookingChannel(tr, b.channel),
         b.affiliateName,
         formatDateTime(b.createdAt, tenant.timezone, lang),
+        answersText(b.answers),
       ]),
     );
     downloadCsv(t('operator.bookings.csvFile', { from: range.from, to: range.to }), csv);
@@ -266,13 +269,25 @@ export function BookingsScreen() {
                     timezone={tenant.timezone}
                     showExternalRef
                     extra={
-                      <p className="text-sm text-muted">
-                        {bookingChannel(tr, booking.channel)}
-                        {booking.affiliateName ? ` · ${booking.affiliateName}` : ''} ·{' '}
-                        {booking.paymentMode === 'online'
-                          ? t('operator.bookings.paidOnline')
-                          : t('operator.bookings.payOnBoard')}
-                      </p>
+                      <>
+                        <p className="text-sm text-muted">
+                          {bookingChannel(tr, booking.channel)}
+                          {booking.affiliateName ? ` · ${booking.affiliateName}` : ''} ·{' '}
+                          {booking.paymentMode === 'online'
+                            ? t('operator.bookings.paidOnline')
+                            : t('operator.bookings.payOnBoard')}
+                        </p>
+                        {booking.answers.length > 0 ? (
+                          <ul className="text-sm">
+                            {booking.answers.map((a) => (
+                              <li key={a.questionId}>
+                                <span className="text-muted">{answerLabel(a.label)}</span>{' '}
+                                <span className="font-semibold">{a.value}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </>
                     }
                     actions={
                       CANCELLABLE.includes(booking.status) ? (

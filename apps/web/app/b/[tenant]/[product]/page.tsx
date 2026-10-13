@@ -16,9 +16,13 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const [{ tenant: slug, product: productSlug }, query] = await Promise.all([params, searchParams]);
-  const [tenant, product] = await Promise.all([loadTenant(slug), loadProduct(slug, productSlug)]);
+  const lang = await requestLang(query.lang);
+  const [tenant, product] = await Promise.all([
+    loadTenant(slug, lang),
+    loadProduct(slug, productSlug, lang),
+  ]);
   if (!tenant.ok || !product.ok) {
-    const { t } = await getServerT(await requestLang(query.lang));
+    const { t } = await getServerT(lang);
     return { title: t('public.notFoundTitle'), robots: { index: false } };
   }
   return {
@@ -34,7 +38,10 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const { t } = await getServerT(lang);
   const tenantPath = `/b/${encodeURIComponent(slug)}`;
   const path = `${tenantPath}/${encodeURIComponent(productSlug)}`;
-  const [tenant, product] = await Promise.all([loadTenant(slug), loadProduct(slug, productSlug)]);
+  const [tenant, product] = await Promise.all([
+    loadTenant(slug, lang),
+    loadProduct(slug, productSlug, lang),
+  ]);
 
   if (!tenant.ok || !product.ok) {
     const notFound = (!tenant.ok && tenant.notFound) || (!product.ok && product.notFound);
@@ -96,6 +103,12 @@ export default async function ProductPage({ params, searchParams }: Props) {
               <div>
                 <dt className="text-sm text-muted">{t('public.meetingPoint')}</dt>
                 <dd className="font-semibold">{trip.meetingPoint}</dd>
+              </div>
+            ) : null}
+            {trip.customerNote ? (
+              <div className="sm:col-span-2">
+                <dt className="text-sm text-muted">{t('public.goodToKnow')}</dt>
+                <dd className="whitespace-pre-line">{trip.customerNote}</dd>
               </div>
             ) : null}
           </dl>

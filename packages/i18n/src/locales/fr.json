@@ -231,7 +231,9 @@
       "tripUnavailable": "cette sortie n'est plus disponible",
       "unknownPrice": "type de billet inconnu pour cette sortie",
       "noSeats": "choisissez au moins une place",
-      "paymentsUnavailable": "les paiements sont indisponibles pour le moment, réessayez dans une minute"
+      "paymentsUnavailable": "les paiements sont indisponibles pour le moment, réessayez dans une minute",
+      "answerRequired": "merci de répondre : {question}",
+      "invalidAnswer": "choisissez l’une des réponses proposées pour : {question}"
     },
     "departures": {
       "closed": "ce départ ne peut plus être réservé",
@@ -531,6 +533,12 @@
       "privacyNote": "Nous utilisons vos coordonnées uniquement pour vous répondre. Consultez la {privacy}.",
       "sentTitle": "Merci, nous avons bien reçu votre message",
       "sentText": "Nous vous répondrons à l'adresse {email}."
+    },
+    "goodToKnow": "Bon à savoir",
+    "questions": {
+      "optional": "facultatif",
+      "choose": "Choisir…",
+      "required": "Veuillez répondre à cette question."
     }
   },
   "ticket": {
@@ -738,7 +746,8 @@
       "booking": "Réservation…",
       "submit": "Réserver · {total}",
       "slotWhen": "{day} à {time}",
-      "change": "Modifier"
+      "change": "Modifier",
+      "tripCommission": "Votre commission sur cette sortie : {rate}"
     },
     "result": {
       "created": "Réservation créée",
@@ -841,7 +850,8 @@
       "area": "Gestion",
       "sections": "Sections",
       "menu": "Menu",
-      "tenant": "Opérateur"
+      "tenant": "Opérateur",
+      "departures": "Listes des passagers"
     },
     "dashboard": {
       "title": "Tableau de bord",
@@ -1150,7 +1160,8 @@
       "reasonPlaceholder": "par ex. Mauvais temps, la sortie n'a pas lieu",
       "keep": "Conserver la réservation",
       "cancelling": "Annulation…",
-      "confirmCancel": "Annuler la réservation"
+      "confirmCancel": "Annuler la réservation",
+      "csvAnswers": "Réponses"
     },
     "billing": {
       "title": "Abonnement",
@@ -1190,6 +1201,58 @@
       "planPrice": "/ mois + {fee} / réservation",
       "choose": "Choisir {name}",
       "ownerOnly": "Seul l'administrateur du compte peut changer de formule."
+    },
+    "departures": {
+      "title": "Listes des passagers",
+      "description": "Qui est à bord de chaque départ, ce qu'il a répondu à la réservation et ce qu'il reste à encaisser. Imprimez-la ou téléchargez-la pour l'équipage.",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "pickDay": "Jour",
+      "none": "Aucun départ le {day}.",
+      "chooseDeparture": "Choisissez un départ pour voir ses passagers.",
+      "passengersTitle": "Passagers",
+      "seatsOf": "{booked} places réservées sur {capacity}",
+      "boardedOf": "{boarded} sur {booked} à bord",
+      "pendingPayment_one": "1 réservation pas encore payée",
+      "pendingPayment_many": "{count} réservations pas encore payées",
+      "pendingPayment_other": "{count} réservations pas encore payées",
+      "closed": "Fermé à la vente",
+      "downloadCsv": "Télécharger le CSV",
+      "noPassengers": "Personne n'a encore réservé ce départ.",
+      "search": "Rechercher",
+      "searchHint": "Nom, référence, chambre ou téléphone",
+      "toBoard_one": "1 réservation encore à embarquer",
+      "toBoard_many": "{count} réservations encore à embarquer",
+      "toBoard_other": "{count} réservations encore à embarquer",
+      "noMatch": "Personne ne correspond à la recherche.",
+      "notPaid": "Non payée",
+      "confirmed": "Confirmée",
+      "boardedAt": "À bord à {time}",
+      "due": "À encaisser : {amount}",
+      "room": "Chambre",
+      "soldBy": "Vendu par",
+      "board": "Marquer à bord",
+      "boardTitle": "Marquer à bord ?",
+      "boardBody": "{name} embarque sans scanner le billet. Le billet ne pourra plus être utilisé ensuite.",
+      "boardHint": "À utiliser quand le client n'a pas son téléphone ou que le QR code ne se lit pas. C'est enregistré à votre nom.",
+      "confirmBoard": "Oui, à bord",
+      "collectFirst": "Encaissez {amount} auprès du client : il paie à l'embarquement.",
+      "boardedNotice": "{name} est à bord.",
+      "boardedCollect": "{name} est à bord. Encaissez {amount}.",
+      "alreadyBoarded": "{name} était déjà à bord.",
+      "csvName": "Nom",
+      "csvReference": "Référence",
+      "csvSeats": "Places",
+      "csvTickets": "Billets",
+      "csvRoom": "Chambre",
+      "csvPhone": "Téléphone",
+      "csvAnswers": "Réponses",
+      "csvDue": "À encaisser",
+      "csvCurrency": "Devise",
+      "csvAffiliate": "Affilié",
+      "csvStatus": "Statut",
+      "csvBoarded": "Embarqué à",
+      "csvFile": "passagers-{date}-{time}.csv"
     }
   },
   "admin": {
@@ -1670,7 +1733,8 @@
       "sms": "{tenant} : billet {reference} pour {product}, {when}, {seats}. Montrez le QR code à l'embarquement : {url}",
       "smsDue": "{tenant} : billet {reference} pour {product}, {when}, {seats}, à payer à l'embarquement : {due}. Montrez le QR code à l'embarquement : {url}",
       "calendarAttached": "La sortie est aussi jointe sous forme d'événement : ouvrez-le pour l'ajouter à votre agenda.",
-      "addToGoogle": "Ajouter à Google Calendar"
+      "addToGoogle": "Ajouter à Google Calendar",
+      "note": "Message de {tenant} : {note}"
     },
     "bookingCancelled": {
       "subject": "La réservation {reference} a été annulée",
@@ -1703,7 +1767,8 @@
       "dueOnSite": "À payer à l'embarquement",
       "onlineTicket": "Billet en ligne",
       "keepOnPhone": "Inutile de l'imprimer : gardez-le sur votre téléphone.",
-      "fileName": "billet-{reference}.pdf"
+      "fileName": "billet-{reference}.pdf",
+      "note": "Bon à savoir"
     },
     "calendar": {
       "description": "Réservation {reference}. Votre billet : {url}"
@@ -1906,7 +1971,8 @@
       "cancelledRefunded_other": "{count} clients sont remboursés.",
       "cancelledFailed_one": "{count} réservation n'a pas pu être annulée : réessayez.",
       "cancelledFailed_many": "{count} réservations n'ont pas pu être annulées : réessayez.",
-      "cancelledFailed_other": "{count} réservations n'ont pas pu être annulées : réessayez."
+      "cancelledFailed_other": "{count} réservations n'ont pas pu être annulées : réessayez.",
+      "passengers": "Voir la liste des passagers"
     },
     "settings": {
       "title": "Paramètres et apparence",
@@ -2022,6 +2088,57 @@
       "token": "Jeton d'accès",
       "connecting": "Connexion…",
       "connect": "Connecter"
+    },
+    "extras": {
+      "heading": "Pour les clients et les affiliés",
+      "customerButton": "Message et questions",
+      "translationsButton": "Traductions",
+      "commissionButton": "Commission",
+      "customerTitle": "Message et questions : {name}",
+      "translationsTitle": "Traductions : {name}",
+      "commissionTitle": "Commission : {name}",
+      "commissionChip": "Commission propre {rate}",
+      "translatedChip": "Traduite : {languages}",
+      "questionsChip_one": "1 question",
+      "questionsChip_many": "{count} questions",
+      "questionsChip_other": "{count} questions",
+      "note": "Message pour les clients",
+      "noteHint": "Affiché sur la page de la sortie, sur le billet et dans l'e-mail de confirmation. Par ex. « Venez 15 minutes en avance, apportez une serviette. »",
+      "questionsLegend": "Questions du formulaire de réservation",
+      "questionsHelp": "Demandez ce que vous devez savoir avant le départ. Les réponses apparaissent sur les réservations et sur la liste des passagers.",
+      "noQuestions": "Aucune question pour l'instant : les clients donnent seulement leur nom et leur contact.",
+      "question": "Question {number}",
+      "questionHint": "Par ex. « Quel menu souhaitez-vous au déjeuner ? » ou « Hôtel de prise en charge ».",
+      "removeQuestion": "Supprimer la question {number}",
+      "answerKind": "Réponse",
+      "kindText": "Saisie par le client",
+      "kindChoice": "Choisie dans une liste",
+      "required": "Réponse obligatoire",
+      "options": "Choix",
+      "optionsHint": "Un par ligne, par ex. Poisson, Poulet, Végétarien.",
+      "addQuestion": "Ajouter une question",
+      "translateReminder": "Si vous modifiez le message ou les questions, vérifiez aussi leurs traductions.",
+      "errQuestionLabel": "Saisissez la question.",
+      "errOptionsMin": "Saisissez au moins deux choix, un par ligne.",
+      "errOptionsMax": "{max} choix au maximum.",
+      "errOptionLength": "Chaque choix : 80 caractères au maximum.",
+      "translationsHelp": "Les clients voient la sortie dans leur langue là où vous l'avez traduite. Langue de vos textes : {language}.",
+      "language": "Langue",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "{done} textes traduits sur {total}",
+      "originalText": "Original : {text}",
+      "ticketNames": "Noms des billets",
+      "questionText": "Texte de la question",
+      "untranslatedNote": "Ce que vous laissez vide s'affiche dans votre langue. Les traductions de toutes les langues sont enregistrées ensemble.",
+      "saveTranslations": "Enregistrer les traductions",
+      "commissionLegend": "Ce que les affiliés gagnent sur cette sortie",
+      "commissionPlan": "Le plan de chaque affilié",
+      "commissionPlanHelp": "Le taux de leur plan de commission, avec ses paliers.",
+      "commissionOwn": "Un taux propre à cette sortie",
+      "commissionOwnHelp": "Le même pourcentage pour tous les affiliés, par ex. pour une sortie à plus faible marge.",
+      "rate": "Commission (%)",
+      "errRate": "Un pourcentage entre 0 et 100, par ex. 12,5.",
+      "commissionNote": "Les ventes de cette sortie comptent toujours pour les paliers du plan de chaque affilié. Les affiliés avec un taux négocié gardent leur taux."
     }
   },
   "charts": {

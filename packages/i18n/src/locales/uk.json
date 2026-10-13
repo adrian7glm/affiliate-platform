@@ -233,7 +233,9 @@
       "tripUnavailable": "ця прогулянка більше недоступна",
       "unknownPrice": "невідомий тип квитка для цієї прогулянки",
       "noSeats": "виберіть принаймні одне місце",
-      "paymentsUnavailable": "оплата зараз недоступна, спробуйте за хвилину"
+      "paymentsUnavailable": "оплата зараз недоступна, спробуйте за хвилину",
+      "answerRequired": "будь ласка, дайте відповідь: {question}",
+      "invalidAnswer": "оберіть одну із запропонованих відповідей на питання: {question}"
     },
     "departures": {
       "closed": "це відправлення більше не можна забронювати",
@@ -537,6 +539,12 @@
       "privacyNote": "Ми використовуємо ваші дані лише для відповіді. Див. {privacy}.",
       "sentTitle": "Дякуємо, ми отримали ваше повідомлення",
       "sentText": "Ми відповімо на {email}."
+    },
+    "goodToKnow": "Варто знати",
+    "questions": {
+      "optional": "необов'язково",
+      "choose": "Оберіть…",
+      "required": "Будь ласка, дайте відповідь на це запитання."
     }
   },
   "ticket": {
@@ -751,7 +759,8 @@
       "booking": "Бронюємо…",
       "submit": "Забронювати · {total}",
       "slotWhen": "{day} о {time}",
-      "change": "Змінити"
+      "change": "Змінити",
+      "tripCommission": "Ваша комісія за цю прогулянку: {rate}"
     },
     "result": {
       "created": "Бронювання створено",
@@ -855,7 +864,8 @@
       "area": "Керування",
       "sections": "Розділи",
       "menu": "Меню",
-      "tenant": "Оператор"
+      "tenant": "Оператор",
+      "departures": "Списки пасажирів"
     },
     "dashboard": {
       "title": "Панель",
@@ -1184,7 +1194,8 @@
       "reasonPlaceholder": "напр. Погана погода, прогулянка не відбудеться",
       "keep": "Залишити бронювання",
       "cancelling": "Скасовуємо…",
-      "confirmCancel": "Скасувати бронювання"
+      "confirmCancel": "Скасувати бронювання",
+      "csvAnswers": "Відповіді"
     },
     "billing": {
       "title": "Підписка",
@@ -1228,6 +1239,60 @@
       "planPrice": "/ місяць + {fee} / бронювання",
       "choose": "Вибрати {name}",
       "ownerOnly": "Змінювати план може лише адміністратор акаунта."
+    },
+    "departures": {
+      "title": "Списки пасажирів",
+      "description": "Хто їде кожним рейсом, що відповів під час бронювання і що ще потрібно отримати. Роздрукуйте або завантажте список для екіпажу.",
+      "previousDay": "Попередній день",
+      "nextDay": "Наступний день",
+      "pickDay": "День",
+      "none": "Немає рейсів: {day}.",
+      "chooseDeparture": "Оберіть рейс, щоб побачити пасажирів.",
+      "passengersTitle": "Пасажири",
+      "seatsOf": "Заброньовано місць: {booked} з {capacity}",
+      "boardedOf": "На борту: {boarded} з {booked}",
+      "pendingPayment_one": "{count} бронювання ще не оплачено",
+      "pendingPayment_few": "{count} бронювання ще не оплачені",
+      "pendingPayment_many": "{count} бронювань ще не оплачені",
+      "pendingPayment_other": "{count} бронювання ще не оплачені",
+      "closed": "Продаж закрито",
+      "downloadCsv": "Завантажити CSV",
+      "noPassengers": "На цей рейс поки ніхто не забронював.",
+      "search": "Пошук",
+      "searchHint": "Ім'я, номер броні, номер кімнати або телефон",
+      "toBoard_one": "Ще не на борту: {count} бронювання",
+      "toBoard_few": "Ще не на борту: {count} бронювання",
+      "toBoard_many": "Ще не на борту: {count} бронювань",
+      "toBoard_other": "Ще не на борту: {count} бронювання",
+      "noMatch": "Нікого не знайдено.",
+      "notPaid": "Не оплачено",
+      "confirmed": "Підтверджено",
+      "boardedAt": "На борту о {time}",
+      "due": "Отримати: {amount}",
+      "room": "Номер",
+      "soldBy": "Продав",
+      "board": "Позначити на борту",
+      "boardTitle": "Позначити на борту?",
+      "boardBody": "{name} проходить на борт без сканування квитка. Після цього квиток більше не можна використати.",
+      "boardHint": "Використовуйте, якщо клієнт не має з собою телефона або QR-код не зчитується. Позначка зберігається на ваше ім'я.",
+      "confirmBoard": "Так, на борту",
+      "collectFirst": "Отримайте від клієнта {amount}: він платить під час посадки.",
+      "boardedNotice": "{name} на борту.",
+      "boardedCollect": "{name} на борту. Отримайте {amount}.",
+      "alreadyBoarded": "{name} вже на борту.",
+      "csvName": "Ім'я",
+      "csvReference": "Номер броні",
+      "csvSeats": "Місця",
+      "csvTickets": "Квитки",
+      "csvRoom": "Номер",
+      "csvPhone": "Телефон",
+      "csvAnswers": "Відповіді",
+      "csvDue": "Отримати",
+      "csvCurrency": "Валюта",
+      "csvAffiliate": "Партнер",
+      "csvStatus": "Статус",
+      "csvBoarded": "Посадка о",
+      "csvFile": "passengers-{date}-{time}.csv"
     }
   },
   "admin": {
@@ -1731,7 +1796,8 @@
       "sms": "{tenant}: квиток {reference} на «{product}», {when}, {seats}. Покажіть QR-код під час посадки: {url}",
       "smsDue": "{tenant}: квиток {reference} на «{product}», {when}, {seats}, до сплати під час посадки {due}. Покажіть QR-код під час посадки: {url}",
       "calendarAttached": "Прогулянку також додано як подію календаря: відкрийте її, щоб додати до свого календаря.",
-      "addToGoogle": "Додати до Google Calendar"
+      "addToGoogle": "Додати до Google Calendar",
+      "note": "Повідомлення від {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "Бронювання {reference} скасовано",
@@ -1764,7 +1830,8 @@
       "dueOnSite": "Оплата під час посадки",
       "onlineTicket": "Онлайн-квиток",
       "keepOnPhone": "Друкувати не потрібно: зберігайте його в телефоні.",
-      "fileName": "kvytok-{reference}.pdf"
+      "fileName": "kvytok-{reference}.pdf",
+      "note": "Варто знати"
     },
     "calendar": {
       "description": "Бронювання {reference}. Ваш квиток: {url}"
@@ -1980,7 +2047,8 @@
       "cancelledFailed_one": "Не вдалося скасувати {count} бронювання: спробуйте ще раз.",
       "cancelledFailed_few": "Не вдалося скасувати {count} бронювання: спробуйте ще раз.",
       "cancelledFailed_many": "Не вдалося скасувати {count} бронювань: спробуйте ще раз.",
-      "cancelledFailed_other": "Не вдалося скасувати {count} бронювання: спробуйте ще раз."
+      "cancelledFailed_other": "Не вдалося скасувати {count} бронювання: спробуйте ще раз.",
+      "passengers": "Відкрити список пасажирів"
     },
     "settings": {
       "title": "Налаштування й вигляд",
@@ -2099,6 +2167,58 @@
       "token": "Токен доступу",
       "connecting": "Підключення…",
       "connect": "Підключити"
+    },
+    "extras": {
+      "heading": "Для клієнтів і партнерів",
+      "customerButton": "Повідомлення і запитання",
+      "translationsButton": "Переклади",
+      "commissionButton": "Комісія",
+      "customerTitle": "Повідомлення і запитання: {name}",
+      "translationsTitle": "Переклади: {name}",
+      "commissionTitle": "Комісія: {name}",
+      "commissionChip": "Власна комісія {rate}",
+      "translatedChip": "Перекладено: {languages}",
+      "questionsChip_one": "{count} запитання",
+      "questionsChip_few": "{count} запитання",
+      "questionsChip_many": "{count} запитань",
+      "questionsChip_other": "{count} запитання",
+      "note": "Повідомлення для клієнтів",
+      "noteHint": "Показується на сторінці прогулянки, у квитку та в листі з підтвердженням. Наприклад: «Приходьте за 15 хвилин, візьміть рушник».",
+      "questionsLegend": "Запитання у формі бронювання",
+      "questionsHelp": "Запитайте те, що потрібно знати до відправлення. Відповіді видно в бронюваннях і в списку пасажирів.",
+      "noQuestions": "Запитань поки немає: клієнти вказують лише ім'я та контакт.",
+      "question": "Запитання {number}",
+      "questionHint": "Наприклад: «Яке меню на обід ви бажаєте?» або «Готель, звідки вас забрати».",
+      "removeQuestion": "Видалити запитання {number}",
+      "answerKind": "Відповідь",
+      "kindText": "Клієнт пише сам",
+      "kindChoice": "Вибір зі списку",
+      "required": "Відповідь обов'язкова",
+      "options": "Варіанти",
+      "optionsHint": "По одному в рядку, наприклад: Риба, Курка, Вегетаріанське.",
+      "addQuestion": "Додати запитання",
+      "translateReminder": "Якщо ви змінюєте повідомлення чи запитання, перевірте і їхні переклади.",
+      "errQuestionLabel": "Напишіть запитання.",
+      "errOptionsMin": "Напишіть щонайменше два варіанти, по одному в рядку.",
+      "errOptionsMax": "Не більше {max} варіантів.",
+      "errOptionLength": "Кожен варіант: не більше 80 символів.",
+      "translationsHelp": "Клієнти бачать прогулянку своєю мовою там, де ви її переклали. Мова ваших текстів: {language}.",
+      "language": "Мова",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "Перекладено текстів: {done} з {total}",
+      "originalText": "Оригінал: {text}",
+      "ticketNames": "Назви квитків",
+      "questionText": "Текст запитання",
+      "untranslatedNote": "Усе, що ви залишите порожнім, показується вашою мовою. Переклади всіма мовами зберігаються разом.",
+      "saveTranslations": "Зберегти переклади",
+      "commissionLegend": "Скільки партнери заробляють на цій прогулянці",
+      "commissionPlan": "План кожного партнера",
+      "commissionPlanHelp": "Ставка з їхнього плану комісій, з його порогами.",
+      "commissionOwn": "Окрема ставка для цієї прогулянки",
+      "commissionOwnHelp": "Однаковий відсоток для всіх партнерів, наприклад для прогулянки з меншою маржею.",
+      "rate": "Комісія (%)",
+      "errRate": "Відсоток від 0 до 100, наприклад 12,5.",
+      "commissionNote": "Продажі цієї прогулянки й далі зараховуються до порогів плану кожного партнера. Партнери з погодженою ставкою зберігають свою ставку."
     }
   },
   "charts": {

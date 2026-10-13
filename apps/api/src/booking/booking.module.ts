@@ -8,18 +8,21 @@ import { TrackingModule } from '../tracking/tracking.module';
 import {
   AffiliateBookingController,
   OperatorBookingController,
+  OperatorDeparturesController,
   PublicBookingController,
 } from './booking.controller';
 import { BookingService } from './booking.service';
+import { DeparturesService } from './departures.service';
 import { TicketsService } from './tickets.service';
 
 @Module({
   imports: [CatalogModule, TrackingModule, PaymentsModule, SourcesModule],
-  providers: [BookingService, TicketsService],
+  providers: [BookingService, TicketsService, DeparturesService],
   controllers: [
     PublicBookingController,
     AffiliateBookingController,
     OperatorBookingController,
+    OperatorDeparturesController,
     StripeWebhookController,
   ],
   exports: [BookingService, TicketsService],

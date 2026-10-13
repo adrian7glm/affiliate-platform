@@ -314,7 +314,7 @@ export class CommissionsService implements OnModuleInit {
   async planFor(
     db: DbOrTx,
     affiliateId: string,
-  ): Promise<{ plan: CommissionPlan; source: string } | null> {
+  ): Promise<{ plan: CommissionPlan; source: string; negotiated: boolean } | null> {
     const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.id, affiliateId));
     if (!affiliate) throw new NotFound('affiliate');
     const [row] = await db
@@ -333,10 +333,11 @@ export class CommissionsService implements OnModuleInit {
     const base: CommissionPlan = row
       ? planFromRow(row)
       : { kind: 'fixed', rateBps: 0, basis: 'gross' };
+    const negotiated = affiliate.commissionRateBpsOverride !== null;
     return {
       plan: effectivePlan(base, affiliate.commissionRateBpsOverride),
-      source:
-        affiliate.commissionRateBpsOverride !== null ? 'negotiated rate' : (row?.name ?? 'plan'),
+      source: negotiated ? 'negotiated rate' : (row?.name ?? 'plan'),
+      negotiated,
     };
   }
 
@@ -379,9 +380,22 @@ export class CommissionsService implements OnModuleInit {
           ),
         ),
       );
+    // A trip with its own rate pays it to every affiliate, except one with a negotiated rate:
+    // what was agreed with them personally applies to every trip.
+    const [trip] = await tx
+      .select({ rateBps: products.commissionRateBps })
+      .from(bookings)
+      .innerJoin(products, eq(products.id, bookings.productId))
+      .where(eq(bookings.id, event.bookingId));
+    const tripRateBps = resolved.negotiated ? null : (trip?.rateBps ?? null);
     const commission = commissionAtSale(
       resolved.plan,
-      { bookingId: event.bookingId, grossMinor: event.totalMinor, taxMinor: event.taxMinor },
+      {
+        bookingId: event.bookingId,
+        grossMinor: event.totalMinor,
+        taxMinor: event.taxMinor,
+        tripRateBps,
+      },
       before?.count ?? 0,
     );
     await tx
@@ -396,8 +410,9 @@ export class CommissionsService implements OnModuleInit {
         rateBps: commission.rateBps,
         baseMinor: commission.baseMinor,
         currency: event.currency,
-        reason: `sale #${commission.saleNumber} of ${periodKey} (${resolved.source})`,
+        reason: `sale #${commission.saleNumber} of ${periodKey} (${tripRateBps !== null ? 'trip rate' : resolved.source})`,
         planSnapshot: resolved.plan,
+        tripRateBps,
         createdAt: paidAt,
       })
       .onConflictDoNothing();
@@ -841,6 +856,9 @@ export class CommissionsService implements OnModuleInit {
           grossMinor: b.totalMinor,
           taxMinor: b.taxMinor,
           cancelled: b.status !== 'confirmed',
+          // The trip rate frozen when the sale was recorded.
+          tripRateBps:
+            entryRows.find((e) => e.bookingId === b.id && e.kind === 'sale')?.tripRateBps ?? null,
         }));
         // The rules frozen with the month's first sale apply to the whole month.
         const plan = firstSale.planSnapshot as CommissionPlan;

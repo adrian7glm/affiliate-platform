@@ -8,6 +8,7 @@ import {
 } from '@ap/contracts';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
+import { BookingQuestions } from '@/components/booking/BookingQuestions';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { useT } from '@/components/I18nProvider';
@@ -42,6 +43,7 @@ import {
   ticketPath,
   VISITOR_COOKIE,
 } from '@/lib/links';
+import { type AnswerValues, missingAnswers, toAnswers } from '@/lib/questions';
 import { useApi } from '@/lib/useApi';
 
 const REF_RE = /^[A-Za-z0-9_-]{1,32}$/;
@@ -121,6 +123,8 @@ export function PublicBookingForm({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [accepted, setAccepted] = useState(false);
+  const [answers, setAnswers] = useState<AnswerValues>({});
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
 
   const [slotError, setSlotError] = useState<string | null>(null);
   const [ticketError, setTicketError] = useState<string | null>(null);
@@ -172,6 +176,12 @@ export function PublicBookingForm({
     if (cleanPhone && !isValidPhone(cleanPhone)) nextErrors.phone = t.t('public.errorPhone');
     if (!cleanEmail && !cleanPhone) nextErrors.contact = t.t('public.errorContact');
     if (!accepted) nextErrors.terms = t.t('public.errorTerms');
+    const unanswered = Object.fromEntries(
+      missingAnswers(product.questions, answers).map((id) => [
+        id,
+        t.t('public.questions.required'),
+      ]),
+    );
 
     const missingSlot = !slot ? t.t('public.chooseTimeFirst') : null;
     const ticketProblem = !slot
@@ -185,7 +195,13 @@ export function PublicBookingForm({
     setSlotError(missingSlot);
     setTicketError(ticketProblem);
     setErrors(nextErrors);
-    if (missingSlot || ticketProblem || Object.keys(nextErrors).length > 0) {
+    setAnswerErrors(unanswered);
+    if (
+      missingSlot ||
+      ticketProblem ||
+      Object.keys(nextErrors).length > 0 ||
+      Object.keys(unanswered).length > 0
+    ) {
       setAttempt((n) => n + 1);
       return;
     }
@@ -203,6 +219,7 @@ export function PublicBookingForm({
           // Emails and texts go out in this language; one the API does not know gets English.
           locale: localeSchema.catch('en').parse(lang),
         },
+        answers: toAnswers(product.questions, answers),
         acceptTerms: true,
         ...attribution(),
       });
@@ -333,6 +350,15 @@ export function PublicBookingForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           error={errors.phone}
+        />
+        <BookingQuestions
+          questions={product.questions}
+          values={answers}
+          onChange={(id, value) => {
+            setAnswers((prev) => ({ ...prev, [id]: value }));
+            setAnswerErrors(({ [id]: _cleared, ...rest }) => rest);
+          }}
+          errors={answerErrors}
         />
       </section>
 

@@ -13,6 +13,31 @@ import {
 import { createdAt, id } from './_common';
 import { tenants } from './identity';
 
+/** A trip's texts in one language; what is missing shows in the operator's own language. */
+export interface ProductTranslation {
+  name?: string;
+  description?: string;
+  meetingPoint?: string;
+  customerNote?: string;
+  /** Ticket type labels, by price id. */
+  prices?: Record<string, string>;
+  /** Booking question labels and choices (same order as the question's options), by question id. */
+  questions?: Record<string, { label?: string; options?: string[] }>;
+}
+
+export type ProductTranslations = Record<string, ProductTranslation>;
+
+/** A question the operator asks on the booking form ("Children's ages", "Pick-up hotel"). */
+export interface BookingQuestion {
+  /** Stable id: answers and translations refer to it. */
+  id: string;
+  label: string;
+  /** `text`: free answer. `choice`: one of `options`. */
+  kind: 'text' | 'choice';
+  required: boolean;
+  options: string[];
+}
+
 export const availabilityKindEnum = pgEnum('availability_kind', ['internal', 'rest']);
 
 /** How the platform reads and books availability in the operator's own system. */
@@ -47,6 +72,14 @@ export const products = pgTable(
     meetingPoint: text('meeting_point'),
     images: jsonb('images').$type<string[]>().notNull().default([]),
     active: boolean('active').notNull().default(true),
+    /** The trip's texts in other languages, by language code (see ProductTranslations). */
+    translations: jsonb('translations').$type<ProductTranslations>().notNull().default({}),
+    /** The operator's message to every customer of this trip, on the ticket and in the email. */
+    customerNote: text('customer_note'),
+    /** The operator's own questions on the booking form (BookingQuestion). */
+    questions: jsonb('questions').$type<BookingQuestion[]>().notNull().default([]),
+    /** Commission every affiliate earns on this trip instead of their plan's rate; null: the plan. */
+    commissionRateBps: integer('commission_rate_bps'),
     createdAt: createdAt(),
   },
   (t) => [

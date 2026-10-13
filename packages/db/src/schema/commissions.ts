@@ -101,6 +101,11 @@ export const commissionEntries = pgTable(
     reason: text('reason').notNull(),
     /** The rules used, frozen at the time of the entry. */
     planSnapshot: jsonb('plan_snapshot').notNull(),
+    /**
+     * On a `sale` entry: the trip's own commission rate, which this sale earns whatever the
+     * affiliate's tier (the sale still counts towards the tiers). Null: the plan's rate.
+     */
+    tripRateBps: integer('trip_rate_bps'),
     payoutId: uuid('payout_id').references(() => payouts.id),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     paidAt: timestamp('paid_at', { withTimezone: true }),

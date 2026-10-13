@@ -10,6 +10,8 @@ export interface OperatorTenant {
   slug: string;
   currency: string;
   timezone: string;
+  /** The language the operator writes their trips in. */
+  defaultLocale: string;
 }
 
 export interface OperatorContextValue {

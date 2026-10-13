@@ -279,3 +279,37 @@ describe('approval and payouts', () => {
     expect(clawback).toEqual({ entryIds: [], totalMinor: -1500, carryForward: true });
   });
 });
+
+describe('trips with their own commission rate', () => {
+  it('pays the trip rate whatever the tier, and still counts the sale towards the tiers', () => {
+    // Sales 2 and 5 are on a trip that pays 30%; the others follow the 15/20/25% plan.
+    const list = sales(5).map((sale, i) =>
+      i === 1 || i === 4 ? { ...sale, tripRateBps: 3000 } : sale,
+    );
+    const result = computePeriodCommissions(marginal, list);
+    expect(result.map((r) => r.rateBps)).toEqual([1500, 3000, 1500, 2000, 3000]);
+    expect(result.map((r) => r.saleNumber)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('keeps the trip rate when the period close applies a retroactive tier', () => {
+    const list = sales(11).map((sale, i) => (i === 0 ? { ...sale, tripRateBps: 1000 } : sale));
+    const result = computePeriodCommissions(retroactive, list);
+    expect(result[0]!.rateBps).toBe(1000);
+    expect(result.slice(1).every((r) => r.rateBps === 2500)).toBe(true);
+  });
+
+  it('applies the trip rate on the plan basis at the moment of sale', () => {
+    const plan: CommissionPlan = { kind: 'fixed', rateBps: 2000, basis: 'net_of_tax' };
+    const result = commissionAtSale(
+      plan,
+      { bookingId: 'b1', grossMinor: 11_900, taxMinor: 1900, tripRateBps: 1000 },
+      0,
+    );
+    expect(result).toMatchObject({ baseMinor: 10_000, rateBps: 1000, amountMinor: 1000 });
+  });
+
+  it('rejects an impossible trip rate', () => {
+    const [sale] = sales(1);
+    expect(() => commissionAtSale(marginal, { ...sale!, tripRateBps: 12_000 }, 0)).toThrow();
+  });
+});

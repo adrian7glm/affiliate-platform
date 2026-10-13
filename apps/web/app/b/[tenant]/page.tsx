@@ -16,9 +16,10 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const [{ tenant: slug }, query] = await Promise.all([params, searchParams]);
-  const tenant = await loadTenant(slug);
+  const lang = await requestLang(query.lang);
+  const tenant = await loadTenant(slug, lang);
   if (!tenant.ok) {
-    const { t } = await getServerT(await requestLang(query.lang));
+    const { t } = await getServerT(lang);
     return { title: t('public.notFoundTitle'), robots: { index: false } };
   }
   return {
@@ -33,7 +34,7 @@ export default async function TenantPage({ params, searchParams }: Props) {
   const lang = await requestLang(query.lang);
   const { t } = await getServerT(lang);
   const path = `/b/${encodeURIComponent(slug)}`;
-  const tenant = await loadTenant(slug);
+  const tenant = await loadTenant(slug, lang);
 
   if (!tenant.ok) {
     return (

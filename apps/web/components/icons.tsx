@@ -194,6 +194,16 @@ export const IconBoat = (p: IconProps) => (
   </Svg>
 );
 
+/** A clipboard with ticks: the boarding list. */
+export const IconClipboard = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="5" y="4" width="14" height="17" rx="2" />
+    <path d="M9 4V3h6v1" />
+    <path d="m8.5 11 1.5 1.5L13 9.5" />
+    <path d="M8.5 16.5h7" />
+  </Svg>
+);
+
 export const IconList = (p: IconProps) => (
   <Svg {...p}>
     <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />

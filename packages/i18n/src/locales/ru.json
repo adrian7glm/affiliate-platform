@@ -233,7 +233,9 @@
       "tripUnavailable": "эта прогулка больше недоступна",
       "unknownPrice": "неизвестный тип билета для этой прогулки",
       "noSeats": "выберите хотя бы одно место",
-      "paymentsUnavailable": "оплата сейчас недоступна, попробуйте через минуту"
+      "paymentsUnavailable": "оплата сейчас недоступна, попробуйте через минуту",
+      "answerRequired": "пожалуйста, ответьте: {question}",
+      "invalidAnswer": "выберите один из предложенных ответов на вопрос: {question}"
     },
     "departures": {
       "closed": "это отправление больше нельзя забронировать",
@@ -537,6 +539,12 @@
       "privacyNote": "Мы используем ваши данные только для ответа вам. Подробнее — в {privacy}.",
       "sentTitle": "Спасибо, мы получили ваше сообщение",
       "sentText": "Мы ответим на {email}."
+    },
+    "goodToKnow": "Полезно знать",
+    "questions": {
+      "optional": "необязательно",
+      "choose": "Выберите…",
+      "required": "Пожалуйста, ответьте на этот вопрос."
     }
   },
   "ticket": {
@@ -751,7 +759,8 @@
       "booking": "Бронируем…",
       "submit": "Забронировать · {total}",
       "slotWhen": "{day} в {time}",
-      "change": "Изменить"
+      "change": "Изменить",
+      "tripCommission": "Ваша комиссия за эту прогулку: {rate}"
     },
     "result": {
       "created": "Бронирование создано",
@@ -855,7 +864,8 @@
       "area": "Управление",
       "sections": "Разделы",
       "menu": "Меню",
-      "tenant": "Оператор"
+      "tenant": "Оператор",
+      "departures": "Списки пассажиров"
     },
     "dashboard": {
       "title": "Обзор",
@@ -1184,7 +1194,8 @@
       "reasonPlaceholder": "например, Плохая погода, прогулка не состоится",
       "keep": "Оставить бронирование",
       "cancelling": "Отменяем…",
-      "confirmCancel": "Отменить бронирование"
+      "confirmCancel": "Отменить бронирование",
+      "csvAnswers": "Ответы"
     },
     "billing": {
       "title": "Подписка",
@@ -1228,6 +1239,60 @@
       "planPrice": "/ мес. + {fee} / бронирование",
       "choose": "Выбрать {name}",
       "ownerOnly": "Изменить тариф может только администратор аккаунта."
+    },
+    "departures": {
+      "title": "Списки пассажиров",
+      "description": "Кто едет на каждом рейсе, что ответил при бронировании и что осталось получить. Распечатайте или скачайте список для экипажа.",
+      "previousDay": "Предыдущий день",
+      "nextDay": "Следующий день",
+      "pickDay": "День",
+      "none": "Нет рейсов: {day}.",
+      "chooseDeparture": "Выберите рейс, чтобы увидеть пассажиров.",
+      "passengersTitle": "Пассажиры",
+      "seatsOf": "Забронировано мест: {booked} из {capacity}",
+      "boardedOf": "На борту: {boarded} из {booked}",
+      "pendingPayment_one": "{count} бронирование ещё не оплачено",
+      "pendingPayment_few": "{count} бронирования ещё не оплачены",
+      "pendingPayment_many": "{count} бронирований ещё не оплачены",
+      "pendingPayment_other": "{count} бронирования ещё не оплачены",
+      "closed": "Продажи закрыты",
+      "downloadCsv": "Скачать CSV",
+      "noPassengers": "На этот рейс пока никто не забронировал.",
+      "search": "Поиск",
+      "searchHint": "Имя, номер брони, номер комнаты или телефон",
+      "toBoard_one": "Ещё не на борту: {count} бронирование",
+      "toBoard_few": "Ещё не на борту: {count} бронирования",
+      "toBoard_many": "Ещё не на борту: {count} бронирований",
+      "toBoard_other": "Ещё не на борту: {count} бронирования",
+      "noMatch": "Никто не найден.",
+      "notPaid": "Не оплачено",
+      "confirmed": "Подтверждено",
+      "boardedAt": "На борту в {time}",
+      "due": "Получить: {amount}",
+      "room": "Номер",
+      "soldBy": "Продал",
+      "board": "Отметить на борту",
+      "boardTitle": "Отметить на борту?",
+      "boardBody": "{name} проходит на борт без сканирования билета. После этого билет больше нельзя использовать.",
+      "boardHint": "Используйте, если у клиента нет с собой телефона или QR-код не считывается. Отметка сохраняется на ваше имя.",
+      "confirmBoard": "Да, на борту",
+      "collectFirst": "Получите с клиента {amount}: он платит при посадке.",
+      "boardedNotice": "{name} на борту.",
+      "boardedCollect": "{name} на борту. Получите {amount}.",
+      "alreadyBoarded": "{name} уже на борту.",
+      "csvName": "Имя",
+      "csvReference": "Номер брони",
+      "csvSeats": "Места",
+      "csvTickets": "Билеты",
+      "csvRoom": "Номер",
+      "csvPhone": "Телефон",
+      "csvAnswers": "Ответы",
+      "csvDue": "Получить",
+      "csvCurrency": "Валюта",
+      "csvAffiliate": "Партнёр",
+      "csvStatus": "Статус",
+      "csvBoarded": "Посадка в",
+      "csvFile": "passengers-{date}-{time}.csv"
     }
   },
   "admin": {
@@ -1731,7 +1796,8 @@
       "sms": "{tenant}: билет {reference} на {product}, {when}, {seats}. Покажите QR-код при посадке: {url}",
       "smsDue": "{tenant}: билет {reference} на {product}, {when}, {seats}, к оплате при посадке {due}. Покажите QR-код при посадке: {url}",
       "calendarAttached": "Прогулка также приложена как событие календаря: откройте его, чтобы добавить в свой календарь.",
-      "addToGoogle": "Добавить в Google Calendar"
+      "addToGoogle": "Добавить в Google Calendar",
+      "note": "Сообщение от {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "Бронирование {reference} отменено",
@@ -1764,7 +1830,8 @@
       "dueOnSite": "К оплате при посадке",
       "onlineTicket": "Электронный билет",
       "keepOnPhone": "Печатать не нужно: храните его в телефоне.",
-      "fileName": "bilet-{reference}.pdf"
+      "fileName": "bilet-{reference}.pdf",
+      "note": "Полезно знать"
     },
     "calendar": {
       "description": "Бронирование {reference}. Ваш билет: {url}"
@@ -1980,7 +2047,8 @@
       "cancelledFailed_one": "Не удалось отменить {count} бронирование: попробуйте ещё раз.",
       "cancelledFailed_few": "Не удалось отменить {count} бронирования: попробуйте ещё раз.",
       "cancelledFailed_many": "Не удалось отменить {count} бронирований: попробуйте ещё раз.",
-      "cancelledFailed_other": "Не удалось отменить {count} бронирования: попробуйте ещё раз."
+      "cancelledFailed_other": "Не удалось отменить {count} бронирования: попробуйте ещё раз.",
+      "passengers": "Открыть список пассажиров"
     },
     "settings": {
       "title": "Настройки и оформление",
@@ -2099,6 +2167,58 @@
       "token": "Токен доступа",
       "connecting": "Подключение…",
       "connect": "Подключить"
+    },
+    "extras": {
+      "heading": "Для клиентов и партнёров",
+      "customerButton": "Сообщение и вопросы",
+      "translationsButton": "Переводы",
+      "commissionButton": "Комиссия",
+      "customerTitle": "Сообщение и вопросы: {name}",
+      "translationsTitle": "Переводы: {name}",
+      "commissionTitle": "Комиссия: {name}",
+      "commissionChip": "Своя комиссия {rate}",
+      "translatedChip": "Переведено: {languages}",
+      "questionsChip_one": "{count} вопрос",
+      "questionsChip_few": "{count} вопроса",
+      "questionsChip_many": "{count} вопросов",
+      "questionsChip_other": "{count} вопроса",
+      "note": "Сообщение для клиентов",
+      "noteHint": "Показывается на странице прогулки, в билете и в письме с подтверждением. Например: «Приходите за 15 минут, возьмите полотенце».",
+      "questionsLegend": "Вопросы в форме бронирования",
+      "questionsHelp": "Спросите то, что нужно знать до отправления. Ответы видны в бронированиях и в списке пассажиров.",
+      "noQuestions": "Вопросов пока нет: клиенты указывают только имя и контакт.",
+      "question": "Вопрос {number}",
+      "questionHint": "Например: «Какое меню на обед вы хотите?» или «Отель, откуда вас забрать».",
+      "removeQuestion": "Удалить вопрос {number}",
+      "answerKind": "Ответ",
+      "kindText": "Клиент пишет сам",
+      "kindChoice": "Выбор из списка",
+      "required": "Ответ обязателен",
+      "options": "Варианты",
+      "optionsHint": "По одному в строке, например: Рыба, Курица, Вегетарианское.",
+      "addQuestion": "Добавить вопрос",
+      "translateReminder": "Если вы меняете сообщение или вопросы, проверьте и их переводы.",
+      "errQuestionLabel": "Напишите вопрос.",
+      "errOptionsMin": "Напишите хотя бы два варианта, по одному в строке.",
+      "errOptionsMax": "Не больше {max} вариантов.",
+      "errOptionLength": "Каждый вариант: не больше 80 символов.",
+      "translationsHelp": "Клиенты видят прогулку на своём языке там, где вы её перевели. Язык ваших текстов: {language}.",
+      "language": "Язык",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "Переведено текстов: {done} из {total}",
+      "originalText": "Оригинал: {text}",
+      "ticketNames": "Названия билетов",
+      "questionText": "Текст вопроса",
+      "untranslatedNote": "Всё, что вы оставите пустым, показывается на вашем языке. Переводы на все языки сохраняются вместе.",
+      "saveTranslations": "Сохранить переводы",
+      "commissionLegend": "Сколько партнёры зарабатывают на этой прогулке",
+      "commissionPlan": "План каждого партнёра",
+      "commissionPlanHelp": "Ставка из их плана комиссий, с его порогами.",
+      "commissionOwn": "Отдельная ставка для этой прогулки",
+      "commissionOwnHelp": "Одинаковый процент для всех партнёров, например для прогулки с меньшей маржой.",
+      "rate": "Комиссия (%)",
+      "errRate": "Процент от 0 до 100, например 12,5.",
+      "commissionNote": "Продажи этой прогулки по-прежнему засчитываются в пороги плана каждого партнёра. Партнёры с согласованной ставкой сохраняют свою ставку."
     }
   },
   "charts": {

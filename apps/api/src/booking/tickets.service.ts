@@ -23,6 +23,7 @@ import { NotificationsService, mask } from '../notifications/notifications.servi
 import { ticketCalendarEvent, ticketCalendarFilename } from '../notifications/ticket-calendar';
 import { renderTicketPdf, ticketPdfFilename } from '../notifications/ticket-pdf';
 import { Outbox } from '../outbox/outbox';
+import { localizedPriceLabel, localizedTexts } from '../catalog/translations';
 
 /** What the customer is told when the operator cancels their trip (bad weather...). */
 export interface CancellationNotice {
@@ -56,8 +57,7 @@ export class TicketsService {
     const [row] = await tx
       .select({
         booking: bookings,
-        productName: products.name,
-        meetingPoint: products.meetingPoint,
+        product: products,
         endsAt: slots.endsAt,
         tenant: tenants,
       })
@@ -67,11 +67,10 @@ export class TicketsService {
       .innerJoin(slots, eq(slots.id, bookings.slotId))
       .where(eq(bookings.id, bookingId));
     if (!row) return;
-    const { booking, tenant } = row;
-    const items = await tx
-      .select({ label: bookingItems.label, quantity: bookingItems.quantity })
-      .from(bookingItems)
-      .where(eq(bookingItems.bookingId, bookingId));
+    const { booking, tenant, product } = row;
+    // The trip in the customer's language, where the operator translated it.
+    const texts = localizedTexts(product, booking.customerLocale);
+    const items = await this.items(tx, bookingId, product, booking.customerLocale);
     // Email first: it carries the QR code itself and costs nothing.
     const contact = booking.customerEmail ?? booking.customerPhone;
     if (!contact) return;
@@ -83,12 +82,13 @@ export class TicketsService {
       dedupeKey: `ticket:${bookingId}`,
       params: {
         tenantName: tenant.name,
-        productName: row.productName,
+        productName: texts.name,
         reference: booking.reference,
         startsAt: booking.startsAt.toISOString(),
         timezone: tenant.timezone,
         customerName: booking.customerName,
-        meetingPoint: row.meetingPoint,
+        meetingPoint: texts.meetingPoint,
+        customerNote: texts.customerNote,
         seats: booking.seats,
         url: this.customerUrl(bookingId, booking.customerLocale),
         qrToken: this.qrToken(ticket.id, booking),
@@ -112,10 +112,7 @@ export class TicketsService {
   ): Promise<void> {
     const contact = booking.customerEmail ?? booking.customerPhone;
     if (!contact) return;
-    const [product] = await tx
-      .select({ name: products.name })
-      .from(products)
-      .where(eq(products.id, booking.productId));
+    const [product] = await tx.select().from(products).where(eq(products.id, booking.productId));
     await this.notifications.enqueue(tx, {
       to: contact,
       template: 'booking_cancelled',
@@ -124,7 +121,7 @@ export class TicketsService {
       dedupeKey: `booking_cancelled:${booking.id}`,
       params: {
         tenantName: tenant.name,
-        productName: product?.name ?? '',
+        productName: product ? localizedTexts(product, booking.customerLocale).name : '',
         reference: booking.reference,
         startsAt: booking.startsAt.toISOString(),
         timezone: tenant.timezone,
@@ -158,10 +155,34 @@ export class TicketsService {
     await tx.update(tickets).set({ status: 'void' }).where(eq(tickets.bookingId, bookingId));
   }
 
-  /** The customer's ticket page, opened with the key from their ticket link. */
-  async view(bookingId: string, key: string): Promise<TicketDto> {
+  /**
+   * The customer's ticket page, opened with the key from their ticket link. The trip's texts are
+   * in `lang` where the operator translated them, else in the customer's language.
+   */
+  async view(bookingId: string, key: string, lang: string | null = null): Promise<TicketDto> {
     if (!checkTicketLinkKey(this.config.APP_SECRET, bookingId, key)) throw new NotFound('ticket');
-    return this.ticketDto(bookingId);
+    return this.ticketDto(bookingId, lang);
+  }
+
+  /** The booking's ticket types and quantities, labelled in `lang` where translated. */
+  private async items(
+    db: DbOrTx,
+    bookingId: string,
+    product: Pick<typeof products.$inferSelect, 'translations'>,
+    lang: string | null,
+  ): Promise<{ label: string; quantity: number }[]> {
+    const rows = await db
+      .select({
+        priceId: bookingItems.priceId,
+        label: bookingItems.label,
+        quantity: bookingItems.quantity,
+      })
+      .from(bookingItems)
+      .where(eq(bookingItems.bookingId, bookingId));
+    return rows.map((r) => ({
+      label: localizedPriceLabel(product.translations, lang, r.priceId, r.label),
+      quantity: r.quantity,
+    }));
   }
 
   /**
@@ -173,16 +194,17 @@ export class TicketsService {
     key: string,
     lang: string | null,
   ): Promise<{ filename: string; content: Buffer }> {
-    const ticket = await this.view(bookingId, key);
-    if (!ticket.qrToken) {
-      throw new DomainError('errors.ticket.noPdf', HttpStatus.CONFLICT);
-    }
+    if (!checkTicketLinkKey(this.config.APP_SECRET, bookingId, key)) throw new NotFound('ticket');
     const [row] = await this.db
       .select({ locale: bookings.customerLocale, branding: tenants.branding })
       .from(bookings)
       .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
       .where(eq(bookings.id, bookingId));
     const language = this.i18n.pick(lang ?? row?.locale, 'en');
+    const ticket = await this.ticketDto(bookingId, language);
+    if (!ticket.qrToken) {
+      throw new DomainError('errors.ticket.noPdf', HttpStatus.CONFLICT);
+    }
     const content = await renderTicketPdf(
       {
         tenantName: ticket.tenantName,
@@ -192,6 +214,7 @@ export class TicketsService {
         timezone: ticket.timezone,
         customerName: ticket.customerName,
         meetingPoint: ticket.meetingPoint,
+        customerNote: ticket.customerNote,
         seats: ticket.seats,
         items: ticket.items,
         qrToken: ticket.qrToken,
@@ -215,13 +238,14 @@ export class TicketsService {
     key: string,
     lang: string | null,
   ): Promise<{ filename: string; content: string }> {
-    const ticket = await this.view(bookingId, key);
-    if (!ticket.qrToken) throw new DomainError('errors.ticket.noCalendar', HttpStatus.CONFLICT);
+    if (!checkTicketLinkKey(this.config.APP_SECRET, bookingId, key)) throw new NotFound('ticket');
     const [row] = await this.db
       .select({ locale: bookings.customerLocale })
       .from(bookings)
       .where(eq(bookings.id, bookingId));
     const language = this.i18n.pick(lang ?? row?.locale, 'en');
+    const ticket = await this.ticketDto(bookingId, language);
+    if (!ticket.qrToken) throw new DomainError('errors.ticket.noCalendar', HttpStatus.CONFLICT);
     const event = ticketCalendarEvent(
       {
         tenantName: ticket.tenantName,
@@ -240,7 +264,7 @@ export class TicketsService {
     };
   }
 
-  private async ticketDto(bookingId: string): Promise<TicketDto> {
+  private async ticketDto(bookingId: string, lang: string | null = null): Promise<TicketDto> {
     const [row] = await this.db
       .select({
         booking: bookings,
@@ -261,11 +285,10 @@ export class TicketsService {
       .leftJoin(tickets, eq(tickets.bookingId, bookings.id))
       .where(eq(bookings.id, bookingId));
     if (!row) throw new NotFound('ticket');
-    const items = await this.db
-      .select({ label: bookingItems.label, quantity: bookingItems.quantity })
-      .from(bookingItems)
-      .where(eq(bookingItems.bookingId, bookingId));
     const { booking, ticket } = row;
+    const language = lang ?? booking.customerLocale;
+    const texts = localizedTexts(row.product, language);
+    const items = await this.items(this.db, bookingId, row.product, language);
 
     const status: TicketDto['status'] =
       booking.status === 'pending_payment'
@@ -281,12 +304,13 @@ export class TicketsService {
     return {
       bookingReference: booking.reference,
       status,
-      productName: row.product.name,
+      productName: texts.name,
       tenantName: row.tenantName,
       timezone: row.timezone,
       branding: row.branding,
       startsAt: booking.startsAt.toISOString(),
-      meetingPoint: row.product.meetingPoint,
+      meetingPoint: texts.meetingPoint,
+      customerNote: texts.customerNote,
       seats: booking.seats,
       items,
       customerName: booking.customerName,
@@ -319,12 +343,39 @@ export class TicketsService {
         checkedInBy: null,
       };
     }
+    return this.checkInTicket(tenantId, payload.tid, userId, lang);
+  }
+
+  /**
+   * Boarding from the passenger list, for a customer who cannot show their ticket (flat phone):
+   * the same as scanning it.
+   */
+  async boardBooking(
+    tenantId: string,
+    bookingId: string,
+    userId: string,
+    lang = 'en',
+  ): Promise<CheckInResultDto> {
+    const [ticket] = await this.db
+      .select({ id: tickets.id })
+      .from(tickets)
+      .where(and(eq(tickets.bookingId, bookingId), eq(tickets.tenantId, tenantId)));
+    if (!ticket) throw new NotFound('ticket');
+    return this.checkInTicket(tenantId, ticket.id, userId, lang);
+  }
+
+  private async checkInTicket(
+    tenantId: string,
+    ticketId: string,
+    userId: string,
+    lang: string,
+  ): Promise<CheckInResultDto> {
     const now = this.clock.now();
     const outcome = await this.db.transaction(async (tx) => {
       const [ticket] = await tx
         .select()
         .from(tickets)
-        .where(and(eq(tickets.id, payload.tid), eq(tickets.tenantId, tenantId)))
+        .where(and(eq(tickets.id, ticketId), eq(tickets.tenantId, tenantId)))
         .for('update');
       if (!ticket) return { result: 'not_valid' as const, bookingId: null, collectMinor: 0 };
       const firstScan = {
@@ -383,7 +434,7 @@ export class TicketsService {
       };
     });
 
-    const ticket = outcome.bookingId ? await this.ticketDto(outcome.bookingId) : null;
+    const ticket = outcome.bookingId ? await this.ticketDto(outcome.bookingId, lang) : null;
     const scan = 'checkedInAt' in outcome ? outcome : null;
     const messages = {
       checked_in: 'errors.checkIn.checkedIn',

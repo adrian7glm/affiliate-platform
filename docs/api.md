@@ -34,41 +34,54 @@ Errors: `{ statusCode, error, message, details? }`.
 
 ## Operator (roles `owner`, `staff`)
 
-| Method | Path                                          | Body / query           | Response                            |
-| ------ | --------------------------------------------- | ---------------------- | ----------------------------------- |
-| GET    | `/operator/dashboard`                         |                        | `OperatorDashboardDto`              |
-| GET    | `/operator/analytics`                         | `?period=YYYY-MM`      | `OperatorAnalyticsDto`              |
-| GET    | `/operator/affiliates`                        |                        | `AffiliateWithStatsDto[]`           |
-| POST   | `/operator/affiliates`                        | `InviteAffiliateBody`  | `AffiliateDto` (with `inviteUrl`)   |
-| PATCH  | `/operator/affiliates/:id`                    | `UpdateAffiliateBody`  | `AffiliateDto`                      |
-| GET    | `/operator/commission-plans`                  |                        | `CommissionPlanDto[]`               |
-| POST   | `/operator/commission-plans`                  | `CreatePlanBody`       | `CommissionPlanDto`                 |
-| PUT    | `/operator/commission-plans/:id`              | `UpdatePlanBody`       | `CommissionPlanDto` (new version)   |
-| POST   | `/operator/commission-plans/:id/make-default` |                        | `CommissionPlanDto`                 |
-| DELETE | `/operator/commission-plans/:id`              |                        | `ArchivePlanResultDto`              |
-| GET    | `/operator/products`                          |                        | `ProductDto[]`                      |
-| POST   | `/operator/products`                          | `CreateProductBody`    | `ProductDto`                        |
-| PATCH  | `/operator/products/:id`                      | `UpdateProductBody`    | `ProductDto`                        |
-| GET    | `/operator/products/:id/slots`                | `?from&to`             | `OperatorSlotDto[]`                 |
-| POST   | `/operator/products/:id/slots`                | `CreateSlotsBody`      | `{ created: number }`               |
-| PATCH  | `/operator/products/:id/slots`                | `UpdateSlotsBody`      | `UpdateSlotsResultDto`              |
-| POST   | `/operator/products/:id/slots/delete`         | `DeleteSlotsBody`      | `DeleteSlotsResultDto`              |
-| POST   | `/operator/products/:id/slots/cancel`         | `CancelDeparturesBody` | `CancelDeparturesResultDto`         |
-| GET    | `/operator/settings`                          |                        | `OperatorSettingsDto`               |
-| PATCH  | `/operator/settings` (owner)                  | `UpdateSettingsBody`   | `OperatorSettingsDto`               |
-| GET    | `/operator/bookings`                          | `?from&to`             | `BookingDto[]`                      |
-| POST   | `/operator/bookings/:id/cancel`               | `CancelBookingBody`    | `BookingDto`                        |
-| POST   | `/operator/tickets/check-in`                  | `CheckInBody`          | `CheckInResultDto` (also `scanner`) |
-| GET    | `/operator/scanners`                          |                        | `ScannerAccountDto[]`               |
-| POST   | `/operator/scanners`                          | `AddScannerBody`       | `ScannerAccountDto`                 |
-| DELETE | `/operator/scanners/:userId`                  |                        | 204                                 |
-| GET    | `/operator/commissions/report`                | `?period=YYYY-MM`      | `CommissionReportDto`               |
-| POST   | `/operator/payouts/close-period`              | `ClosePeriodBody`      | `ClosePeriodResultDto`              |
-| GET    | `/operator/payouts`                           | `?period=YYYY-MM`      | `PayoutDto[]`                       |
-| POST   | `/operator/payouts/:id/mark-paid`             |                        | `PayoutDto`                         |
-| GET    | `/operator/sources`                           |                        | `SourceDto[]`                       |
-| POST   | `/operator/sources` (owner)                   | `ConnectSourceBody`    | `SourceDto`                         |
-| POST   | `/operator/sources/:id/sync`                  |                        | `SyncResultDto`                     |
+| Method | Path                                          | Body / query           | Response                                    |
+| ------ | --------------------------------------------- | ---------------------- | ------------------------------------------- |
+| GET    | `/operator/dashboard`                         |                        | `OperatorDashboardDto`                      |
+| GET    | `/operator/analytics`                         | `?period=YYYY-MM`      | `OperatorAnalyticsDto`                      |
+| GET    | `/operator/affiliates`                        |                        | `AffiliateWithStatsDto[]`                   |
+| POST   | `/operator/affiliates`                        | `InviteAffiliateBody`  | `AffiliateDto` (with `inviteUrl`)           |
+| PATCH  | `/operator/affiliates/:id`                    | `UpdateAffiliateBody`  | `AffiliateDto`                              |
+| GET    | `/operator/commission-plans`                  |                        | `CommissionPlanDto[]`                       |
+| POST   | `/operator/commission-plans`                  | `CreatePlanBody`       | `CommissionPlanDto`                         |
+| PUT    | `/operator/commission-plans/:id`              | `UpdatePlanBody`       | `CommissionPlanDto` (new version)           |
+| POST   | `/operator/commission-plans/:id/make-default` |                        | `CommissionPlanDto`                         |
+| DELETE | `/operator/commission-plans/:id`              |                        | `ArchivePlanResultDto`                      |
+| GET    | `/operator/products`                          |                        | `ProductDto[]`                              |
+| POST   | `/operator/products`                          | `CreateProductBody`    | `ProductDto`                                |
+| PATCH  | `/operator/products/:id`                      | `UpdateProductBody`    | `ProductDto`                                |
+| GET    | `/operator/products/:id/slots`                | `?from&to`             | `OperatorSlotDto[]`                         |
+| POST   | `/operator/products/:id/slots`                | `CreateSlotsBody`      | `{ created: number }`                       |
+| PATCH  | `/operator/products/:id/slots`                | `UpdateSlotsBody`      | `UpdateSlotsResultDto`                      |
+| POST   | `/operator/products/:id/slots/delete`         | `DeleteSlotsBody`      | `DeleteSlotsResultDto`                      |
+| POST   | `/operator/products/:id/slots/cancel`         | `CancelDeparturesBody` | `CancelDeparturesResultDto`                 |
+| GET    | `/operator/settings`                          |                        | `OperatorSettingsDto`                       |
+| PATCH  | `/operator/settings` (owner)                  | `UpdateSettingsBody`   | `OperatorSettingsDto`                       |
+| GET    | `/operator/bookings`                          | `?from&to`             | `BookingDto[]`                              |
+| POST   | `/operator/bookings/:id/cancel`               | `CancelBookingBody`    | `BookingDto`                                |
+| POST   | `/operator/bookings/:id/board`                |                        | `CheckInResultDto` (boarded without a scan) |
+| GET    | `/operator/departures`                        | `?date=YYYY-MM-DD`     | `DepartureDayDto`                           |
+| GET    | `/operator/departures/:slotId/passengers`     |                        | `DeparturePassengersDto`                    |
+| POST   | `/operator/tickets/check-in`                  | `CheckInBody`          | `CheckInResultDto` (also `scanner`)         |
+| GET    | `/operator/scanners`                          |                        | `ScannerAccountDto[]`                       |
+| POST   | `/operator/scanners`                          | `AddScannerBody`       | `ScannerAccountDto`                         |
+| DELETE | `/operator/scanners/:userId`                  |                        | 204                                         |
+| GET    | `/operator/commissions/report`                | `?period=YYYY-MM`      | `CommissionReportDto`                       |
+| POST   | `/operator/payouts/close-period`              | `ClosePeriodBody`      | `ClosePeriodResultDto`                      |
+| GET    | `/operator/payouts`                           | `?period=YYYY-MM`      | `PayoutDto[]`                               |
+| POST   | `/operator/payouts/:id/mark-paid`             |                        | `PayoutDto`                                 |
+| GET    | `/operator/sources`                           |                        | `SourceDto[]`                               |
+| POST   | `/operator/sources` (owner)                   | `ConnectSourceBody`    | `SourceDto`                                 |
+| POST   | `/operator/sources/:id/sync`                  |                        | `SyncResultDto`                             |
+
+Trip extras (`CreateProductBody` / `UpdateProductBody`, also for trips from the operator's own
+system): `customerNote` is shown on the trip page, the ticket, the PDF and the confirmation email;
+`questions` (at most 10, `text` or `choice`) are asked on both booking forms and their answers are
+stored on the booking as asked (`BookingDto.answers`, `PassengerDto.answers`);
+`commissionRateBps` replaces each affiliate's plan rate on that trip (the sale still counts
+toward the plan's tiers, and a negotiated affiliate rate still wins; the rate is frozen on the
+commission entry); `translations` holds the trip's texts per language. Public and affiliate
+routes return the trip in the `Accept-Language` language where it is translated, and in the
+operator's language otherwise; operators get their own texts plus `translations`.
 
 ## Boarding scanner (roles `scanner`, `owner`, `staff`)
 
@@ -81,19 +94,19 @@ A `scanner` account sees nothing else: besides this route it can only call
 
 ## Public (no authentication)
 
-| Method | Path                                                | Body / query         | Response                                    |
-| ------ | --------------------------------------------------- | -------------------- | ------------------------------------------- |
-| POST   | `/public/links/:code/click`                         | `RecordClickBody`    | `ClickResultDto`                            |
-| GET    | `/public/tenants/:slug`                             |                      | `PublicTenantDto`                           |
-| GET    | `/public/tenants/:slug/products/:productSlug`       |                      | `ProductDto`                                |
-| GET    | `/public/tenants/:slug/products/:productSlug/slots` | `?from&to`           | `SlotDto[]`                                 |
-| POST   | `/public/tenants/:slug/checkout`                    | `PublicCheckoutBody` | `CheckoutResultDto`                         |
-| GET    | `/public/tickets/:bookingId`                        | `?k=<ticket key>`    | `TicketDto`                                 |
-| GET    | `/public/tickets/:bookingId/pdf`                    | `?k&lang&download=1` | PDF ticket (409 if the ticket is not valid) |
-| GET    | `/public/tickets/:bookingId/calendar.ics`           | `?k&lang`            | iCalendar event (409 if not valid)          |
-| POST   | `/public/contact`                                   | `ContactRequestBody` | 204 (429 after 3 per hour per email)        |
-| POST   | `/public/dev-payments/:bookingId/succeed`           | `?k=<ticket key>`    | 204, only with `PAYMENTS_PROVIDER=fake`     |
-| POST   | `/webhooks/stripe`                                  | Stripe event         | 200                                         |
+| Method | Path                                                | Body / query           | Response                                    |
+| ------ | --------------------------------------------------- | ---------------------- | ------------------------------------------- |
+| POST   | `/public/links/:code/click`                         | `RecordClickBody`      | `ClickResultDto`                            |
+| GET    | `/public/tenants/:slug`                             |                        | `PublicTenantDto`                           |
+| GET    | `/public/tenants/:slug/products/:productSlug`       |                        | `ProductDto`                                |
+| GET    | `/public/tenants/:slug/products/:productSlug/slots` | `?from&to`             | `SlotDto[]`                                 |
+| POST   | `/public/tenants/:slug/checkout`                    | `PublicCheckoutBody`   | `CheckoutResultDto`                         |
+| GET    | `/public/tickets/:bookingId`                        | `?k=<ticket key>&lang` | `TicketDto`                                 |
+| GET    | `/public/tickets/:bookingId/pdf`                    | `?k&lang&download=1`   | PDF ticket (409 if the ticket is not valid) |
+| GET    | `/public/tickets/:bookingId/calendar.ics`           | `?k&lang`              | iCalendar event (409 if not valid)          |
+| POST   | `/public/contact`                                   | `ContactRequestBody`   | 204 (429 after 3 per hour per email)        |
+| POST   | `/public/dev-payments/:bookingId/succeed`           | `?k=<ticket key>`      | 204, only with `PAYMENTS_PROVIDER=fake`     |
+| POST   | `/webhooks/stripe`                                  | Stripe event           | 200                                         |
 
 `PublicCheckoutBody.acceptTerms` must be `true` (the customer ticked the booking terms and
 privacy policy); the time is stored on the booking. Cancelling departures closes them, then

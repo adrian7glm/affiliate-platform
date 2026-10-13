@@ -231,7 +231,9 @@
       "tripUnavailable": "această excursie nu mai este disponibilă",
       "unknownPrice": "tip de bilet necunoscut pentru această excursie",
       "noSeats": "alege cel puțin un loc",
-      "paymentsUnavailable": "plățile nu sunt disponibile acum, încearcă din nou peste un minut"
+      "paymentsUnavailable": "plățile nu sunt disponibile acum, încearcă din nou peste un minut",
+      "answerRequired": "te rugăm să răspunzi: {question}",
+      "invalidAnswer": "alege unul dintre răspunsurile oferite la: {question}"
     },
     "departures": {
       "closed": "pentru această plecare nu se mai pot face rezervări",
@@ -531,6 +533,12 @@
       "privacyNote": "Folosim datele tale doar ca să-ți răspundem. Vezi {privacy}.",
       "sentTitle": "Mulțumim, am primit mesajul",
       "sentText": "Îți răspundem la {email}."
+    },
+    "goodToKnow": "Bine de știut",
+    "questions": {
+      "optional": "opțional",
+      "choose": "Alege…",
+      "required": "Te rugăm să răspunzi la această întrebare."
     }
   },
   "ticket": {
@@ -738,7 +746,8 @@
       "booking": "Se rezervă…",
       "submit": "Rezervă · {total}",
       "slotWhen": "{day}, ora {time}",
-      "change": "Schimbă"
+      "change": "Schimbă",
+      "tripCommission": "Comisionul tău pe această excursie: {rate}"
     },
     "result": {
       "created": "Rezervare creată",
@@ -841,7 +850,8 @@
       "area": "Administrare",
       "sections": "Secțiuni",
       "menu": "Meniu",
-      "tenant": "Operator"
+      "tenant": "Operator",
+      "departures": "Liste de pasageri"
     },
     "dashboard": {
       "title": "Panou",
@@ -1150,7 +1160,8 @@
       "reasonPlaceholder": "ex. Vreme rea, excursia nu mai pleacă",
       "keep": "Renunță",
       "cancelling": "Se anulează…",
-      "confirmCancel": "Anulează rezervarea"
+      "confirmCancel": "Anulează rezervarea",
+      "csvAnswers": "Răspunsuri"
     },
     "billing": {
       "title": "Abonament",
@@ -1190,6 +1201,58 @@
       "planPrice": "/ lună + {fee} / rezervare",
       "choose": "Alege {name}",
       "ownerOnly": "Doar administratorul contului poate schimba planul."
+    },
+    "departures": {
+      "title": "Liste de pasageri",
+      "description": "Cine e pe fiecare cursă, ce a răspuns la rezervare și ce mai e de încasat. Tipărește lista sau descarc-o pentru echipaj.",
+      "previousDay": "Ziua anterioară",
+      "nextDay": "Ziua următoare",
+      "pickDay": "Ziua",
+      "none": "Nicio cursă {day}.",
+      "chooseDeparture": "Alege o cursă ca să vezi pasagerii.",
+      "passengersTitle": "Pasageri",
+      "seatsOf": "{booked} din {capacity} locuri rezervate",
+      "boardedOf": "{boarded} din {booked} la bord",
+      "pendingPayment_one": "O rezervare încă neplătită",
+      "pendingPayment_few": "{count} rezervări încă neplătite",
+      "pendingPayment_other": "{count} de rezervări încă neplătite",
+      "closed": "Închisă la vânzare",
+      "downloadCsv": "Descarcă CSV",
+      "noPassengers": "Nimeni nu a rezervat încă la această cursă.",
+      "search": "Caută",
+      "searchHint": "Nume, cod de rezervare, cameră sau telefon",
+      "toBoard_one": "O rezervare mai are de urcat la bord",
+      "toBoard_few": "{count} rezervări mai au de urcat la bord",
+      "toBoard_other": "{count} de rezervări mai au de urcat la bord",
+      "noMatch": "Nimeni nu se potrivește căutării.",
+      "notPaid": "Neplătită",
+      "confirmed": "Confirmată",
+      "boardedAt": "La bord la {time}",
+      "due": "De încasat {amount}",
+      "room": "Camera",
+      "soldBy": "Vândut de",
+      "board": "Marchează la bord",
+      "boardTitle": "Marchezi la bord?",
+      "boardBody": "{name} urcă la bord fără scanarea biletului. După aceea biletul nu mai poate fi folosit.",
+      "boardHint": "Folosește asta când clientul nu are telefonul la el sau codul QR nu se scanează. Se înregistrează pe numele tău.",
+      "confirmBoard": "Da, la bord",
+      "collectFirst": "Încasează {amount} de la client: plătește la îmbarcare.",
+      "boardedNotice": "{name} e la bord.",
+      "boardedCollect": "{name} e la bord. Încasează {amount}.",
+      "alreadyBoarded": "{name} era deja la bord.",
+      "csvName": "Nume",
+      "csvReference": "Cod rezervare",
+      "csvSeats": "Locuri",
+      "csvTickets": "Bilete",
+      "csvRoom": "Cameră",
+      "csvPhone": "Telefon",
+      "csvAnswers": "Răspunsuri",
+      "csvDue": "De încasat",
+      "csvCurrency": "Monedă",
+      "csvAffiliate": "Afiliat",
+      "csvStatus": "Stare",
+      "csvBoarded": "Urcat la bord",
+      "csvFile": "pasageri-{date}-{time}.csv"
     }
   },
   "admin": {
@@ -1670,7 +1733,8 @@
       "sms": "{tenant}: biletul tău {reference} pentru {product}, {when}, {seats}. Arată codul QR la îmbarcare: {url}",
       "smsDue": "{tenant}: biletul tău {reference} pentru {product}, {when}, {seats}, de plată la îmbarcare {due}. Arată codul QR la îmbarcare: {url}",
       "calendarAttached": "Excursia e atașată și ca eveniment de calendar: deschide-l ca să o adaugi în calendar.",
-      "addToGoogle": "Adaugă în Google Calendar"
+      "addToGoogle": "Adaugă în Google Calendar",
+      "note": "Mesaj de la {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "Rezervarea {reference} a fost anulată",
@@ -1703,7 +1767,8 @@
       "dueOnSite": "De plată la îmbarcare",
       "onlineTicket": "Biletul online",
       "keepOnPhone": "Nu trebuie printat: păstrează-l pe telefon.",
-      "fileName": "bilet-{reference}.pdf"
+      "fileName": "bilet-{reference}.pdf",
+      "note": "Bine de știut"
     },
     "calendar": {
       "description": "Rezervarea {reference}. Biletul tău: {url}"
@@ -1906,7 +1971,8 @@
       "cancelExplain_few": "Sunt {count} locuri rezervate. Toate rezervările se anulează, banii plătiți online se întorc pe carduri, iar fiecare client primește un email sau SMS cu motivul.",
       "cancelledBookings_few": "{count} rezervări anulate.",
       "cancelledRefunded_few": "{count} clienți primesc banii înapoi.",
-      "cancelledFailed_few": "{count} rezervări nu au putut fi anulate: încearcă din nou."
+      "cancelledFailed_few": "{count} rezervări nu au putut fi anulate: încearcă din nou.",
+      "passengers": "Vezi lista de pasageri"
     },
     "settings": {
       "title": "Setări și aspect",
@@ -2022,6 +2088,57 @@
       "token": "Token de acces",
       "connecting": "Se conectează…",
       "connect": "Conectează"
+    },
+    "extras": {
+      "heading": "Pentru clienți și afiliați",
+      "customerButton": "Mesaj și întrebări",
+      "translationsButton": "Traduceri",
+      "commissionButton": "Comision",
+      "customerTitle": "Mesaj și întrebări: {name}",
+      "translationsTitle": "Traduceri: {name}",
+      "commissionTitle": "Comision: {name}",
+      "commissionChip": "Comision propriu {rate}",
+      "translatedChip": "Tradusă: {languages}",
+      "questionsChip_one": "O întrebare",
+      "questionsChip_few": "{count} întrebări",
+      "questionsChip_other": "{count} de întrebări",
+      "note": "Mesaj pentru clienți",
+      "noteHint": "Apare pe pagina excursiei, pe bilet și în emailul de confirmare. De ex. „Veniți cu 15 minute mai devreme, luați un prosop.”",
+      "questionsLegend": "Întrebări la rezervare",
+      "questionsHelp": "Întreabă ce trebuie să știi înainte de plecare. Răspunsurile apar la rezervări și pe lista de pasageri.",
+      "noQuestions": "Nicio întrebare deocamdată: clienții dau doar numele și datele de contact.",
+      "question": "Întrebarea {number}",
+      "questionHint": "De ex. „Ce meniu doriți la prânz?” sau „Hotelul de unde vă luăm”.",
+      "removeQuestion": "Șterge întrebarea {number}",
+      "answerKind": "Răspuns",
+      "kindText": "Scris de client",
+      "kindChoice": "Ales dintr-o listă",
+      "required": "Răspuns obligatoriu",
+      "options": "Variante",
+      "optionsHint": "Câte una pe rând, de ex. Pește, Pui, Vegetarian.",
+      "addQuestion": "Adaugă o întrebare",
+      "translateReminder": "Dacă schimbi mesajul sau întrebările, verifică și traducerile lor.",
+      "errQuestionLabel": "Scrie întrebarea.",
+      "errOptionsMin": "Scrie cel puțin două variante, câte una pe rând.",
+      "errOptionsMax": "Cel mult {max} variante.",
+      "errOptionLength": "Fiecare variantă: cel mult 80 de caractere.",
+      "translationsHelp": "Clienții văd excursia în limba lor acolo unde ai tradus-o. Limba textelor tale: {language}.",
+      "language": "Limba",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "{done} din {total} texte traduse",
+      "originalText": "Original: {text}",
+      "ticketNames": "Tipurile de bilet",
+      "questionText": "Textul întrebării",
+      "untranslatedNote": "Ce lași gol apare în limba ta. Traducerile în toate limbile se salvează împreună.",
+      "saveTranslations": "Salvează traducerile",
+      "commissionLegend": "Cât câștigă afiliații pe această excursie",
+      "commissionPlan": "Planul fiecărui afiliat",
+      "commissionPlanHelp": "Procentul din planul lor de comision, cu pragurile lui.",
+      "commissionOwn": "Un procent doar pentru această excursie",
+      "commissionOwnHelp": "Același procent pentru toți afiliații, de ex. pentru o excursie cu marjă mai mică.",
+      "rate": "Comision (%)",
+      "errRate": "Un procent între 0 și 100, de ex. 12,5.",
+      "commissionNote": "Vânzările acestei excursii contează în continuare la pragurile din planul fiecărui afiliat. Afiliații cu comision negociat își păstrează comisionul lor."
     }
   },
   "charts": {

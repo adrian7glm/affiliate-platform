@@ -1,6 +1,8 @@
 import type {
   ArchivePlanResultDto,
   DeleteSlotsResultDto,
+  DepartureDayDto,
+  DeparturePassengersDto,
   OperatorSettingsDto,
   OperatorSlotDto,
   UpdatePlanBody,
@@ -59,7 +61,8 @@ import { API_URL, apiFetch, buildUrl, type RequestOptions } from './api';
  * One typed function per endpoint in docs/api.md. Pages call these instead of building URLs.
  */
 
-type Opts = Pick<RequestOptions, 'signal' | 'baseUrl'>;
+/** `lang`: the language of error messages and, on public pages, of the operator's trip texts. */
+type Opts = Pick<RequestOptions, 'signal' | 'baseUrl' | 'lang'>;
 const enc = encodeURIComponent;
 
 export interface DateRange {
@@ -168,6 +171,16 @@ export const operatorApi = {
     apiFetch<BookingDto>(`/operator/bookings/${enc(id)}/cancel`, { ...o, method: 'POST', body }),
   checkIn: (body: CheckInBody, o?: Opts) =>
     apiFetch<CheckInResultDto>('/operator/tickets/check-in', { ...o, method: 'POST', body }),
+  /** Boards a passenger from the list, without scanning their ticket. */
+  board: (bookingId: string, o?: Opts) =>
+    apiFetch<CheckInResultDto>(`/operator/bookings/${enc(bookingId)}/board`, {
+      ...o,
+      method: 'POST',
+    }),
+  departures: (date: string, o?: Opts) =>
+    apiFetch<DepartureDayDto>('/operator/departures', { ...o, query: { date } }),
+  passengers: (slotId: string, o?: Opts) =>
+    apiFetch<DeparturePassengersDto>(`/operator/departures/${enc(slotId)}/passengers`, o),
   commissionReport: (period: string, o?: Opts) =>
     apiFetch<CommissionReportDto>('/operator/commissions/report', { ...o, query: { period } }),
   closePeriod: (body: ClosePeriodBody, o?: Opts) =>
@@ -218,11 +231,12 @@ export const publicApi = {
       body,
       auth: false,
     }),
+  /** The ticket, with the trip in `lang` where the operator translated it. */
   ticket: (bookingId: string, key: string, o?: Opts) =>
     apiFetch<TicketDto>(`/public/tickets/${enc(bookingId)}`, {
       ...o,
       auth: false,
-      query: { k: key },
+      query: { k: key, lang: o?.lang ?? undefined },
     }),
   /** Direct link to the PDF ticket; `download` asks the browser to save it. */
   ticketPdfUrl: (bookingId: string, key: string, lang: string, download = false) =>

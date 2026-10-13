@@ -236,6 +236,7 @@ export function ChoiceGroup<T extends string>({
       {error ? (
         <p
           id={errorId}
+          role="alert"
           className="mt-1.5 flex items-start gap-1.5 text-sm font-medium text-danger-fg"
         >
           <IconAlert size={18} className="mt-0.5 shrink-0" />

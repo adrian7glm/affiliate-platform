@@ -1,4 +1,4 @@
-import { applyRate, assertMinorUnits } from './money';
+import { applyRate, assertMinorUnits, assertRateBps } from './money';
 import { type CommissionPlan, rateForSale, tierIndexForSale, validatePlan } from './plan';
 
 /**
@@ -12,6 +12,11 @@ export interface Sale {
   grossMinor: number;
   taxMinor: number;
   cancelled: boolean;
+  /**
+   * The trip's own rate (an operator can pay more on one trip): the sale earns it whatever the
+   * tier, on the plan's basis, and still counts towards the tiers. Absent or null: the plan.
+   */
+  tripRateBps?: number | null;
 }
 
 export interface SaleCommission {
@@ -42,7 +47,7 @@ export function commissionBase(
  */
 export function commissionAtSale(
   plan: CommissionPlan,
-  sale: Pick<Sale, 'bookingId' | 'grossMinor' | 'taxMinor'>,
+  sale: Pick<Sale, 'bookingId' | 'grossMinor' | 'taxMinor' | 'tripRateBps'>,
   paidSalesBefore: number,
 ): SaleCommission {
   validatePlan(plan);
@@ -51,7 +56,7 @@ export function commissionAtSale(
   }
   const saleNumber = paidSalesBefore + 1;
   const baseMinor = commissionBase(plan, sale);
-  const rateBps = rateForSale(plan, saleNumber);
+  const rateBps = tripRate(sale) ?? rateForSale(plan, saleNumber);
   return {
     bookingId: sale.bookingId,
     saleNumber,
@@ -59,6 +64,12 @@ export function commissionAtSale(
     rateBps,
     amountMinor: applyRate(baseMinor, rateBps),
   };
+}
+
+function tripRate(sale: Pick<Sale, 'tripRateBps'>): number | null {
+  if (sale.tripRateBps === undefined || sale.tripRateBps === null) return null;
+  assertRateBps(sale.tripRateBps, 'tripRateBps');
+  return sale.tripRateBps;
 }
 
 function bySaleOrder(a: Sale, b: Sale): number {
@@ -88,7 +99,7 @@ export function computePeriodCommissions(plan: CommissionPlan, sales: Sale[]): S
       return { bookingId: sale.bookingId, saleNumber: null, baseMinor, rateBps: 0, amountMinor: 0 };
     }
     saleNumber += 1;
-    const rateBps = retroactiveRate ?? rateForSale(plan, saleNumber);
+    const rateBps = tripRate(sale) ?? retroactiveRate ?? rateForSale(plan, saleNumber);
     return {
       bookingId: sale.bookingId,
       saleNumber,

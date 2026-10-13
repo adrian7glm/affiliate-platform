@@ -13,6 +13,8 @@ export interface TicketPdfData {
   timezone: string;
   customerName: string;
   meetingPoint: string | null;
+  /** The operator's message for the trip's customers. */
+  customerNote?: string | null;
   seats: number;
   items?: { label: string; quantity: number }[];
   /** Signed QR payload, the same one the ticket page and email show. */
@@ -43,6 +45,7 @@ const DANGER = '#b91c1c';
 const PAGE = { width: 360, height: 640 };
 const MARGIN = 24;
 const QR_SIZE = 200;
+const NOTE_MAX_CHARS = 240;
 
 export function ticketPdfFilename(reference: string, tr: Translator): string {
   return tr.t('email.ticketPdf.fileName', { reference: reference.replace(/[^A-Za-z0-9-]/g, '') });
@@ -60,6 +63,7 @@ export async function renderTicketPdf(data: TicketPdfData, tr: Translator): Prom
     seats: word('seats'),
     tickets: word('tickets'),
     meetingPoint: word('meetingPoint'),
+    note: word('note'),
     dueOnSite: word('dueOnSite'),
     onlineTicket: word('onlineTicket'),
     keepOnPhone: word('keepOnPhone'),
@@ -152,6 +156,25 @@ export async function renderTicketPdf(data: TicketPdfData, tr: Translator): Prom
       .fillColor(INK)
       .text(value, MARGIN + labelWidth, y - 1, { width: width - labelWidth });
     doc.y = Math.max(doc.y, y + 14) + 5;
+  }
+
+  if (data.customerNote) {
+    // The page is phone-sized: a long message is cut here, the online ticket shows all of it.
+    const note =
+      data.customerNote.length > NOTE_MAX_CHARS
+        ? `${data.customerNote.slice(0, NOTE_MAX_CHARS - 1).trimEnd()}…`
+        : data.customerNote;
+    doc
+      .font('regular')
+      .fontSize(10)
+      .fillColor(MUTED)
+      .text(t.note, MARGIN, doc.y + 2, { width });
+    doc
+      .font('regular')
+      .fontSize(9.5)
+      .fillColor(INK)
+      .text(note, MARGIN, doc.y + 1, { width });
+    doc.y += 6;
   }
 
   if (data.amountDueOnSiteMinor > 0) {

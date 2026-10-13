@@ -229,7 +229,9 @@
       "tripUnavailable": "diese Tour ist nicht mehr verfügbar",
       "unknownPrice": "unbekannte Ticketart für diese Tour",
       "noSeats": "wählen Sie mindestens einen Platz",
-      "paymentsUnavailable": "Zahlungen sind gerade nicht möglich, versuchen Sie es in einer Minute erneut"
+      "paymentsUnavailable": "Zahlungen sind gerade nicht möglich, versuchen Sie es in einer Minute erneut",
+      "answerRequired": "bitte beantworten Sie: {question}",
+      "invalidAnswer": "wählen Sie eine der angebotenen Antworten für: {question}"
     },
     "departures": {
       "closed": "diese Abfahrt kann nicht mehr gebucht werden",
@@ -525,6 +527,12 @@
       "privacyNote": "Wir verwenden Ihre Angaben nur, um Ihnen zu antworten. Siehe {privacy}.",
       "sentTitle": "Vielen Dank, Ihre Nachricht ist angekommen",
       "sentText": "Wir antworten Ihnen an {email}."
+    },
+    "goodToKnow": "Gut zu wissen",
+    "questions": {
+      "optional": "optional",
+      "choose": "Bitte wählen…",
+      "required": "Bitte beantworten Sie diese Frage."
     }
   },
   "ticket": {
@@ -725,7 +733,8 @@
       "booking": "Wird gebucht…",
       "submit": "Buchen · {total}",
       "slotWhen": "{day} um {time}",
-      "change": "Ändern"
+      "change": "Ändern",
+      "tripCommission": "Ihre Provision für diese Tour: {rate}"
     },
     "result": {
       "created": "Buchung erstellt",
@@ -827,7 +836,8 @@
       "area": "Verwaltung",
       "sections": "Bereiche",
       "menu": "Menü",
-      "tenant": "Anbieter"
+      "tenant": "Anbieter",
+      "departures": "Passagierlisten"
     },
     "dashboard": {
       "title": "Übersicht",
@@ -1116,7 +1126,8 @@
       "reasonPlaceholder": "z. B. Schlechtes Wetter, die Tour findet nicht statt",
       "keep": "Buchung behalten",
       "cancelling": "Wird storniert…",
-      "confirmCancel": "Buchung stornieren"
+      "confirmCancel": "Buchung stornieren",
+      "csvAnswers": "Antworten"
     },
     "billing": {
       "title": "Abonnement",
@@ -1152,6 +1163,56 @@
       "planPrice": "/ Monat + {fee} / Buchung",
       "choose": "{name} wählen",
       "ownerOnly": "Nur der Kontoadministrator kann den Plan ändern."
+    },
+    "departures": {
+      "title": "Passagierlisten",
+      "description": "Wer bei jeder Abfahrt dabei ist, was bei der Buchung angegeben wurde und was noch zu kassieren ist. Zum Ausdrucken oder Herunterladen für die Crew.",
+      "previousDay": "Vorheriger Tag",
+      "nextDay": "Nächster Tag",
+      "pickDay": "Tag",
+      "none": "Keine Abfahrten am {day}.",
+      "chooseDeparture": "Wählen Sie eine Abfahrt, um die Passagiere zu sehen.",
+      "passengersTitle": "Passagiere",
+      "seatsOf": "{booked} von {capacity} Plätzen gebucht",
+      "boardedOf": "{boarded} von {booked} an Bord",
+      "pendingPayment_one": "1 Buchung noch nicht bezahlt",
+      "pendingPayment_other": "{count} Buchungen noch nicht bezahlt",
+      "closed": "Für den Verkauf geschlossen",
+      "downloadCsv": "CSV herunterladen",
+      "noPassengers": "Für diese Abfahrt hat noch niemand gebucht.",
+      "search": "Suchen",
+      "searchHint": "Name, Buchungsnummer, Zimmer oder Telefon",
+      "toBoard_one": "1 Buchung noch nicht an Bord",
+      "toBoard_other": "{count} Buchungen noch nicht an Bord",
+      "noMatch": "Niemand passt zur Suche.",
+      "notPaid": "Nicht bezahlt",
+      "confirmed": "Bestätigt",
+      "boardedAt": "An Bord um {time}",
+      "due": "Zu kassieren: {amount}",
+      "room": "Zimmer",
+      "soldBy": "Verkauft von",
+      "board": "Als an Bord markieren",
+      "boardTitle": "Als an Bord markieren?",
+      "boardBody": "{name} geht ohne Scannen des Tickets an Bord. Danach kann das Ticket nicht mehr verwendet werden.",
+      "boardHint": "Nutzen Sie dies, wenn der Kunde kein Telefon dabeihat oder der QR-Code nicht lesbar ist. Es wird unter Ihrem Namen erfasst.",
+      "confirmBoard": "Ja, an Bord",
+      "collectFirst": "Kassieren Sie {amount} beim Kunden: Er zahlt beim Einsteigen.",
+      "boardedNotice": "{name} ist an Bord.",
+      "boardedCollect": "{name} ist an Bord. Kassieren Sie {amount}.",
+      "alreadyBoarded": "{name} war bereits an Bord.",
+      "csvName": "Name",
+      "csvReference": "Buchungsnummer",
+      "csvSeats": "Plätze",
+      "csvTickets": "Tickets",
+      "csvRoom": "Zimmer",
+      "csvPhone": "Telefon",
+      "csvAnswers": "Antworten",
+      "csvDue": "Zu kassieren",
+      "csvCurrency": "Währung",
+      "csvAffiliate": "Affiliate",
+      "csvStatus": "Status",
+      "csvBoarded": "An Bord um",
+      "csvFile": "passagiere-{date}-{time}.csv"
     }
   },
   "admin": {
@@ -1609,7 +1670,8 @@
       "sms": "{tenant}: Ticket {reference} für {product}, {when}, {seats}. Zeigen Sie den QR-Code beim Einsteigen: {url}",
       "smsDue": "{tenant}: Ticket {reference} für {product}, {when}, {seats}, beim Einsteigen zu zahlen: {due}. Zeigen Sie den QR-Code beim Einsteigen: {url}",
       "calendarAttached": "Die Tour ist auch als Kalendertermin angehängt: Öffnen Sie ihn, um ihn zu Ihrem Kalender hinzuzufügen.",
-      "addToGoogle": "Zu Google Calendar hinzufügen"
+      "addToGoogle": "Zu Google Calendar hinzufügen",
+      "note": "Nachricht von {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "Die Buchung {reference} wurde storniert",
@@ -1642,7 +1704,8 @@
       "dueOnSite": "Beim Einsteigen zu zahlen",
       "onlineTicket": "Online-Ticket",
       "keepOnPhone": "Ausdrucken ist nicht nötig: Bewahren Sie es auf Ihrem Handy auf.",
-      "fileName": "ticket-{reference}.pdf"
+      "fileName": "ticket-{reference}.pdf",
+      "note": "Gut zu wissen"
     },
     "calendar": {
       "description": "Buchung {reference}. Ihr Ticket: {url}"
@@ -1832,7 +1895,8 @@
       "cancelledRefunded_one": "{count} Kunde erhält das Geld zurück.",
       "cancelledRefunded_other": "{count} Kunden erhalten ihr Geld zurück.",
       "cancelledFailed_one": "{count} Buchung konnte nicht storniert werden: Versuchen Sie es erneut.",
-      "cancelledFailed_other": "{count} Buchungen konnten nicht storniert werden: Versuchen Sie es erneut."
+      "cancelledFailed_other": "{count} Buchungen konnten nicht storniert werden: Versuchen Sie es erneut.",
+      "passengers": "Passagierliste ansehen"
     },
     "settings": {
       "title": "Einstellungen und Aussehen",
@@ -1945,6 +2009,56 @@
       "token": "Zugriffstoken",
       "connecting": "Wird verbunden…",
       "connect": "Verbinden"
+    },
+    "extras": {
+      "heading": "Für Kunden und Affiliates",
+      "customerButton": "Hinweis und Fragen",
+      "translationsButton": "Übersetzungen",
+      "commissionButton": "Provision",
+      "customerTitle": "Hinweis und Fragen: {name}",
+      "translationsTitle": "Übersetzungen: {name}",
+      "commissionTitle": "Provision: {name}",
+      "commissionChip": "Eigene Provision {rate}",
+      "translatedChip": "Übersetzt: {languages}",
+      "questionsChip_one": "1 Frage",
+      "questionsChip_other": "{count} Fragen",
+      "note": "Hinweis für Kunden",
+      "noteHint": "Erscheint auf der Tourseite, auf dem Ticket und in der Bestätigungs-E-Mail. Z. B. „Kommen Sie 15 Minuten früher, bringen Sie ein Handtuch mit.“",
+      "questionsLegend": "Fragen im Buchungsformular",
+      "questionsHelp": "Fragen Sie, was Sie vor der Abfahrt wissen müssen. Die Antworten erscheinen bei den Buchungen und auf der Passagierliste.",
+      "noQuestions": "Noch keine Fragen: Kunden geben nur Namen und Kontakt an.",
+      "question": "Frage {number}",
+      "questionHint": "Z. B. „Welches Mittagsmenü möchten Sie?“ oder „Hotel für die Abholung“.",
+      "removeQuestion": "Frage {number} löschen",
+      "answerKind": "Antwort",
+      "kindText": "Vom Kunden eingegeben",
+      "kindChoice": "Aus einer Liste gewählt",
+      "required": "Antwort erforderlich",
+      "options": "Auswahlmöglichkeiten",
+      "optionsHint": "Eine pro Zeile, z. B. Fisch, Huhn, Vegetarisch.",
+      "addQuestion": "Frage hinzufügen",
+      "translateReminder": "Wenn Sie den Hinweis oder die Fragen ändern, prüfen Sie auch deren Übersetzungen.",
+      "errQuestionLabel": "Geben Sie die Frage ein.",
+      "errOptionsMin": "Geben Sie mindestens zwei Möglichkeiten ein, eine pro Zeile.",
+      "errOptionsMax": "Höchstens {max} Möglichkeiten.",
+      "errOptionLength": "Jede Möglichkeit: höchstens 80 Zeichen.",
+      "translationsHelp": "Kunden sehen die Tour in ihrer Sprache, soweit Sie sie übersetzt haben. Sprache Ihrer Texte: {language}.",
+      "language": "Sprache",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "{done} von {total} Texten übersetzt",
+      "originalText": "Original: {text}",
+      "ticketNames": "Ticketarten",
+      "questionText": "Text der Frage",
+      "untranslatedNote": "Was Sie leer lassen, erscheint in Ihrer Sprache. Die Übersetzungen aller Sprachen werden zusammen gespeichert.",
+      "saveTranslations": "Übersetzungen speichern",
+      "commissionLegend": "Was Affiliates mit dieser Tour verdienen",
+      "commissionPlan": "Der Plan jedes Affiliates",
+      "commissionPlanHelp": "Der Satz ihres Provisionsplans, mit seinen Stufen.",
+      "commissionOwn": "Ein Satz nur für diese Tour",
+      "commissionOwnHelp": "Derselbe Prozentsatz für alle Affiliates, z. B. für eine Tour mit kleinerer Marge.",
+      "rate": "Provision (%)",
+      "errRate": "Ein Prozentsatz zwischen 0 und 100, z. B. 12,5.",
+      "commissionNote": "Verkäufe dieser Tour zählen weiterhin für die Stufen im Plan jedes Affiliates. Affiliates mit ausgehandeltem Satz behalten ihren Satz."
     }
   },
   "charts": {

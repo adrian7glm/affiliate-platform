@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { BookingQuestions } from '@/components/booking/BookingQuestions';
 import { ChoiceGroup, Field } from '@/components/Field';
 import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
@@ -33,8 +34,9 @@ import {
 import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/lib/contact';
 import { DEFAULT_TIMEZONE, dateKeyInTz, formatDayLong, formatTime, nextDays } from '@/lib/dates';
 import { affiliateApi } from '@/lib/endpoints';
-import { formatMoney } from '@/lib/format';
+import { formatBps, formatMoney } from '@/lib/format';
 import { formatDuration } from '@/lib/i18n';
+import { type AnswerValues, missingAnswers, toAnswers } from '@/lib/questions';
 import { useAffiliateHome } from '@/lib/useAffiliateHome';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { BookingResult } from './BookingResult';
@@ -94,6 +96,8 @@ export function BookFlow() {
   const [room, setRoom] = useState('');
   const [locale, setLocale] = useState<Locale>('en');
   const [payment, setPayment] = useState<Payment>('link');
+  const [answers, setAnswers] = useState<AnswerValues>({});
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
 
   const [stepError, setStepError] = useState<string | null>(null);
   const [customerErrors, setCustomerErrors] = useState<CustomerErrors>({});
@@ -166,8 +170,12 @@ export function BookFlow() {
     if (cleanPhone && !isValidPhone(cleanPhone)) errors.phone = t('affiliate.book.phoneInvalid');
     if (cleanEmail && !isValidEmail(cleanEmail)) errors.email = t('affiliate.book.emailInvalid');
     if (!cleanPhone && !cleanEmail) errors.contact = t('affiliate.book.contactRequired');
+    const unanswered = Object.fromEntries(
+      missingAnswers(product.questions, answers).map((id) => [id, t('public.questions.required')]),
+    );
     setCustomerErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    setAnswerErrors(unanswered);
+    if (Object.keys(errors).length > 0 || Object.keys(unanswered).length > 0) return;
 
     setBusy(true);
     setSubmitError(null);
@@ -182,6 +190,7 @@ export function BookFlow() {
           locale,
           hotelRoom: room.trim() || undefined,
         },
+        answers: toAnswers(product.questions, answers),
         payment: allowPayOnSite ? payment : 'link',
       });
       setResult(created);
@@ -214,6 +223,8 @@ export function BookFlow() {
     setPhone('');
     setEmail('');
     setRoom('');
+    setAnswers({});
+    setAnswerErrors({});
     setLocale('en');
     setPayment('link');
     setCustomerErrors({});
@@ -292,15 +303,28 @@ export function BookFlow() {
                 setDate(null);
                 setSlotId(null);
                 setQuantities({});
+                setAnswers({});
+                setAnswerErrors({});
                 setStepError(null);
               }}
               options={products.data.map((p) => ({
                 value: p.id,
                 label: p.name,
-                description: t('affiliate.book.productLine', {
-                  duration: formatDuration(p.durationMinutes, lang),
-                  price: formatMoney(p.fromMinor, p.currency, lang),
-                }),
+                description: (
+                  <>
+                    {t('affiliate.book.productLine', {
+                      duration: formatDuration(p.durationMinutes, lang),
+                      price: formatMoney(p.fromMinor, p.currency, lang),
+                    })}
+                    {p.commissionRateBps !== null ? (
+                      <span className="block font-semibold">
+                        {t('affiliate.book.tripCommission', {
+                          rate: formatBps(p.commissionRateBps, lang),
+                        })}
+                      </span>
+                    ) : null}
+                  </>
+                ),
               }))}
             />
           ) : null}
@@ -314,6 +338,13 @@ export function BookFlow() {
                   price: formatMoney(product.fromMinor, product.currency, lang),
                 })}
               </span>
+              {product.commissionRateBps !== null ? (
+                <span className="block text-sm font-semibold">
+                  {t('affiliate.book.tripCommission', {
+                    rate: formatBps(product.commissionRateBps, lang),
+                  })}
+                </span>
+              ) : null}
             </p>
           ) : null}
 
@@ -473,6 +504,15 @@ export function BookFlow() {
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
                 optionalText={t('affiliate.optional')}
+              />
+              <BookingQuestions
+                questions={product.questions}
+                values={answers}
+                onChange={(id, value) => {
+                  setAnswers((prev) => ({ ...prev, [id]: value }));
+                  setAnswerErrors(({ [id]: _cleared, ...rest }) => rest);
+                }}
+                errors={answerErrors}
               />
             </div>
           </Card>

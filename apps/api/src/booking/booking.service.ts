@@ -10,6 +10,7 @@ import type {
   PublicCheckoutBody,
 } from '@ap/contracts';
 import {
+  type BookingAnswer,
   type Database,
   affiliates,
   auditLog,
@@ -23,7 +24,8 @@ import {
 import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { AvailabilityService } from '../catalog/availability.service';
-import { CatalogService, toOperatorSlotDto } from '../catalog/catalog.service';
+import { CatalogService, type Product, toOperatorSlotDto } from '../catalog/catalog.service';
+import { localizedPriceLabel, localizedQuestions, localizedTexts } from '../catalog/translations';
 import { Clock } from '../common/clock';
 import { randomCode, ticketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
@@ -44,11 +46,50 @@ interface CreateInput {
   slotId: string;
   items: { priceId: string; quantity: number }[];
   customer: PublicCheckoutBody['customer'];
+  answers: PublicCheckoutBody['answers'];
   channel: BookingChannel;
   attribution: Attribution | null;
   createdByUserId: string | null;
   paymentMode: 'online' | 'on_site';
   termsAcceptedAt?: Date | null;
+}
+
+/**
+ * The answers to keep with a booking, checked against the trip's questions: every required
+ * question answered, choices among the offered options. Answers to questions the operator has
+ * since removed are dropped. Errors name the question in the customer's language.
+ */
+export function bookingAnswers(
+  product: Pick<Product, 'questions' | 'translations'>,
+  answers: PublicCheckoutBody['answers'],
+  locale: string,
+): BookingAnswer[] {
+  const given = new Map(answers.map((a) => [a.questionId, a.value.trim()]));
+  const shown = localizedQuestions(product.questions, product.translations, locale);
+  return product.questions.flatMap((question, i) => {
+    const value = given.get(question.id) ?? '';
+    const vars = { question: shown[i]!.label };
+    if (!value) {
+      if (question.required) {
+        throw new DomainError(
+          'errors.booking.answerRequired',
+          HttpStatus.BAD_REQUEST,
+          undefined,
+          vars,
+        );
+      }
+      return [];
+    }
+    if (question.kind === 'choice' && !question.options.includes(value)) {
+      throw new DomainError(
+        'errors.booking.invalidAnswer',
+        HttpStatus.BAD_REQUEST,
+        undefined,
+        vars,
+      );
+    }
+    return [{ questionId: question.id, label: question.label, value }];
+  });
 }
 
 /** VAT included in a gross amount. */
@@ -87,6 +128,7 @@ export class BookingService {
       slotId: body.slotId,
       items: body.items,
       customer: body.customer,
+      answers: body.answers,
       channel: attribution ? (body.refSource === 'qr' ? 'qr' : 'link') : 'direct',
       attribution,
       createdByUserId: null,
@@ -116,6 +158,7 @@ export class BookingService {
       slotId: body.slotId,
       items: body.items,
       customer: body.customer,
+      answers: body.answers,
       channel: 'affiliate_assisted',
       attribution: { affiliateId, linkId: null },
       createdByUserId: userId,
@@ -126,6 +169,8 @@ export class BookingService {
     const contact = body.customer.phone ?? body.customer.email;
     if (contact && result.paymentUrl) {
       const { booking } = result;
+      const slot = await this.availability.slot(this.db, tenantId, body.slotId);
+      const product = await this.catalog.product(tenantId, slot.productId);
       await this.notifications.enqueue(this.db, {
         to: contact,
         template: 'payment_link',
@@ -134,7 +179,7 @@ export class BookingService {
         dedupeKey: `payment_link:${booking.id}`,
         params: {
           tenantName: tenant.name,
-          productName: booking.productName,
+          productName: localizedTexts(product, body.customer.locale).name,
           reference: booking.reference,
           startsAt: booking.startsAt,
           timezone: tenant.timezone,
@@ -162,6 +207,7 @@ export class BookingService {
     if (prices.length !== quantities.size)
       throw new DomainError('errors.booking.unknownPrice', HttpStatus.BAD_REQUEST);
 
+    const answers = bookingAnswers(product, input.answers, input.customer.locale);
     const lines = prices.map((price) => ({ price, quantity: quantities.get(price.id)! }));
     const seats = lines.reduce((sum, l) => sum + l.quantity * l.price.seats, 0);
     const totalMinor = lines.reduce((sum, l) => sum + l.quantity * l.price.amountMinor, 0);
@@ -206,6 +252,7 @@ export class BookingService {
           customerPhone: input.customer.phone ?? null,
           customerLocale: input.customer.locale,
           hotelRoom: input.customer.hotelRoom ?? null,
+          answers,
           seats,
           currency: tenant.currency,
           totalMinor,
@@ -245,13 +292,16 @@ export class BookingService {
     let paymentUrl: string | null = null;
     if (!onSite) {
       try {
+        // The payment page is in the customer's language: so is the trip on it, where translated.
+        const locale = booking.customerLocale;
+        const tripName = localizedTexts(product, locale).name;
         const session = await this.gateway.createCheckout({
           bookingId: booking.id,
           tenantId: tenant.id,
           reference: booking.reference,
           currency: tenant.currency,
           lines: lines.map((l) => ({
-            name: `${product.name} · ${l.price.label}`,
+            name: `${tripName} · ${localizedPriceLabel(product.translations, locale, l.price.id, l.price.label)}`,
             unitAmountMinor: l.price.amountMinor,
             quantity: l.quantity,
           })),
@@ -645,6 +695,7 @@ export class BookingService {
           createdAt: b.createdAt.toISOString(),
           paidAt: b.paidAt?.toISOString() ?? null,
           externalRef: b.externalRef,
+          answers: b.answers,
         },
       ];
     });
