@@ -4,6 +4,8 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // A self-contained server (.next/standalone) for the Docker image: no node_modules needed.
+  output: 'standalone',
   // Language files are loaded one by one from @ap/i18n's source (see lib/i18n.ts).
   transpilePackages: ['@ap/i18n'],
   // The monorepo root (one pnpm lockfile for every package).

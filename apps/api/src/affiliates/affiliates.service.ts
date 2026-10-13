@@ -195,16 +195,8 @@ export class AffiliatesService {
         .update(affiliates)
         .set({ userId, status: 'active', inviteToken: null, inviteExpiresAt: null })
         .where(eq(affiliates.id, affiliate.id));
-      await tx
-        .insert(memberships)
-        .values({ userId, tenantId: affiliate.tenantId, role: 'affiliate' })
-        .onConflictDoNothing();
-      if (name) {
-        await tx
-          .update(users)
-          .set({ name })
-          .where(and(eq(users.id, userId), sql`${users.name} is null`));
-      }
+      await this.identity.grantRole(tx, userId, affiliate.tenantId, 'affiliate');
+      if (name) await this.identity.nameIfMissing(tx, userId, name);
     });
     return this.identity.me(userId);
   }

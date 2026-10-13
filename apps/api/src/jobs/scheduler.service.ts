@@ -61,7 +61,7 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
 
   private every(name: JobName, job: () => Promise<unknown>): void {
     let running = false;
-    const timer = setInterval(() => {
+    const tick = () => {
       if (running) return;
       running = true;
       job()
@@ -80,7 +80,10 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
         .finally(() => {
           running = false;
         });
-    }, JOBS[name]);
+    };
+    // Once at start-up, so the health check sees every job soon after a deploy.
+    setImmediate(tick);
+    const timer = setInterval(tick, JOBS[name]);
     timer.unref();
     this.timers.push(timer);
   }

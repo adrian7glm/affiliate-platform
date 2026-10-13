@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_CONFIG, type AppConfig } from '../config';
+import { IdentityModule } from '../identity/identity.module';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { BillingGateway, ManualBilling, StripeBilling } from './billing.gateway';
@@ -19,6 +20,7 @@ import { SystemService } from './system.service';
  * for reporting.
  */
 @Module({
+  imports: [IdentityModule],
   providers: [
     {
       provide: BillingGateway,

@@ -1,0 +1,70 @@
+# The platform on one server: Postgres, the API, the background worker, the web app and a daily
+# database backup. Put a reverse proxy with HTTPS (Caddy, Traefik, or the host's) in front of
+# ports 3000 (web) and 4000 (API). See docs/deploy.md.
+#
+#   cp prod.env.example .env.prod   # fill in the secrets
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: affiliate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: affiliate
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U affiliate']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      DATABASE_URL: postgres://affiliate:${POSTGRES_PASSWORD}@postgres:5432/affiliate
+      WORKER_ENABLED: 'false'
+    ports: ['127.0.0.1:4000:4000']
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  worker:
+    build: { context: ., target: worker }
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      DATABASE_URL: postgres://affiliate:${POSTGRES_PASSWORD}@postgres:5432/affiliate
+      WORKER_ENABLED: 'true'
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:4000
+    ports: ['127.0.0.1:3000:3000']
+    depends_on: [api]
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://affiliate:${POSTGRES_PASSWORD}@postgres:5432/affiliate
+      KEEP_DAYS: '14'
+    volumes:
+      - ./docker/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+    entrypoint: ['/bin/sh', '/backup.sh']
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  postgres-data:

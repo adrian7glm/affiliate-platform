@@ -16,6 +16,7 @@ import { migrateDatabase } from './migrate';
 async function main(): Promise<void> {
   loadDotEnv();
   const config = { ...loadConfig(), WORKER_ENABLED: true };
+  Logger.overrideLogger(appLogger(config));
   initErrorReporting({ dsn: config.SENTRY_DSN, environment: config.NODE_ENV, role: 'worker' });
   if (config.MIGRATE_ON_START) await migrateDatabase(config.DATABASE_URL);
   const app = await NestFactory.createApplicationContext(AppModule.with(config), {
