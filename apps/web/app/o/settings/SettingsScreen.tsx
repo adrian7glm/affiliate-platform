@@ -5,13 +5,14 @@ import { useEffect, useId, useState, type ChangeEvent, type FormEvent } from 're
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Field } from '@/components/Field';
+import { Field, TextareaField } from '@/components/Field';
 import { IconCheck, IconExternal, IconImage, IconTicket } from '@/components/icons';
 import { PageHeader } from '@/components/PageHeader';
 import { BrandScope } from '@/components/public/PublicFrame';
 import { LoadingBlock } from '@/components/Spinner';
 import { StickyActions } from '@/components/StickyActions';
 import { brandPalette, contrastRatio, safeLogoUrl } from '@/lib/brandColors';
+import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/lib/contact';
 import { operatorApi } from '@/lib/endpoints';
 import { formatMoney } from '@/lib/format';
 import { formatDuration } from '@/lib/i18n';
@@ -40,6 +41,9 @@ interface Draft {
   primaryColor: string | null;
   allowPayOnSite: boolean;
   attributionWindowDays: string;
+  cancellationPolicy: string;
+  contactEmail: string;
+  contactPhone: string;
 }
 
 function draftOf(settings: OperatorSettingsDto): Draft {
@@ -49,6 +53,9 @@ function draftOf(settings: OperatorSettingsDto): Draft {
     primaryColor: settings.branding.primaryColor ?? null,
     allowPayOnSite: settings.allowPayOnSite,
     attributionWindowDays: String(settings.attributionWindowDays),
+    cancellationPolicy: settings.cancellationPolicy ?? '',
+    contactEmail: settings.contactEmail ?? '',
+    contactPhone: settings.contactPhone ?? '',
   };
 }
 
@@ -62,6 +69,13 @@ function changes(saved: Draft, draft: Draft): UpdateSettingsBody {
   if (draft.attributionWindowDays !== saved.attributionWindowDays) {
     body.attributionWindowDays = Number(draft.attributionWindowDays);
   }
+  // An empty field goes back to the platform's text (policy) or hides the contact.
+  const policy = draft.cancellationPolicy.trim();
+  if (policy !== saved.cancellationPolicy) body.cancellationPolicy = policy || null;
+  const email = draft.contactEmail.trim() ? normalizeEmail(draft.contactEmail) : '';
+  if (email !== saved.contactEmail) body.contactEmail = email || null;
+  const phone = draft.contactPhone.trim() ? normalizePhone(draft.contactPhone) : '';
+  if (phone !== saved.contactPhone) body.contactPhone = phone || null;
   return body;
 }
 
@@ -139,6 +153,14 @@ function SettingsForm({
     const days = Number(draft.attributionWindowDays);
     if (!Number.isInteger(days) || days < 1 || days > 365) {
       next.attributionWindowDays = t('catalog.settings.errDays');
+    }
+    const email = draft.contactEmail.trim();
+    if (email && !isValidEmail(normalizeEmail(email))) {
+      next.contactEmail = t('catalog.settings.errContactEmail');
+    }
+    const phone = draft.contactPhone.trim();
+    if (phone && !isValidPhone(normalizePhone(phone))) {
+      next.contactPhone = t('catalog.settings.errContactPhone');
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -253,6 +275,49 @@ function SettingsForm({
                   <dd className="font-semibold">{settings.timezone}</dd>
                 </div>
               </dl>
+            </div>
+          </Card>
+
+          <Card
+            title={t('catalog.settings.customersTitle')}
+            description={t('catalog.settings.customersDescription')}
+          >
+            <div className="flex flex-col gap-5">
+              <Field
+                label={t('catalog.settings.contactPhone')}
+                hint={t('catalog.settings.contactPhoneHint')}
+                name="contactPhone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={draft.contactPhone}
+                onChange={(e) => update({ contactPhone: e.target.value })}
+                error={errors.contactPhone}
+              />
+              <Field
+                label={t('catalog.settings.contactEmail')}
+                name="contactEmail"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={draft.contactEmail}
+                onChange={(e) => update({ contactEmail: e.target.value })}
+                error={errors.contactEmail}
+              />
+              <TextareaField
+                label={t('catalog.settings.cancellationPolicy')}
+                hint={t('catalog.settings.cancellationPolicyHint')}
+                name="cancellationPolicy"
+                rows={5}
+                maxLength={2000}
+                placeholder={t('public.policy.default', {
+                  tenant: draft.name.trim() || settings.name,
+                })}
+                value={draft.cancellationPolicy}
+                onChange={(e) => update({ cancellationPolicy: e.target.value })}
+              />
             </div>
           </Card>
         </div>

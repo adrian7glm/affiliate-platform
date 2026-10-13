@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Suspense } from 'react';
 import { ButtonLink } from '@/components/Button';
 import { IconCalendarPlus, IconPercent, IconQr, IconTicket } from '@/components/icons';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PublicI18n } from '@/components/public/PublicI18n';
+import { SiteFooter, SiteHeader } from '@/components/public/SiteChrome';
 import type { Translator } from '@/lib/i18n';
 import { getServerT, serverLang, serverLanguages, serverOverrides } from '@/lib/i18n-server';
 
@@ -34,34 +33,19 @@ export default async function LandingPage({ searchParams }: Props) {
     serverLanguages(),
     serverOverrides(lang),
   ]);
-  const appName = t('common.appName');
   return (
     <Suspense>
       <PublicI18n lang={lang} languages={languages} overrides={overrides}>
-        <LandingContent t={t} appName={appName} />
+        <LandingContent t={t} />
       </PublicI18n>
     </Suspense>
   );
 }
 
-function LandingContent({ t, appName }: { t: Translator['t']; appName: string }) {
+function LandingContent({ t }: { t: Translator['t'] }) {
   return (
     <div className="min-h-dvh">
-      <header
-        className="page-x mx-auto flex max-w-5xl items-center justify-between gap-4 py-4"
-        style={{ paddingTop: 'max(1rem, var(--safe-top))' }}
-      >
-        <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
-          <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
-          {appName}
-        </Link>
-        <div className="flex items-center gap-1">
-          <LanguageSwitcher compact />
-          <ButtonLink href="/login" variant="secondary">
-            {t('common.signIn')}
-          </ButtonLink>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main id="content">
         <section className="page-x mx-auto max-w-5xl py-10 sm:py-16" aria-labelledby="hero-title">
@@ -77,8 +61,8 @@ function LandingContent({ t, appName }: { t: Translator['t']; appName: string })
             <ButtonLink href="/start" size="lg">
               {t('public.landing.startFree')}
             </ButtonLink>
-            <ButtonLink href="/login" size="lg" variant="secondary">
-              {t('common.signIn')}
+            <ButtonLink href="/contact?topic=demo" size="lg" variant="secondary">
+              {t('public.landing.requestDemo')}
             </ButtonLink>
             <ButtonLink href="#cum-functioneaza" size="lg" variant="ghost">
               {t('public.landing.howItWorks')}
@@ -128,12 +112,7 @@ function LandingContent({ t, appName }: { t: Translator['t']; appName: string })
         </section>
       </main>
 
-      <footer
-        className="page-x mx-auto max-w-5xl border-t border-line py-6 text-sm text-muted"
-        style={{ paddingBottom: 'max(1.5rem, var(--safe-bottom))' }}
-      >
-        {t('public.landing.copyright', { year: new Date().getFullYear(), name: appName })}
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -18,6 +18,8 @@ import {
   type AssistedBookingBody,
   type BookingDto,
   type CancelBookingBody,
+  type CancelDeparturesBody,
+  type CancelDeparturesResultDto,
   type CheckInBody,
   type CheckInResultDto,
   type CheckoutResultDto,
@@ -28,6 +30,7 @@ import {
   type TicketDto,
   assistedBookingBody,
   cancelBookingBody,
+  cancelDeparturesBody,
   checkInBody,
   publicCheckoutBody,
 } from '@ap/contracts';
@@ -77,6 +80,9 @@ export class PublicBookingController {
       timezone: tenant.timezone,
       branding: tenant.branding,
       products: await this.catalog.listProducts(tenant.id),
+      cancellationPolicy: tenant.cancellationPolicy,
+      contactEmail: tenant.contactEmail,
+      contactPhone: tenant.contactPhone,
     };
   }
 
@@ -143,6 +149,25 @@ export class PublicBookingController {
       disposition: `${download === '1' ? 'attachment' : 'inline'}; filename="${pdf.filename}"`,
       length: pdf.content.length,
     });
+  }
+
+  /** The trip as a calendar event: Apple Calendar, Outlook and phones open it to add it. */
+  @Get('tickets/:bookingId/calendar.ics')
+  async ticketCalendar(
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+    @Query('k') key: unknown,
+    @Query('lang') lang: unknown,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<string> {
+    const file = await this.tickets.calendar(
+      bookingId,
+      typeof key === 'string' ? key : '',
+      typeof lang === 'string' ? lang : null,
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    return file.content;
   }
 
   /** Public key that verifies ticket QR codes, for offline scanners. */
@@ -234,6 +259,23 @@ export class OperatorBookingController {
     @ZodBody(cancelBookingBody) body: CancelBookingBody,
   ): Promise<BookingDto> {
     const result = await this.bookingService.cancel(tenant.tenantId, id, body.reason, user.id);
+    if (this.config.WORKER_ENABLED) void this.outbox.drain();
+    return result;
+  }
+
+  /**
+   * Cancels departures of the operator's own calendar (bad weather...): they close to new sales,
+   * and every booking on them is cancelled, refunded and its customer told why.
+   */
+  @Post('products/:id/slots/cancel')
+  @HttpCode(200)
+  async cancelDepartures(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @ZodBody(cancelDeparturesBody) body: CancelDeparturesBody,
+  ): Promise<CancelDeparturesResultDto> {
+    const result = await this.bookingService.cancelDepartures(tenant.tenantId, id, body, user.id);
     if (this.config.WORKER_ENABLED) void this.outbox.drain();
     return result;
   }

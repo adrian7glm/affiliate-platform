@@ -12,6 +12,7 @@ import type {
   ScannerAccountDto,
   ScannerContextDto,
   ConnectSourceBody,
+  ContactRequestBody,
   PublicCheckoutBody,
   SourceDto,
   SyncResultDto,
@@ -22,6 +23,8 @@ import type {
   AssistedBookingBody,
   BookingDto,
   CancelBookingBody,
+  CancelDeparturesBody,
+  CancelDeparturesResultDto,
   CheckInBody,
   CheckInResultDto,
   CheckoutResultDto,
@@ -144,6 +147,12 @@ export const operatorApi = {
       method: 'PATCH',
       body,
     }),
+  cancelDepartures: (productId: string, body: CancelDeparturesBody, o?: Opts) =>
+    apiFetch<CancelDeparturesResultDto>(`/operator/products/${enc(productId)}/slots/cancel`, {
+      ...o,
+      method: 'POST',
+      body,
+    }),
   deleteSlots: (productId: string, slotIds: string[], o?: Opts) =>
     apiFetch<DeleteSlotsResultDto>(`/operator/products/${enc(productId)}/slots/delete`, {
       ...o,
@@ -222,6 +231,11 @@ export const publicApi = {
       lang,
       download: download ? 1 : undefined,
     }),
+  /** The trip as a calendar event (.ics) for Apple Calendar, Outlook and phones. */
+  ticketCalendarUrl: (bookingId: string, key: string, lang: string) =>
+    buildUrl(API_URL, `/public/tickets/${enc(bookingId)}/calendar.ics`, { k: key, lang }),
+  contact: (body: ContactRequestBody, o?: Opts) =>
+    apiFetch<void>('/public/contact', { ...o, method: 'POST', body, auth: false }),
   devPaymentSucceed: (bookingId: string, key: string, o?: Opts) =>
     apiFetch<void>(`/public/dev-payments/${enc(bookingId)}/succeed`, {
       ...o,

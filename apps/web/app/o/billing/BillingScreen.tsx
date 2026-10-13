@@ -18,7 +18,7 @@ import { operatorPlatformApi } from '@/lib/platform-endpoints';
 import { daysUntil, subscriptionStatus } from '@/lib/platform-labels';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
-import { Rich, slots } from '../Rich';
+import { Rich, slots } from '@/components/Rich';
 
 export function BillingScreen() {
   const tr = useT();

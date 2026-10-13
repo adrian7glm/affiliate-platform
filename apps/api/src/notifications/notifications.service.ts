@@ -2,11 +2,13 @@ import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { type Database, notifications } from '@ap/db';
 import { and, asc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import QRCode from 'qrcode';
+import { icsFile } from '../common/calendar';
 import { Clock } from '../common/clock';
 import { DomainError } from '../common/errors';
 import { DB, type DbOrTx } from '../database/database.module';
 import { I18nService } from '../i18n/i18n.service';
 import { QR_CONTENT_ID, type TemplateName, type TemplateParams, render } from './templates';
+import { ticketCalendarEvent, ticketCalendarFilename } from './ticket-calendar';
 import { renderTicketPdf, ticketPdfFilename } from './ticket-pdf';
 import {
   type DeliveryReceipt,
@@ -263,6 +265,16 @@ export class NotificationsService {
         contentType: 'application/pdf',
         content: await renderTicketPdf({ ...ticket, qrToken: message.qr }, t),
       });
+      // And as a calendar event: one tap adds the trip in Apple Calendar, Outlook or Gmail.
+      if (ticket.endsAt) {
+        attachments.push({
+          filename: ticketCalendarFilename(ticket.reference),
+          contentType: 'text/calendar; charset=utf-8; method=PUBLISH',
+          content: Buffer.from(
+            icsFile(ticketCalendarEvent({ ...ticket, endsAt: ticket.endsAt }, t), this.clock.now()),
+          ),
+        });
+      }
     }
     return this.email.send({
       to,

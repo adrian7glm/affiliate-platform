@@ -5,13 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button, ButtonLink } from '@/components/Button';
 import { useT } from '@/components/I18nProvider';
-import { IconDownload } from '@/components/icons';
+import { IconCalendarPlus, IconDownload } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
+import { CancellationPolicy, OperatorContact } from '@/components/public/CancellationPolicy';
 import { PublicFrame, PublicMessage } from '@/components/public/PublicFrame';
 import { QrCode } from '@/components/QrCode';
 import { LoadingBlock } from '@/components/Spinner';
 import { StatusChip, type Tone } from '@/components/StatusChip';
 import { isApiError } from '@/lib/api';
+import { googleCalendarUrl } from '@/lib/calendar';
 import { formatDateTime } from '@/lib/dates';
 import { publicApi } from '@/lib/endpoints';
 import type { MessageKey } from '@/lib/i18n';
@@ -254,9 +256,73 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
           </div>
         ) : null}
 
+        {ticket.status === 'valid' && !offline && ticket.endsAt ? (
+          <AddToCalendar bookingId={bookingId} ticketKey={ticketKey} ticket={ticket} />
+        ) : null}
+
         {ticket.status === 'valid' ? <AddToHome /> : null}
+
+        {ticket.status === 'valid' || ticket.status === 'pending_payment' ? (
+          <div className="flex flex-col gap-4 rounded-3xl bg-surface-2 p-5">
+            <CancellationPolicy
+              tenantName={ticket.tenantName}
+              policy={ticket.cancellationPolicy ?? null}
+            />
+            <OperatorContact
+              tenantName={ticket.tenantName}
+              email={ticket.contactEmail ?? null}
+              phone={ticket.contactPhone ?? null}
+            />
+          </div>
+        ) : null}
       </div>
     </PublicFrame>
+  );
+}
+
+/** Google Calendar link, and the .ics file for Apple Calendar, Outlook and other phones. */
+function AddToCalendar({
+  bookingId,
+  ticketKey,
+  ticket,
+}: {
+  bookingId: string;
+  ticketKey: string;
+  ticket: TicketDto;
+}) {
+  const t = useT();
+  const google = googleCalendarUrl({
+    title: `${ticket.productName} · ${ticket.tenantName}`,
+    startsAt: ticket.startsAt,
+    endsAt: ticket.endsAt,
+    location: ticket.meetingPoint,
+    details: t.t('ticket.calendarDetails', {
+      reference: ticket.bookingReference,
+      url: typeof window === 'undefined' ? '' : window.location.href,
+    }),
+  });
+  return (
+    <section
+      aria-labelledby="calendar-title"
+      className="no-print flex flex-col gap-2 rounded-3xl border border-line bg-surface p-5"
+    >
+      <h2 id="calendar-title" className="flex items-center gap-2 font-semibold">
+        <IconCalendarPlus size={22} />
+        {t.t('ticket.addToCalendar')}
+      </h2>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <ButtonLink external href={google} target="_blank" rel="noopener" variant="secondary">
+          {t.t('ticket.googleCalendar')}
+        </ButtonLink>
+        <ButtonLink
+          external
+          href={publicApi.ticketCalendarUrl(bookingId, ticketKey, t.lang)}
+          variant="secondary"
+        >
+          {t.t('ticket.otherCalendar')}
+        </ButtonLink>
+      </div>
+    </section>
   );
 }
 

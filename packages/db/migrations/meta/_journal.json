@@ -43,6 +43,13 @@
       "when": 1791845726036,
       "tag": "0005_boarding_scanner",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791848969130,
+      "tag": "0006_launch_ready",
+      "breakpoints": true
     }
   ]
 }

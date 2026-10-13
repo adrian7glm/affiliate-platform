@@ -280,3 +280,23 @@ export const IconGlobe = (p: IconProps) => (
     <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
   </Svg>
 );
+
+export const IconMail = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3.5 6.5 8.5 6.5 8.5-6.5" />
+  </Svg>
+);
+
+export const IconPhone = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 3.5h3.5l1.8 4.5-2.3 1.5a11 11 0 0 0 6.5 6.5l1.5-2.3 4.5 1.8V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.1 1.5 1.5 0 0 1 5 3.5" />
+  </Svg>
+);
+
+export const IconStorm = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 16.5a4.5 4.5 0 1 1 1.2-8.8A6 6 0 0 1 19.5 10a3.5 3.5 0 0 1-.5 6.5" />
+    <path d="m13 12-3 5h4l-3 5" />
+  </Svg>
+);

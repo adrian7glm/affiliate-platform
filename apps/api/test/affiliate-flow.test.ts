@@ -59,6 +59,7 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       .send({
         slotId: slot.id,
         items: [{ priceId: adult().id, quantity: adults }],
+        acceptTerms: true,
         customer: { name: 'Tourist', email: 'tourist@example.com', locale: 'en' },
         ref,
         refSource: 'qr',
@@ -240,6 +241,10 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
         filename: `ticket-${checkout.booking.reference}.pdf`,
         contentType: 'application/pdf',
       }),
+      expect.objectContaining({
+        filename: `${checkout.booking.reference}.ics`,
+        contentType: 'text/calendar; charset=utf-8; method=PUBLISH',
+      }),
     ]);
   });
 
@@ -314,6 +319,7 @@ describe.skipIf(!databaseUrl)('affiliate flow end to end (needs TEST_DATABASE_UR
       .send({
         slotId: slots[0]!.id,
         items: [{ priceId: adult().id, quantity: 9 }],
+        acceptTerms: true,
         customer: { name: 'Big group', email: 'group@example.com' },
       })
       .expect(409);

@@ -38,6 +38,7 @@ describe.skipIf(!databaseUrl)('boarding scanners and PDF tickets (needs TEST_DAT
       .send({
         slotId: slot.id,
         items: [{ priceId: product.prices[0]!.id, quantity: adults }],
+        acceptTerms: true,
         customer: { name: 'Ștefan Țurcanu', email, locale: 'ro' },
       })
       .expect(201);

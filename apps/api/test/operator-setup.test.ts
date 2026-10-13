@@ -45,6 +45,7 @@ describe.skipIf(!databaseUrl)('operator setup (needs TEST_DATABASE_URL)', () => 
       .send({
         slotId: slot.id,
         items: [{ priceId: adult.id, quantity: adults }],
+        acceptTerms: true,
         customer: { name: 'Tourist', email: 'tourist@example.com', locale: 'en' },
       })
       .expect(201);

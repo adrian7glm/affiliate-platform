@@ -1,12 +1,12 @@
 'use client';
 
-import type { OperatorSlotDto, ProductDto } from '@ap/contracts';
+import type { CancelDeparturesBody, OperatorSlotDto, ProductDto } from '@ap/contracts';
 import { useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
-import { Field, INPUT_CLASSES } from '@/components/Field';
-import { IconChevronLeft, IconChevronRight, IconPlus, IconX } from '@/components/icons';
+import { ChoiceGroup, Field, INPUT_CLASSES, TextareaField } from '@/components/Field';
+import { IconChevronLeft, IconChevronRight, IconPlus, IconStorm, IconX } from '@/components/icons';
 import { LoadingBlock } from '@/components/Spinner';
 import { groupSlotsByDay } from '@/lib/booking';
 import { addDays, formatDayLabel, formatDayLong, formatTime, todayKey } from '@/lib/dates';
@@ -231,6 +231,9 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
   const [closingDay, setClosingDay] = useState<{ day: string; list: OperatorSlotDto[] } | null>(
     null,
   );
+  const [cancelling, setCancelling] = useState<{ title: string; list: OperatorSlotDto[] } | null>(
+    null,
+  );
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyDay, setBusyDay] = useState<string | null>(null);
@@ -262,6 +265,16 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
       setBusyDay(null);
       setClosingDay(null);
     }
+  }
+
+  /** Calls off the departures of a day that have not left yet. */
+  function cancelDay(day: string, list: OperatorSlotDto[]) {
+    const now = Date.now();
+    setClosingDay(null);
+    setCancelling({
+      title: t('catalog.slots.cancelDayTitle', { day: formatDayLong(day, lang) }),
+      list: list.filter((s) => new Date(s.startsAt).getTime() > now),
+    });
   }
 
   const nav = (
@@ -312,9 +325,19 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
           return (
             <li key={day} className="rounded-2xl bg-surface-2 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">
+                <p className="mr-auto font-semibold">
                   {label.weekday} {label.day}
                 </p>
+                {editable && cancellable(list) ? (
+                  <Button
+                    variant="ghost"
+                    className="-my-1 text-danger-fg hover:bg-danger-soft"
+                    icon={<IconStorm size={20} />}
+                    onClick={() => cancelDay(day, list)}
+                  >
+                    {t('catalog.slots.cancelDay')}
+                  </Button>
+                ) : null}
                 {editable ? (
                   <Button
                     variant="ghost"
@@ -416,6 +439,17 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
             key={editing.id}
             product={product}
             slot={editing}
+            onCancelDeparture={() => {
+              const slot = editing;
+              setEditing(null);
+              setCancelling({
+                title: t('catalog.slots.cancelSlotTitle', {
+                  day: formatDayLong(todayKeyOf(slot.startsAt, tenant.timezone), lang),
+                  time: formatTime(slot.startsAt, tenant.timezone, lang),
+                }),
+                list: [slot],
+              });
+            }}
             onDone={(message, updated, removedId) => {
               if (updated) merge([updated]);
               if (removedId)
@@ -443,19 +477,49 @@ export function UpcomingSlots({ product }: { product: ProductDto }) {
         }
       >
         {closingDay ? (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="secondary" onClick={() => setClosingDay(null)}>
-              {t('catalog.slots.cancel')}
-            </Button>
+          <div className="flex flex-col gap-2">
+            {cancellable(closingDay.list) ? (
+              <Button
+                variant="danger"
+                icon={<IconStorm size={20} />}
+                onClick={() => cancelDay(closingDay.day, closingDay.list)}
+              >
+                {t('catalog.slots.cancelAndRefund')}
+              </Button>
+            ) : null}
             <Button
-              variant="danger"
+              variant="secondary"
               loading={busyDay === closingDay.day}
               loadingText={t('catalog.slots.closing')}
               onClick={() => void setDayClosed(closingDay.day, closingDay.list, true)}
             >
               {t('catalog.slots.closeSales')}
             </Button>
+            <Button variant="ghost" onClick={() => setClosingDay(null)}>
+              {t('catalog.slots.cancel')}
+            </Button>
           </div>
+        ) : null}
+      </Dialog>
+
+      <Dialog
+        open={!!cancelling}
+        onClose={() => setCancelling(null)}
+        title={cancelling?.title ?? ''}
+        lightDismiss={false}
+      >
+        {cancelling ? (
+          <CancelDeparturesForm
+            product={product}
+            slots={cancelling.list}
+            onCancel={() => setCancelling(null)}
+            onDone={(message, updated) => {
+              merge(updated);
+              setNotice(message);
+              setError(null);
+              setCancelling(null);
+            }}
+          />
         ) : null}
       </Dialog>
     </div>
@@ -471,10 +535,12 @@ function SlotEditor({
   product,
   slot,
   onDone,
+  onCancelDeparture,
 }: {
   product: ProductDto;
   slot: OperatorSlotDto;
   onDone: (message: string, updated?: OperatorSlotDto, removedId?: string) => void;
+  onCancelDeparture: () => void;
 }) {
   const i18n = useT();
   const { t, tp } = i18n;
@@ -580,6 +646,11 @@ function SlotEditor({
         {slot.reserved > 0 && !slot.closed ? (
           <p className="text-sm text-muted">{t('catalog.slots.closeHint')}</p>
         ) : null}
+        {cancellable([slot]) ? (
+          <Button variant="danger" icon={<IconStorm size={20} />} onClick={onCancelDeparture}>
+            {t('catalog.slots.cancelSlot')}
+          </Button>
+        ) : null}
         <Button
           variant="ghost"
           className="text-danger-fg hover:bg-danger-soft"
@@ -601,5 +672,97 @@ function SlotEditor({
         </Button>
       </div>
     </div>
+  );
+}
+
+/** Departures with passengers that have not left yet: those can be called off. */
+function cancellable(list: OperatorSlotDto[]): boolean {
+  const now = Date.now();
+  return list.some((s) => s.reserved > 0 && new Date(s.startsAt).getTime() > now);
+}
+
+/**
+ * Calls off departures (bad weather...): they close to new sales, every booking is cancelled,
+ * paid ones are refunded, and each customer gets an email or SMS saying why.
+ */
+function CancelDeparturesForm({
+  product,
+  slots,
+  onCancel,
+  onDone,
+}: {
+  product: ProductDto;
+  slots: OperatorSlotDto[];
+  onCancel: () => void;
+  onDone: (message: string, updated: OperatorSlotDto[]) => void;
+}) {
+  const i18n = useT();
+  const { t, tp } = i18n;
+  const [reason, setReason] = useState<CancelDeparturesBody['reason']>('weather');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const seats = slots.reduce((n, s) => n + s.reserved, 0);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await operatorApi.cancelDepartures(product.id, {
+        slotIds: slots.map((s) => s.id),
+        reason,
+        message: message.trim() || undefined,
+      });
+      const parts = [tp('catalog.slots.cancelledBookings', result.cancelled)];
+      if (result.refunded > 0) parts.push(tp('catalog.slots.cancelledRefunded', result.refunded));
+      if (result.failed > 0) parts.push(tp('catalog.slots.cancelledFailed', result.failed));
+      onDone(parts.join(' '), result.slots);
+    } catch (err) {
+      setError(errorMessage(err, i18n));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+      <p>{tp('catalog.slots.cancelExplain', seats)}</p>
+      <ChoiceGroup<CancelDeparturesBody['reason']>
+        legend={t('catalog.slots.cancelReason')}
+        name="reason"
+        value={reason}
+        onChange={setReason}
+        gridClassName="grid gap-2 sm:grid-cols-2"
+        options={[
+          { value: 'weather', label: t('catalog.slots.reasonWeather') },
+          { value: 'other', label: t('catalog.slots.reasonOther') },
+        ]}
+      />
+      <TextareaField
+        label={t('catalog.slots.cancelMessage')}
+        optionalText={t('common.optional')}
+        hint={t('catalog.slots.cancelMessageHint')}
+        name="message"
+        rows={3}
+        maxLength={300}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      {error ? <Alert tone="error">{error}</Alert> : null}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button variant="secondary" onClick={onCancel} disabled={busy}>
+          {t('catalog.slots.keepDepartures')}
+        </Button>
+        <Button
+          type="submit"
+          variant="danger"
+          loading={busy}
+          loadingText={t('catalog.slots.cancellingDepartures')}
+        >
+          {t('catalog.slots.confirmCancel')}
+        </Button>
+      </div>
+    </form>
   );
 }

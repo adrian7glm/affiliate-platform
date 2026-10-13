@@ -1,7 +1,17 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { CheckInResultDto, TicketDto } from '@ap/contracts';
-import { type Database, bookingItems, bookings, products, tenants, tickets, users } from '@ap/db';
+import {
+  type Database,
+  bookingItems,
+  bookings,
+  products,
+  slots,
+  tenants,
+  tickets,
+  users,
+} from '@ap/db';
 import { and, eq } from 'drizzle-orm';
+import { icsFile } from '../common/calendar';
 import { Clock } from '../common/clock';
 import { TicketSigner, checkTicketLinkKey, ticketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
@@ -10,8 +20,15 @@ import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
 import { I18nService } from '../i18n/i18n.service';
 import { NotificationsService, mask } from '../notifications/notifications.service';
+import { ticketCalendarEvent, ticketCalendarFilename } from '../notifications/ticket-calendar';
 import { renderTicketPdf, ticketPdfFilename } from '../notifications/ticket-pdf';
 import { Outbox } from '../outbox/outbox';
+
+/** What the customer is told when the operator cancels their trip (bad weather...). */
+export interface CancellationNotice {
+  reason: 'weather' | 'other';
+  message?: string | null;
+}
 
 @Injectable()
 export class TicketsService {
@@ -41,11 +58,13 @@ export class TicketsService {
         booking: bookings,
         productName: products.name,
         meetingPoint: products.meetingPoint,
+        endsAt: slots.endsAt,
         tenant: tenants,
       })
       .from(bookings)
       .innerJoin(products, eq(products.id, bookings.productId))
       .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
+      .innerJoin(slots, eq(slots.id, bookings.slotId))
       .where(eq(bookings.id, bookingId));
     if (!row) return;
     const { booking, tenant } = row;
@@ -78,6 +97,7 @@ export class TicketsService {
         currency: booking.currency,
         items,
         brandColor: tenant.branding.primaryColor ?? null,
+        endsAt: row.endsAt.toISOString(),
       },
     });
   }
@@ -88,6 +108,7 @@ export class TicketsService {
     tenant: Tenant,
     booking: typeof bookings.$inferSelect,
     refunded: boolean,
+    notice: CancellationNotice | null = null,
   ): Promise<void> {
     const contact = booking.customerEmail ?? booking.customerPhone;
     if (!contact) return;
@@ -108,6 +129,8 @@ export class TicketsService {
         startsAt: booking.startsAt.toISOString(),
         timezone: tenant.timezone,
         refunded,
+        reason: notice?.reason ?? null,
+        message: notice?.message ?? null,
       },
     });
   }
@@ -186,6 +209,37 @@ export class TicketsService {
     };
   }
 
+  /** The trip as a calendar event (.ics), for valid and used tickets. */
+  async calendar(
+    bookingId: string,
+    key: string,
+    lang: string | null,
+  ): Promise<{ filename: string; content: string }> {
+    const ticket = await this.view(bookingId, key);
+    if (!ticket.qrToken) throw new DomainError('errors.ticket.noCalendar', HttpStatus.CONFLICT);
+    const [row] = await this.db
+      .select({ locale: bookings.customerLocale })
+      .from(bookings)
+      .where(eq(bookings.id, bookingId));
+    const language = this.i18n.pick(lang ?? row?.locale, 'en');
+    const event = ticketCalendarEvent(
+      {
+        tenantName: ticket.tenantName,
+        productName: ticket.productName,
+        reference: ticket.bookingReference,
+        startsAt: ticket.startsAt,
+        endsAt: ticket.endsAt,
+        meetingPoint: ticket.meetingPoint,
+        url: this.customerUrl(bookingId, language),
+      },
+      this.i18n.translator(language),
+    );
+    return {
+      filename: ticketCalendarFilename(ticket.bookingReference),
+      content: icsFile(event, this.clock.now()),
+    };
+  }
+
   private async ticketDto(bookingId: string): Promise<TicketDto> {
     const [row] = await this.db
       .select({
@@ -194,11 +248,16 @@ export class TicketsService {
         tenantName: tenants.name,
         timezone: tenants.timezone,
         branding: tenants.branding,
+        cancellationPolicy: tenants.cancellationPolicy,
+        contactEmail: tenants.contactEmail,
+        contactPhone: tenants.contactPhone,
+        endsAt: slots.endsAt,
         ticket: tickets,
       })
       .from(bookings)
       .innerJoin(products, eq(products.id, bookings.productId))
       .innerJoin(tenants, eq(tenants.id, bookings.tenantId))
+      .innerJoin(slots, eq(slots.id, bookings.slotId))
       .leftJoin(tickets, eq(tickets.bookingId, bookings.id))
       .where(eq(bookings.id, bookingId));
     if (!row) throw new NotFound('ticket');
@@ -235,6 +294,10 @@ export class TicketsService {
       paymentMode: booking.paymentMode,
       amountDueOnSiteMinor: dueOnSite,
       currency: booking.currency,
+      endsAt: row.endsAt.toISOString(),
+      cancellationPolicy: row.cancellationPolicy,
+      contactEmail: row.contactEmail,
+      contactPhone: row.contactPhone,
     };
   }
 

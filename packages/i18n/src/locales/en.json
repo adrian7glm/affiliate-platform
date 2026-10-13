@@ -204,7 +204,8 @@
       "product": "product not found",
       "ticket": "ticket not found",
       "user": "user not found",
-      "scannerAccount": "scanner account not found"
+      "scannerAccount": "scanner account not found",
+      "contactRequest": "message not found"
     },
     "auth": {
       "signInAgain": "sign in again",
@@ -233,7 +234,8 @@
     "departures": {
       "closed": "this departure can no longer be booked",
       "seatsLeft_one": "only {count} seat left on this departure",
-      "seatsLeft_other": "only {count} seats left on this departure"
+      "seatsLeft_other": "only {count} seats left on this departure",
+      "alreadyStarted": "this departure has already left, so it can no longer be called off"
     },
     "catalog": {
       "duplicatePriceCode": "each price needs a different code",
@@ -306,10 +308,14 @@
       "otherOperator": "This QR code is not a ticket of this operator."
     },
     "ticket": {
-      "noPdf": "this ticket is not valid, so it has no PDF"
+      "noPdf": "this ticket is not valid, so it has no PDF",
+      "noCalendar": "this ticket is not valid, so it cannot be added to a calendar"
     },
     "scanners": {
       "exists": "this person already has a scanner account"
+    },
+    "contact": {
+      "tooMany": "You have already sent us several messages. We will answer soon."
     }
   },
   "auth": {
@@ -478,7 +484,47 @@
         "recommend": "They recommend with the QR code or book for the tourist.",
         "pay": "The tourist pays online; the commission works itself out."
       },
-      "copyright": "© {year} {name}"
+      "copyright": "© {year} {name}",
+      "requestDemo": "Request a demo"
+    },
+    "policy": {
+      "title": "Cancellation policy",
+      "default": "If {tenant} cancels the trip (for example because of the weather), you get all your money back automatically. To cancel or change your booking yourself, contact {tenant}."
+    },
+    "contactOperator": "Questions? Contact {tenant}",
+    "acceptTerms": "I agree to the {terms} and the {privacy}.",
+    "termsLink": "booking terms",
+    "privacyLink": "privacy policy",
+    "errorTerms": "Tick the box to agree to the booking terms before you pay.",
+    "site": {
+      "contact": "Contact",
+      "terms": "Booking terms",
+      "privacy": "Privacy",
+      "footerNav": "Information"
+    },
+    "contact": {
+      "title": "Talk to us",
+      "intro": "Run boat trips, tours or experiences? Tell us a little about your business and we will show you how your own network of sellers works.",
+      "topic": "What would you like?",
+      "topicDemo": "A demo",
+      "topicDemoHint": "We show you the platform with your own trips.",
+      "topicQuestion": "Ask a question",
+      "topicQuestionHint": "About prices, setup or anything else.",
+      "name": "Your name",
+      "company": "Business name",
+      "phoneHint": "If you prefer that we call you.",
+      "message": "Message",
+      "messageDemoHint": "For example: how many boats or trips you run and how many hotels sell for you.",
+      "errName": "Write your name.",
+      "errEmail": "Write an email address we can answer, like name@example.com.",
+      "errMessage": "Write your question.",
+      "tooMany": "You have already sent us several messages. We will answer soon.",
+      "sending": "Sending…",
+      "sendDemo": "Request the demo",
+      "send": "Send",
+      "privacyNote": "We use your details only to answer you. See the {privacy}.",
+      "sentTitle": "Thank you, we got your message",
+      "sentText": "We will answer at {email}."
     }
   },
   "ticket": {
@@ -511,7 +557,11 @@
     "referenceLabel": "Booking reference:",
     "qrLabel": "Ticket QR code {reference}",
     "tickets": "Tickets",
-    "items": "{quantity} × {label}"
+    "items": "{quantity} × {label}",
+    "addToCalendar": "Add to your calendar",
+    "googleCalendar": "Google Calendar",
+    "otherCalendar": "Apple, Outlook, other",
+    "calendarDetails": "Booking {reference}. Your ticket: {url}"
   },
   "affiliate": {
     "meta": {
@@ -1112,7 +1162,8 @@
       "operators": "Operators",
       "plans": "Plans and fees",
       "invites": "Invitations",
-      "translations": "Translations"
+      "translations": "Translations",
+      "contact": "Messages"
     },
     "shell": {
       "loadError": "We could not load your account",
@@ -1351,6 +1402,17 @@
         "reasonError": "Enter the reason (at least 3 characters).",
         "submit": "Suspend"
       }
+    },
+    "contact": {
+      "title": "Contact page messages",
+      "description": "Demo requests and questions from operators. You also get each one by email.",
+      "openTitle": "To answer ({count})",
+      "noneOpen": "Nothing to answer. New messages appear here.",
+      "doneTitle": "Answered",
+      "demo": "Demo",
+      "question": "Question",
+      "markHandled": "Mark as answered",
+      "reopen": "Move back to answer"
     }
   },
   "signup": {
@@ -1545,14 +1607,21 @@
       "action": "Open your ticket",
       "qrFileName": "ticket-qr",
       "sms": "{tenant}: ticket {reference} for {product}, {when}, {seats}. Show the QR code at boarding: {url}",
-      "smsDue": "{tenant}: ticket {reference} for {product}, {when}, {seats}, to pay at boarding {due}. Show the QR code at boarding: {url}"
+      "smsDue": "{tenant}: ticket {reference} for {product}, {when}, {seats}, to pay at boarding {due}. Show the QR code at boarding: {url}",
+      "calendarAttached": "The trip is also attached as a calendar event: open it to add it to your calendar.",
+      "addToGoogle": "Add to Google Calendar"
     },
     "bookingCancelled": {
       "subject": "Booking {reference} has been cancelled",
       "cancelled": "Your booking {reference} for {product} ({when}) has been cancelled by {tenant}. The ticket is no longer valid.",
       "refunded": "Your money is being refunded to your card. It can take 5-10 business days to appear.",
       "sms": "{tenant}: booking {reference} ({product}, {when}) has been cancelled.",
-      "smsRefunded": "{tenant}: booking {reference} ({product}, {when}) has been cancelled. Your money is refunded to your card in 5-10 business days."
+      "smsRefunded": "{tenant}: booking {reference} ({product}, {when}) has been cancelled. Your money is refunded to your card in 5-10 business days.",
+      "weather": "The trip cannot go ahead because of the weather. Your safety comes first.",
+      "message": "Message from the operator: {message}",
+      "sorry": "We are sorry for the change of plans and hope to see you on board another time.",
+      "smsWeather": "{tenant}: because of the weather, booking {reference} ({product}, {when}) is cancelled. Sorry!",
+      "smsWeatherRefunded": "{tenant}: because of the weather, booking {reference} ({product}, {when}) is cancelled. Your money goes back to your card within 5-10 business days. Sorry!"
     },
     "scannerInvite": {
       "subject": "{tenant}: your ticket scanning account",
@@ -1574,6 +1643,21 @@
       "onlineTicket": "Online ticket",
       "keepOnPhone": "No need to print it: keep it on your phone.",
       "fileName": "ticket-{reference}.pdf"
+    },
+    "calendar": {
+      "description": "Booking {reference}. Your ticket: {url}"
+    },
+    "contactRequest": {
+      "demo": "Demo request",
+      "question": "Question",
+      "subject": "{topic} from {name}",
+      "intro": "{name} wrote from the contact page ({topic}).",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "action": "See all requests",
+      "sms": "{topic} from {name}: {contact}"
     }
   },
   "catalog": {
@@ -1703,8 +1787,8 @@
       "slotAriaOpen_other": "{time}, {available} of {count} seats free. Change the departure",
       "editTitle": "Departure on {day}, {time}",
       "closeDayTitle": "Close the day?",
-      "closeDayDescription_one": "{count} seat is booked on {day}. Tickets stay valid; let the customers know if the trip will not run.",
-      "closeDayDescription_other": "{count} seats are booked on {day}. Tickets stay valid; let the customers know if the trip will not run.",
+      "closeDayDescription_one": "{count} seat is booked on {day}. You can call off the trips (customers get their money back and a message) or only stop new sales (tickets stay valid).",
+      "closeDayDescription_other": "{count} seats are booked on {day}. You can call off the trips (customers get their money back and a message) or only stop new sales (tickets stay valid).",
       "cancel": "Cancel",
       "closing": "Closing…",
       "closeSales": "Close sales",
@@ -1727,7 +1811,28 @@
       "deleting": "Deleting…",
       "deleted": "The departure has been deleted.",
       "closedInstead": "The departure has bookings, so it was closed instead of deleted.",
-      "deleteSlot": "Delete the departure"
+      "deleteSlot": "Delete the departure",
+      "cancelDay": "Call off",
+      "cancelDayTitle": "Call off the trips of {day}?",
+      "cancelSlotTitle": "Call off the trip of {day}, {time}?",
+      "cancelAndRefund": "Call off the trips and refund",
+      "cancelSlot": "Call off and refund",
+      "cancelExplain_one": "{count} seat is booked. The booking is cancelled, money paid online goes back to the card, and the customer gets an email or SMS saying why.",
+      "cancelExplain_other": "{count} seats are booked. Every booking is cancelled, money paid online goes back to the cards, and each customer gets an email or SMS saying why.",
+      "cancelReason": "Reason, told to the customers",
+      "reasonWeather": "Bad weather",
+      "reasonOther": "Another reason",
+      "cancelMessage": "Message for the customers",
+      "cancelMessageHint": "For example: \"Reply to this email and we move you to another day.\"",
+      "keepDepartures": "Do not cancel",
+      "cancellingDepartures": "Cancelling and refunding…",
+      "confirmCancel": "Cancel and refund",
+      "cancelledBookings_one": "{count} booking cancelled.",
+      "cancelledBookings_other": "{count} bookings cancelled.",
+      "cancelledRefunded_one": "{count} customer gets the money back.",
+      "cancelledRefunded_other": "{count} customers get their money back.",
+      "cancelledFailed_one": "{count} booking could not be cancelled: try again.",
+      "cancelledFailed_other": "{count} bookings could not be cancelled: try again."
     },
     "settings": {
       "title": "Settings and look",
@@ -1792,7 +1897,16 @@
       "sampleTicket": "Ticket · {name}",
       "sampleSlot": "Saturday, 18:00 · 2 adults",
       "sampleValid": "Valid",
-      "previewSr": "Preview: the booking page and the ticket, with the chosen name, logo and colour."
+      "previewSr": "Preview: the booking page and the ticket, with the chosen name, logo and colour.",
+      "customersTitle": "For your customers",
+      "customersDescription": "Shown on the booking page before they pay and on every ticket.",
+      "contactPhone": "Phone for customers",
+      "contactPhoneHint": "Customers can call you from their ticket. Leave empty to hide it.",
+      "contactEmail": "Email for customers",
+      "cancellationPolicy": "Cancellation policy",
+      "cancellationPolicyHint": "When customers can cancel and get their money back. Leave empty to use the text shown in the box.",
+      "errContactEmail": "Check the email address, like name@example.com.",
+      "errContactPhone": "Write the phone number with the country code, like +40 722 123 456."
     },
     "sources": {
       "title": "Your booking system",
@@ -1932,5 +2046,84 @@
       "howTo": "The person opens the link, signs in with the code from the SMS or email and goes straight to the scanner."
     },
     "noName": "No name"
+  },
+  "legal": {
+    "updated": "Last updated: {date}",
+    "terms": {
+      "title": "Booking terms",
+      "intro": "These terms apply when you book a trip or an experience through {app}. Please read them before you pay.",
+      "sections": {
+        "who": {
+          "title": "Who you book with",
+          "text": "The trip is offered and run by the operator named on the booking page and on your ticket. Your contract for the trip is with that operator.\n\n{app} provides the booking, payment and ticketing technology on the operator's behalf. If someone (for example your hotel's reception) recommended the trip or booked it for you, they did so as the operator's partner."
+        },
+        "booking": {
+          "title": "Booking and payment",
+          "text": "Prices are shown in the operator's currency and include VAT. Your seats are held for a few minutes while you pay; the booking is confirmed when the payment succeeds, and you then receive your ticket by email or SMS.\n\nCard payments are processed by Stripe. Neither the operator nor {app} sees or stores your card details. If the operator allows it, a partner may book for you with payment at boarding; in that case you pay the operator when you board."
+        },
+        "ticket": {
+          "title": "Your ticket",
+          "text": "Your ticket is valid for the date, time and number of people shown on it. Its QR code is scanned at boarding and can be used only once. Keep it on your phone or save the PDF; you do not need to print it."
+        },
+        "yourCancel": {
+          "title": "If you want to cancel or change",
+          "text": "The operator's cancellation policy applies. It is shown on the booking page before you pay and on your ticket. To cancel or change your booking, contact the operator using the details on your ticket."
+        },
+        "operatorCancel": {
+          "title": "If the operator cancels",
+          "text": "Trips on the water and outdoors depend on the weather and on safety. If the operator calls off your trip, you are told by email or SMS and the full amount you paid online goes back to the card you used, usually within 5 to 10 business days. The operator may also offer you another date."
+        },
+        "onTheDay": {
+          "title": "On the day",
+          "text": "Arrive at the meeting point shown on your ticket a little before the departure time. Follow the crew's safety instructions. The operator may refuse boarding to keep passengers safe."
+        },
+        "liability": {
+          "title": "Responsibility and complaints",
+          "text": "The operator is responsible for running the trip. Send any complaint about the trip to the operator first. These terms do not limit the rights you have as a consumer under the law of your country."
+        },
+        "contact": {
+          "title": "Contact",
+          "text": "For your booking, contact the operator using the details on your ticket. For a question about {app} itself, use our contact page."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "intro": "How your personal data is used when you book through {app} or write to us.",
+      "sections": {
+        "controller": {
+          "title": "Who is responsible",
+          "text": "For a booking, the operator you book with is responsible for your data (the controller). {app} processes the data on the operator's behalf, only to provide the booking, payment and ticketing service.\n\nFor messages you send from our contact page, {app} is the controller."
+        },
+        "data": {
+          "title": "What data",
+          "text": "Your name, email address or phone number, the language you chose, the trip, date and tickets you booked, the payment status, and, if someone booked for you, your hotel room number when given. Card details are collected by Stripe and never reach the operator or {app}.\n\nIf you arrived through a partner's link or QR code, we keep a code that identifies that partner, so their commission can be calculated."
+        },
+        "purposes": {
+          "title": "Why it is used",
+          "text": "To make and manage your booking (the contract you ask for): send your ticket, check it at boarding, tell you about changes or cancellations and send refunds. To pay the partner who recommended the trip their commission and to keep the accounting records the law requires.\n\nWe do not use your data for advertising and we do not sell it."
+        },
+        "recipients": {
+          "title": "Who receives it",
+          "text": "The operator and their staff. The partner who recommended the trip or booked it for you sees the booking and your name. Service providers that work for us under contract: Stripe for payments, email and SMS providers to send your ticket, and the hosting provider that stores the data."
+        },
+        "retention": {
+          "title": "How long it is kept",
+          "text": "For as long as needed to provide the trip and handle any questions about it, and afterwards for as long as accounting and tax law require for the payment records."
+        },
+        "rights": {
+          "title": "Your rights",
+          "text": "You can ask for a copy of your data, for it to be corrected or deleted, for its use to be restricted, to object to its use, and to receive it in a portable format. Write to the operator using the details on your ticket. You can also complain to your national data protection authority (in Romania: ANSPDCP, dataprotection.ro)."
+        },
+        "cookies": {
+          "title": "Cookies",
+          "text": "We use only the cookies the service needs: one remembers the language you chose, and, if you came through a partner's link or QR code, a few remember which partner recommended the trip (with a random visit code, so repeated clicks count once) so the booking counts for them. There are no advertising cookies and no tracking across other websites."
+        },
+        "contact": {
+          "title": "Contact",
+          "text": "For your booking data, write to the operator using the details on your ticket. For anything about {app} itself or the contact page, use our contact page."
+        }
+      }
+    }
   }
 }

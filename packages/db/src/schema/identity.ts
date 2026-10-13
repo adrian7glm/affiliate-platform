@@ -39,6 +39,11 @@ export const tenants = pgTable('tenants', {
   /** Hours after departure before an unscanned booking's commission is approved. */
   approvalGraceHours: integer('approval_grace_hours').notNull().default(24),
   stripeAccountId: text('stripe_account_id'),
+  /** Shown to customers before they pay and on their ticket. Null: the platform's default text. */
+  cancellationPolicy: text('cancellation_policy'),
+  /** How customers reach the operator (ticket page, legal pages). */
+  contactEmail: text('contact_email'),
+  contactPhone: text('contact_phone'),
   /** Suspended operators cannot sign in to their console and their booking pages are offline. */
   status: tenantStatusEnum('status').notNull().default('active'),
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
