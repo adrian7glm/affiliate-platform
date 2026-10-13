@@ -213,8 +213,27 @@ const priceFields = {
   label: z.string().trim().min(1).max(80),
   amountMinor: z.number().int().min(0),
   taxRateBps: rateBps.default(0),
+  /** Ignored for extras: they take no seat. */
   seats: z.number().int().min(0).max(10).default(1),
+  /**
+   * `ticket`: a place on the trip. `extra`: something customers add to their booking (lunch, a
+   * transfer from the hotel, photos); a booking needs at least one ticket.
+   */
+  kind: z.enum(['ticket', 'extra']).default('ticket'),
+  /** False: affiliates earn no commission on it (e.g. a transfer the operator pays a driver for). */
+  commissionable: z.boolean().default(true),
 };
+
+/** Up to 30 ticket types and extras together, at least one ticket type among them. */
+function priceList<T extends z.ZodTypeAny>(item: T) {
+  return z
+    .array(item)
+    .min(1)
+    .max(30)
+    .refine((list) => list.some((p: { kind: string }) => p.kind === 'ticket'), {
+      message: 'a trip needs at least one ticket type',
+    });
+}
 
 export const MAX_BOOKING_QUESTIONS = 10;
 export const MAX_QUESTION_OPTIONS = 20;
@@ -293,10 +312,7 @@ export const createProductBody = z.object({
   description: z.string().trim().max(4000).optional(),
   durationMinutes,
   meetingPoint: z.string().trim().max(400).optional(),
-  prices: z
-    .array(z.object({ code: priceCodeSchema, ...priceFields }))
-    .min(1)
-    .max(20),
+  prices: priceList(z.object({ code: priceCodeSchema, ...priceFields })),
   ...tripExtras,
 });
 export type CreateProductBody = z.infer<typeof createProductBody>;
@@ -315,17 +331,13 @@ export const updateProductBody = z.object({
   meetingPoint: z.string().trim().max(400).nullable().optional(),
   /** False hides the trip from the booking page and from affiliates. */
   active: z.boolean().optional(),
-  prices: z
-    .array(
-      z.object({
-        id: z.string().uuid().optional(),
-        code: priceCodeSchema.optional(),
-        ...priceFields,
-      }),
-    )
-    .min(1)
-    .max(20)
-    .optional(),
+  prices: priceList(
+    z.object({
+      id: z.string().uuid().optional(),
+      code: priceCodeSchema.optional(),
+      ...priceFields,
+    }),
+  ).optional(),
   ...tripExtras,
 });
 export type UpdateProductBody = z.infer<typeof updateProductBody>;
@@ -337,6 +349,8 @@ export interface PriceDto {
   amountMinor: number;
   taxRateBps: number;
   seats: number;
+  kind: 'ticket' | 'extra';
+  commissionable: boolean;
 }
 
 export interface BookingQuestionDto {
@@ -506,6 +520,103 @@ export interface ClickResultDto {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Discount codes
+// ---------------------------------------------------------------------------------------------
+
+/** What customers type: letters, digits and dashes, any case (kept in upper case). */
+export const discountCodeText = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z0-9][A-Z0-9-]{2,23}$/, '3 to 24 letters, digits or dashes');
+
+const dayString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** Percentages up to 90%: a booking always costs something. */
+export const MAX_DISCOUNT_BPS = 9000;
+
+const discountCodeFields = {
+  /** Percentage off, in basis points (1000 = 10%). Exactly one of this and `amountMinor`. */
+  percentBps: z.number().int().min(1).max(MAX_DISCOUNT_BPS).nullable().optional(),
+  /** Fixed amount off the booking, in the operator's currency. */
+  amountMinor: z.number().int().min(1).max(100_000_000).nullable().optional(),
+  /** The affiliate the code belongs to: bookings with it count as theirs. */
+  affiliateId: z.string().uuid().nullable().optional(),
+  /** Trips it is valid for; empty: every trip. */
+  productIds: z.array(z.string().uuid()).max(100).optional(),
+  /** First and last day it can be used (the day the customer books, operator's timezone). */
+  validFrom: dayString.nullable().optional(),
+  validUntil: dayString.nullable().optional(),
+  /** How many bookings can use it; null: no limit. */
+  maxUses: z.number().int().min(1).max(1_000_000).nullable().optional(),
+  active: z.boolean().optional(),
+};
+
+const validDates = (b: { validFrom?: string | null; validUntil?: string | null }) =>
+  !b.validFrom || !b.validUntil || b.validFrom <= b.validUntil;
+
+export const createDiscountCodeBody = z
+  .object({ code: discountCodeText, ...discountCodeFields })
+  .refine((b) => (b.percentBps == null) !== (b.amountMinor == null), {
+    message: 'give a percentage or an amount',
+    path: ['percentBps'],
+  })
+  .refine(validDates, { message: 'the last day is before the first', path: ['validUntil'] });
+export type CreateDiscountCodeBody = z.infer<typeof createDiscountCodeBody>;
+
+/** Changes to a code. Setting a percentage removes the amount and the other way round. */
+export const updateDiscountCodeBody = z
+  .object({ code: discountCodeText.optional(), ...discountCodeFields })
+  .refine((b) => b.percentBps == null || b.amountMinor == null, {
+    message: 'give a percentage or an amount',
+    path: ['percentBps'],
+  })
+  .refine(validDates, { message: 'the last day is before the first', path: ['validUntil'] });
+export type UpdateDiscountCodeBody = z.infer<typeof updateDiscountCodeBody>;
+
+export interface DiscountCodeDto {
+  id: string;
+  code: string;
+  percentBps: number | null;
+  amountMinor: number | null;
+  affiliateId: string | null;
+  affiliateName: string | null;
+  productIds: string[];
+  validFrom: string | null;
+  validUntil: string | null;
+  maxUses: number | null;
+  active: boolean;
+  /** Bookings holding the code: paid, to pay at boarding, or waiting for payment. */
+  uses: number;
+  /** What the paid bookings with the code brought in, after the discount. */
+  revenueMinor: number;
+  createdAt: string;
+}
+
+/** GET /public/tenants/:slug/discount-codes/:code?productId=: whether a code works for a trip. */
+export interface DiscountPreviewDto {
+  code: string;
+  percentBps: number | null;
+  amountMinor: number | null;
+}
+
+/**
+ * How much a code takes off a booking total. A fixed amount larger than the booking leaves 10% to
+ * pay, like the largest percentage. The API and the booking forms both use this.
+ */
+export function discountMinorFor(
+  code: { percentBps: number | null; amountMinor: number | null },
+  totalMinor: number,
+): number {
+  if (totalMinor <= 0) return 0;
+  const raw =
+    code.percentBps != null
+      ? Math.round((totalMinor * code.percentBps) / 10_000)
+      : (code.amountMinor ?? 0);
+  return Math.max(0, Math.min(raw, Math.floor((totalMinor * MAX_DISCOUNT_BPS) / 10_000)));
+}
+
+// ---------------------------------------------------------------------------------------------
 // Bookings
 // ---------------------------------------------------------------------------------------------
 
@@ -543,6 +654,8 @@ export const publicCheckoutBody = z.object({
   visitorId: z.string().max(64).optional(),
   /** The customer ticked "I agree to the booking terms and the privacy policy". */
   acceptTerms: z.literal(true),
+  /** A discount code the customer typed; a code that belongs to an affiliate makes it theirs. */
+  discountCode: z.string().trim().max(40).optional(),
 });
 export type PublicCheckoutBody = z.infer<typeof publicCheckoutBody>;
 
@@ -557,6 +670,8 @@ export const assistedBookingBody = z.object({
    * - `on_site`: the customer pays when boarding (only if the operator allows it).
    */
   payment: z.enum(['link', 'on_site']).default('link'),
+  /** A discount code: the operator's, or one of this affiliate's own. */
+  discountCode: z.string().trim().max(40).optional(),
 });
 export type AssistedBookingBody = z.infer<typeof assistedBookingBody>;
 
@@ -572,7 +687,11 @@ export interface BookingDto {
   startsAt: string;
   seats: number;
   customerName: string;
+  /** What the customer pays, after the discount. */
   totalMinor: number;
+  /** The discount code used, and how much it took off. */
+  discountCode: string | null;
+  discountMinor: number;
   currency: string;
   paymentMode: 'online' | 'on_site';
   affiliateName: string | null;

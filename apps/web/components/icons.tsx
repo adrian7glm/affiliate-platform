@@ -310,3 +310,10 @@ export const IconStorm = (p: IconProps) => (
     <path d="m13 12-3 5h4l-3 5" />
   </Svg>
 );
+
+export const IconTag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 5v6.2a2 2 0 0 0 .6 1.4l7.8 7.8a2 2 0 0 0 2.8 0l6.2-6.2a2 2 0 0 0 0-2.8L12.6 3.6A2 2 0 0 0 11.2 3H5a2 2 0 0 0-2 2Z" />
+    <path d="M7.5 7.5h.01" />
+  </Svg>
+);

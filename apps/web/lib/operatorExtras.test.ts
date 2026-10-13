@@ -60,7 +60,16 @@ describe('trip translations', () => {
     meetingPoint: null,
     customerNote: 'Come early',
     prices: [
-      { id: 'p1', code: 'adult', label: 'Adult', amountMinor: 1000, taxRateBps: 0, seats: 1 },
+      {
+        id: 'p1',
+        code: 'adult',
+        label: 'Adult',
+        amountMinor: 1000,
+        taxRateBps: 0,
+        seats: 1,
+        kind: 'ticket' as const,
+        commissionable: true,
+      },
     ],
     questions: [lunch],
   };

@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -103,9 +105,19 @@ export const productPrices = pgTable(
     taxRateBps: integer('tax_rate_bps').notNull().default(0),
     /** How many seats one ticket of this type takes (an infant may take 0). */
     seats: integer('seats').notNull().default(1),
+    /**
+     * `ticket`: a place on the trip. `extra`: something added to a booking (lunch, a hotel
+     * transfer, photos); it takes no seat and a booking needs at least one ticket.
+     */
+    kind: text('kind').$type<'ticket' | 'extra'>().notNull().default('ticket'),
+    /** False: affiliates earn no commission on it (e.g. a transfer the operator buys in). */
+    commissionable: boolean('commissionable').notNull().default(true),
     active: boolean('active').notNull().default(true),
   },
-  (t) => [uniqueIndex('product_prices_product_code').on(t.productId, t.code)],
+  (t) => [
+    uniqueIndex('product_prices_product_code').on(t.productId, t.code),
+    check('product_prices_kind', sql`${t.kind} in ('ticket', 'extra')`),
+  ],
 );
 
 /**

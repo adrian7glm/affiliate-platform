@@ -2,6 +2,7 @@
 
 import {
   localeSchema,
+  type DiscountPreviewDto,
   type ProductDto,
   type PublicCheckoutBody,
   type SlotDto,
@@ -9,6 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { BookingQuestions } from '@/components/booking/BookingQuestions';
+import { DiscountCodeField } from '@/components/booking/DiscountCodeField';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { useT } from '@/components/I18nProvider';
@@ -21,17 +23,18 @@ import { LoadingBlock } from '@/components/Spinner';
 import { StickyActions } from '@/components/StickyActions';
 import { isApiError } from '@/lib/api';
 import {
+  bookingTotals,
   defaultQuantities,
   groupSlotsByDay,
   seatsNeeded,
   ticketCount,
   toItems,
-  totalMinor,
   upcomingSlots,
   type Quantities,
 } from '@/lib/booking';
 import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/lib/contact';
 import { nextDays } from '@/lib/dates';
+import { discountErrorKey } from '@/lib/discounts';
 import { publicApi } from '@/lib/endpoints';
 import { formatMoney } from '@/lib/format';
 import type { Lang } from '@/lib/i18n';
@@ -118,6 +121,12 @@ export function PublicBookingForm({
   const [slotId, setSlotId] = useState<string | null>(null);
   const slot: SlotDto | null = upcoming.find((s) => s.id === slotId) ?? null;
   const [quantities, setQuantities] = useState<Quantities>({});
+  const [discount, setDiscount] = useState<DiscountPreviewDto | null>(null);
+  // A code in the page address (`?code=HOTEL10`, from a hotel's flyer) is tried at once.
+  const [initialCode, setInitialCode] = useState<string | null>(null);
+  useEffect(() => {
+    setInitialCode(new URLSearchParams(window.location.search).get('code')?.slice(0, 40) || null);
+  }, []);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -159,7 +168,7 @@ export function PublicBookingForm({
     setSlotId(next.id);
     setSlotError(null);
     setTicketError(null);
-    if (ticketCount(quantities) === 0)
+    if (ticketCount(quantities, product.prices) === 0)
       setQuantities(defaultQuantities(product.prices, next.available));
   }
 
@@ -186,7 +195,7 @@ export function PublicBookingForm({
     const missingSlot = !slot ? t.t('public.chooseTimeFirst') : null;
     const ticketProblem = !slot
       ? null
-      : ticketCount(quantities) === 0
+      : ticketCount(quantities, product.prices) === 0
         ? t.t('public.selectTickets')
         : seatsNeeded(product.prices, quantities) > slot.available
           ? t.tp('public.notEnoughSeats', slot.available)
@@ -221,13 +230,19 @@ export function PublicBookingForm({
         },
         answers: toAnswers(product.questions, answers),
         acceptTerms: true,
+        discountCode: discount?.code,
         ...attribution(),
       });
       window.location.assign(nextLocation(result.paymentUrl, result.ticketUrl, lang));
       // Keep the button busy while the browser navigates away.
     } catch (err) {
       setBusy(false);
-      if (isApiError(err) && err.status === 409) {
+      const codeProblem = discountErrorKey(err);
+      if (codeProblem) {
+        // The code stopped working while the customer filled in the form (its last use went).
+        setDiscount(null);
+        setSubmitError(t.t(codeProblem));
+      } else if (isApiError(err) && err.status === 409) {
         setSubmitError(t.t('public.slotGone'));
         setSlotId(null);
         slots.reload();
@@ -244,7 +259,7 @@ export function PublicBookingForm({
     }
   }
 
-  const total = totalMinor(product.prices, quantities);
+  const { discountMinor, totalMinor: total } = bookingTotals(product.prices, quantities, discount);
   const noDepartures = slots.data !== null && !upcoming.some((s) => s.available > 0);
 
   return (
@@ -308,7 +323,17 @@ export function PublicBookingForm({
             }}
             available={slot.available}
             error={ticketError}
-          />
+            discount={discount ? { code: discount.code, minor: discountMinor } : null}
+          >
+            <DiscountCodeField
+              tenantSlug={tenantSlug}
+              productId={product.id}
+              currency={product.currency}
+              applied={discount}
+              onApplied={setDiscount}
+              initialCode={initialCode}
+            />
+          </TicketQuantities>
         </section>
       ) : null}
 

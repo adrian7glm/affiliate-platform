@@ -70,7 +70,8 @@
       "qrShort": "QR",
       "book": "Rezervă acum",
       "bookShort": "Rezervă"
-    }
+    },
+    "discountCode": "cod {code}: −{amount}"
   },
   "labels": {
     "bookingStatus": {
@@ -207,7 +208,8 @@
       "ticket": "biletul nu a fost găsit",
       "user": "utilizatorul nu a fost găsit",
       "scannerAccount": "contul de scanare nu a fost găsit",
-      "contactRequest": "mesajul nu a fost găsit"
+      "contactRequest": "mesajul nu a fost găsit",
+      "discountCode": "codul de reducere nu a fost găsit"
     },
     "auth": {
       "signInAgain": "conectează-te din nou",
@@ -322,6 +324,15 @@
     },
     "contact": {
       "tooMany": "Ne-ai trimis deja mai multe mesaje. Îți răspundem în curând."
+    },
+    "discounts": {
+      "invalid": "codul de reducere nu există sau nu mai e valabil",
+      "notToday": "codul de reducere nu poate fi folosit azi",
+      "notForTrip": "codul de reducere nu e valabil pentru această excursie",
+      "usedUp": "codul de reducere a fost folosit de numărul maxim de ori",
+      "otherAffiliate": "codul de reducere aparține altui afiliat",
+      "codeTaken": "codul {code} există deja",
+      "datesReversed": "ultima zi e înaintea primei"
     }
   },
   "auth": {
@@ -539,7 +550,27 @@
       "optional": "opțional",
       "choose": "Alege…",
       "required": "Te rugăm să răspunzi la această întrebare."
-    }
+    },
+    "extras": "Extra-uri",
+    "extrasHint": "Opțional, se adaugă la rezervare.",
+    "subtotal": "Subtotal",
+    "discountLine": "Cod {code}",
+    "discount": {
+      "question": "Ai un cod de reducere?",
+      "label": "Cod de reducere",
+      "apply": "Aplică",
+      "remove": "Scoate codul",
+      "applied": "Codul {code}: {discount}",
+      "empty": "Scrie codul.",
+      "yourCodes": "Codurile tale",
+      "invalid": "Codul nu există sau nu mai e valabil.",
+      "notToday": "Codul nu poate fi folosit azi.",
+      "notForTrip": "Codul nu e valabil pentru această excursie.",
+      "usedUp": "Codul a fost folosit de numărul maxim de ori.",
+      "otherAffiliate": "Codul e al altui afiliat: folosește unul de-al tău sau unul fără afiliat."
+    },
+    "addExtra": "Adaugă: {label}",
+    "removeExtra": "Scoate: {label}"
   },
   "ticket": {
     "title": "Biletul tău",
@@ -771,6 +802,16 @@
     "customerMessage": {
       "pay": "Bună, {name}! Rezervarea ta pentru {product}, {day}, ora {time}, te așteaptă. Plătește aici ca să primești biletul: {url}",
       "ticket": "Bună, {name}! Biletul tău pentru {product}, {day}, ora {time}: {url}"
+    },
+    "codes": {
+      "title": "Codurile tale de reducere",
+      "description": "Dă-le clienților tăi. Cine rezervă cu un cod de-al tău îți aduce comision, chiar dacă rezervă singur, de pe telefon.",
+      "until": "valabil până pe {day}",
+      "uses_one": "folosit o dată",
+      "uses_few": "folosit de {count} ori",
+      "uses_other": "folosit de {count} de ori",
+      "shareTitle": "Rezervări la {name}",
+      "shareText": "Rezervă cu codul {code} și plătești mai puțin: {discount}."
     }
   },
   "kit": {
@@ -851,7 +892,8 @@
       "sections": "Secțiuni",
       "menu": "Meniu",
       "tenant": "Operator",
-      "departures": "Liste de pasageri"
+      "departures": "Liste de pasageri",
+      "discounts": "Coduri de reducere"
     },
     "dashboard": {
       "title": "Panou",
@@ -1161,7 +1203,9 @@
       "keep": "Renunță",
       "cancelling": "Se anulează…",
       "confirmCancel": "Anulează rezervarea",
-      "csvAnswers": "Răspunsuri"
+      "csvAnswers": "Răspunsuri",
+      "csvDiscountCode": "Cod de reducere",
+      "csvDiscount": "Reducere"
     },
     "billing": {
       "title": "Abonament",
@@ -1253,6 +1297,63 @@
       "csvStatus": "Stare",
       "csvBoarded": "Urcat la bord",
       "csvFile": "pasageri-{date}-{time}.csv"
+    },
+    "discounts": {
+      "title": "Coduri de reducere",
+      "description": "Clienții scriu codul când rezervă și plătesc mai puțin. Un cod dat unui afiliat (de ex. -10% pentru oaspeții unui hotel) îi aduce lui rezervarea și comisionul, oriunde ar rezerva clientul.",
+      "newTitle": "Cod nou",
+      "created": "Codul {code} a fost creat",
+      "createdHelp": "Clienții îl scriu pe pagina de rezervare, la „Ai un cod de reducere?”. Afiliatul lui îl vede în aplicație, la Linkuri.",
+      "listTitle": "Codurile tale",
+      "empty": "Nu ai creat încă niciun cod.",
+      "editTitle": "Modifică codul {code}",
+      "stateActive": "Activ",
+      "statePaused": "Oprit",
+      "stateScheduled": "Programat",
+      "stateExpired": "Expirat",
+      "stateUsedUp": "Epuizat",
+      "forAffiliate": "Al lui {name}",
+      "forEveryone": "Codul tău, pentru orice client",
+      "affiliateInactive": "afiliatul nu e activ, codul nu merge",
+      "edit": "Modifică",
+      "pause": "Oprește",
+      "resume": "Pornește",
+      "trips": "Excursii",
+      "allTrips": "Toate",
+      "valid": "Valabil",
+      "validRange": "{from} – {until}",
+      "validFromOnly": "din {from}",
+      "validUntilOnly": "până pe {until}",
+      "validAlways": "Oricând",
+      "uses": "Folosit",
+      "usesOf": "{uses} din {max}",
+      "revenue": "Vânzări",
+      "code": "Codul",
+      "codeHint": "Ce scriu clienții: 3–24 litere, cifre sau liniuțe, de ex. VARA10.",
+      "kind": "Reducerea",
+      "kindPercent": "Procent",
+      "kindAmount": "Sumă fixă ({currency})",
+      "percent": "Procent (%)",
+      "percentHint": "Cel mult 90%.",
+      "amount": "Suma ({currency})",
+      "amountHint": "Se scade din totalul rezervării.",
+      "affiliate": "Afiliatul",
+      "affiliateHint": "Rezervările cu acest cod devin ale lui, cu comisionul lui. Apar doar afiliații cu contul activat.",
+      "noAffiliate": "Niciunul (cod al tău)",
+      "tripsHint": "Nicio bifă: merge la toate excursiile.",
+      "validFrom": "Valabil din",
+      "validUntil": "Valabil până pe",
+      "validHint": "Zilele în care clienții pot rezerva cu el, oricând ar fi excursia.",
+      "maxUses": "De câte ori poate fi folosit",
+      "maxUsesHint": "Gol: fără limită. O rezervare anulată sau neplătită își eliberează folosirea.",
+      "errCode": "Codul are 3–24 litere, cifre sau liniuțe.",
+      "errPercent": "Scrie un procent între 0,01 și 90.",
+      "errAmount": "Scrie o sumă mai mare ca zero.",
+      "errMaxUses": "Scrie un număr întreg, cel puțin 1.",
+      "errDates": "Ultima zi e înaintea primei.",
+      "errTaken": "Codul {code} există deja.",
+      "save": "Salvează",
+      "create": "Creează codul"
     }
   },
   "admin": {
@@ -1822,7 +1923,9 @@
       "saving": "Se salvează…",
       "pause": "Pune pe pauză",
       "resume": "Reia vânzarea",
-      "viewPublic": "Vezi pagina pentru clienți"
+      "viewPublic": "Vezi pagina pentru clienți",
+      "extraTag": "extra",
+      "extraNoCommission": "extra, fără comision"
     },
     "productForm": {
       "defaultAdult": "Adult",
@@ -1834,8 +1937,8 @@
       "errPriceAmount": "Scrie prețul, ex. 120 sau 99,50.",
       "errPriceTax": "TVA: un procent între 0 și 100.",
       "errPriceSeats": "Locuri ocupate: între 0 și 10.",
-      "errPricesMin": "Adaugă cel puțin un preț.",
-      "errPricesMax": "Cel mult 20 de tipuri de bilet.",
+      "errPricesMin": "Adaugă cel puțin un tip de bilet.",
+      "errPricesMax": "Cel mult 30 de bilete și extra-uri.",
       "errSlugTaken": "Altă excursie folosește deja această adresă. Alege alta.",
       "name": "Nume",
       "nameHint": "Ex. „Plimbare cu barca la apus”.",
@@ -1859,7 +1962,17 @@
       "saving": "Se salvează…",
       "saveChanges": "Salvează modificările",
       "saveTrip": "Salvează excursia",
-      "newTrip": "Excursie nouă"
+      "newTrip": "Excursie nouă",
+      "extrasLegend": "Extra-uri ({currency})",
+      "extrasHelp": "Ce pot adăuga clienții la rezervare: prânz, transfer de la hotel, poze. Nu ocupă locuri.",
+      "extra": "Extra",
+      "extraPlaceholder": "ex. Prânz la bord",
+      "addExtra": "Adaugă un extra",
+      "extraCommission": "Afiliații primesc comision pe el",
+      "extraCommissionHint": "Debifează pentru ce nu câștigi tu, de ex. un transfer plătit șoferului.",
+      "removeExtra": "Șterge extra-ul {number}",
+      "removeExtraNamed": "Șterge {label}",
+      "errExtraLabel": "Scrie numele extra-ului."
     },
     "slots": {
       "weekdayShort": {
@@ -2127,7 +2240,7 @@
       "languageOption": "{language} ({done}/{total})",
       "progress": "{done} din {total} texte traduse",
       "originalText": "Original: {text}",
-      "ticketNames": "Tipurile de bilet",
+      "ticketNames": "Bilete și extra-uri",
       "questionText": "Textul întrebării",
       "untranslatedNote": "Ce lași gol apare în limba ta. Traducerile în toate limbile se salvează împreună.",
       "saveTranslations": "Salvează traducerile",

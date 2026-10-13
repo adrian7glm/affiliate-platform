@@ -9,7 +9,7 @@ import { loadTenant, requestLang, withLang } from '@/lib/public-server';
 
 interface Props {
   params: Promise<{ tenant: string }>;
-  searchParams: Promise<{ lang?: string | string[] }>;
+  searchParams: Promise<{ lang?: string | string[]; code?: string | string[] }>;
 }
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +59,12 @@ export default async function TenantPage({ params, searchParams }: Props) {
       {data.products.length === 0 ? <p className="text-muted">{t('public.noProducts')}</p> : null}
       <ul className="grid gap-4 sm:grid-cols-2">
         {data.products.map((product) => {
-          const href = withLang(`${path}/${encodeURIComponent(product.slug)}`, lang);
+          // A discount code in the address (a hotel's flyer) goes on to the trip's page.
+          const code = typeof query.code === 'string' ? query.code.slice(0, 40) : '';
+          const href = withLang(
+            `${path}/${encodeURIComponent(product.slug)}${code ? `?code=${encodeURIComponent(code)}` : ''}`,
+            lang,
+          );
           const image = product.images.find((src) => /^https:\/\//.test(src));
           return (
             <li key={product.id}>

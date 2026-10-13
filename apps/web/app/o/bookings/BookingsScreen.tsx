@@ -113,6 +113,8 @@ export function BookingsScreen() {
         t('operator.bookings.csvAffiliate'),
         t('operator.bookings.csvCreated'),
         t('operator.bookings.csvAnswers'),
+        t('operator.bookings.csvDiscountCode'),
+        t('operator.bookings.csvDiscount'),
       ],
       visible.map((b) => [
         b.reference,
@@ -131,6 +133,8 @@ export function BookingsScreen() {
         b.affiliateName,
         formatDateTime(b.createdAt, tenant.timezone, lang),
         answersText(b.answers),
+        b.discountCode,
+        b.discountMinor ? minorToCsvAmount(b.discountMinor, digits) : null,
       ]),
     );
     downloadCsv(t('operator.bookings.csvFile', { from: range.from, to: range.to }), csv);

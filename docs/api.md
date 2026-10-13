@@ -31,47 +31,51 @@ Errors: `{ statusCode, error, message, details? }`.
 | GET    | `/affiliate/products/:id/slots` | `?from=YYYY-MM-DD&to=YYYY-MM-DD` | `SlotDto[]`         |
 | POST   | `/affiliate/bookings`           | `AssistedBookingBody`            | `CheckoutResultDto` |
 | GET    | `/affiliate/bookings`           |                                  | `BookingDto[]`      |
+| GET    | `/affiliate/discount-codes`     |                                  | `DiscountCodeDto[]` |
 
 ## Operator (roles `owner`, `staff`)
 
-| Method | Path                                          | Body / query           | Response                                    |
-| ------ | --------------------------------------------- | ---------------------- | ------------------------------------------- |
-| GET    | `/operator/dashboard`                         |                        | `OperatorDashboardDto`                      |
-| GET    | `/operator/analytics`                         | `?period=YYYY-MM`      | `OperatorAnalyticsDto`                      |
-| GET    | `/operator/affiliates`                        |                        | `AffiliateWithStatsDto[]`                   |
-| POST   | `/operator/affiliates`                        | `InviteAffiliateBody`  | `AffiliateDto` (with `inviteUrl`)           |
-| PATCH  | `/operator/affiliates/:id`                    | `UpdateAffiliateBody`  | `AffiliateDto`                              |
-| GET    | `/operator/commission-plans`                  |                        | `CommissionPlanDto[]`                       |
-| POST   | `/operator/commission-plans`                  | `CreatePlanBody`       | `CommissionPlanDto`                         |
-| PUT    | `/operator/commission-plans/:id`              | `UpdatePlanBody`       | `CommissionPlanDto` (new version)           |
-| POST   | `/operator/commission-plans/:id/make-default` |                        | `CommissionPlanDto`                         |
-| DELETE | `/operator/commission-plans/:id`              |                        | `ArchivePlanResultDto`                      |
-| GET    | `/operator/products`                          |                        | `ProductDto[]`                              |
-| POST   | `/operator/products`                          | `CreateProductBody`    | `ProductDto`                                |
-| PATCH  | `/operator/products/:id`                      | `UpdateProductBody`    | `ProductDto`                                |
-| GET    | `/operator/products/:id/slots`                | `?from&to`             | `OperatorSlotDto[]`                         |
-| POST   | `/operator/products/:id/slots`                | `CreateSlotsBody`      | `{ created: number }`                       |
-| PATCH  | `/operator/products/:id/slots`                | `UpdateSlotsBody`      | `UpdateSlotsResultDto`                      |
-| POST   | `/operator/products/:id/slots/delete`         | `DeleteSlotsBody`      | `DeleteSlotsResultDto`                      |
-| POST   | `/operator/products/:id/slots/cancel`         | `CancelDeparturesBody` | `CancelDeparturesResultDto`                 |
-| GET    | `/operator/settings`                          |                        | `OperatorSettingsDto`                       |
-| PATCH  | `/operator/settings` (owner)                  | `UpdateSettingsBody`   | `OperatorSettingsDto`                       |
-| GET    | `/operator/bookings`                          | `?from&to`             | `BookingDto[]`                              |
-| POST   | `/operator/bookings/:id/cancel`               | `CancelBookingBody`    | `BookingDto`                                |
-| POST   | `/operator/bookings/:id/board`                |                        | `CheckInResultDto` (boarded without a scan) |
-| GET    | `/operator/departures`                        | `?date=YYYY-MM-DD`     | `DepartureDayDto`                           |
-| GET    | `/operator/departures/:slotId/passengers`     |                        | `DeparturePassengersDto`                    |
-| POST   | `/operator/tickets/check-in`                  | `CheckInBody`          | `CheckInResultDto` (also `scanner`)         |
-| GET    | `/operator/scanners`                          |                        | `ScannerAccountDto[]`                       |
-| POST   | `/operator/scanners`                          | `AddScannerBody`       | `ScannerAccountDto`                         |
-| DELETE | `/operator/scanners/:userId`                  |                        | 204                                         |
-| GET    | `/operator/commissions/report`                | `?period=YYYY-MM`      | `CommissionReportDto`                       |
-| POST   | `/operator/payouts/close-period`              | `ClosePeriodBody`      | `ClosePeriodResultDto`                      |
-| GET    | `/operator/payouts`                           | `?period=YYYY-MM`      | `PayoutDto[]`                               |
-| POST   | `/operator/payouts/:id/mark-paid`             |                        | `PayoutDto`                                 |
-| GET    | `/operator/sources`                           |                        | `SourceDto[]`                               |
-| POST   | `/operator/sources` (owner)                   | `ConnectSourceBody`    | `SourceDto`                                 |
-| POST   | `/operator/sources/:id/sync`                  |                        | `SyncResultDto`                             |
+| Method | Path                                          | Body / query             | Response                                    |
+| ------ | --------------------------------------------- | ------------------------ | ------------------------------------------- |
+| GET    | `/operator/dashboard`                         |                          | `OperatorDashboardDto`                      |
+| GET    | `/operator/analytics`                         | `?period=YYYY-MM`        | `OperatorAnalyticsDto`                      |
+| GET    | `/operator/affiliates`                        |                          | `AffiliateWithStatsDto[]`                   |
+| POST   | `/operator/affiliates`                        | `InviteAffiliateBody`    | `AffiliateDto` (with `inviteUrl`)           |
+| PATCH  | `/operator/affiliates/:id`                    | `UpdateAffiliateBody`    | `AffiliateDto`                              |
+| GET    | `/operator/commission-plans`                  |                          | `CommissionPlanDto[]`                       |
+| POST   | `/operator/commission-plans`                  | `CreatePlanBody`         | `CommissionPlanDto`                         |
+| PUT    | `/operator/commission-plans/:id`              | `UpdatePlanBody`         | `CommissionPlanDto` (new version)           |
+| POST   | `/operator/commission-plans/:id/make-default` |                          | `CommissionPlanDto`                         |
+| DELETE | `/operator/commission-plans/:id`              |                          | `ArchivePlanResultDto`                      |
+| GET    | `/operator/products`                          |                          | `ProductDto[]`                              |
+| POST   | `/operator/products`                          | `CreateProductBody`      | `ProductDto`                                |
+| PATCH  | `/operator/products/:id`                      | `UpdateProductBody`      | `ProductDto`                                |
+| GET    | `/operator/products/:id/slots`                | `?from&to`               | `OperatorSlotDto[]`                         |
+| POST   | `/operator/products/:id/slots`                | `CreateSlotsBody`        | `{ created: number }`                       |
+| PATCH  | `/operator/products/:id/slots`                | `UpdateSlotsBody`        | `UpdateSlotsResultDto`                      |
+| POST   | `/operator/products/:id/slots/delete`         | `DeleteSlotsBody`        | `DeleteSlotsResultDto`                      |
+| POST   | `/operator/products/:id/slots/cancel`         | `CancelDeparturesBody`   | `CancelDeparturesResultDto`                 |
+| GET    | `/operator/settings`                          |                          | `OperatorSettingsDto`                       |
+| PATCH  | `/operator/settings` (owner)                  | `UpdateSettingsBody`     | `OperatorSettingsDto`                       |
+| GET    | `/operator/bookings`                          | `?from&to`               | `BookingDto[]`                              |
+| POST   | `/operator/bookings/:id/cancel`               | `CancelBookingBody`      | `BookingDto`                                |
+| POST   | `/operator/bookings/:id/board`                |                          | `CheckInResultDto` (boarded without a scan) |
+| GET    | `/operator/departures`                        | `?date=YYYY-MM-DD`       | `DepartureDayDto`                           |
+| GET    | `/operator/departures/:slotId/passengers`     |                          | `DeparturePassengersDto`                    |
+| POST   | `/operator/tickets/check-in`                  | `CheckInBody`            | `CheckInResultDto` (also `scanner`)         |
+| GET    | `/operator/scanners`                          |                          | `ScannerAccountDto[]`                       |
+| POST   | `/operator/scanners`                          | `AddScannerBody`         | `ScannerAccountDto`                         |
+| DELETE | `/operator/scanners/:userId`                  |                          | 204                                         |
+| GET    | `/operator/commissions/report`                | `?period=YYYY-MM`        | `CommissionReportDto`                       |
+| POST   | `/operator/payouts/close-period`              | `ClosePeriodBody`        | `ClosePeriodResultDto`                      |
+| GET    | `/operator/payouts`                           | `?period=YYYY-MM`        | `PayoutDto[]`                               |
+| POST   | `/operator/payouts/:id/mark-paid`             |                          | `PayoutDto`                                 |
+| GET    | `/operator/sources`                           |                          | `SourceDto[]`                               |
+| POST   | `/operator/sources` (owner)                   | `ConnectSourceBody`      | `SourceDto`                                 |
+| POST   | `/operator/sources/:id/sync`                  |                          | `SyncResultDto`                             |
+| GET    | `/operator/discount-codes`                    |                          | `DiscountCodeDto[]`                         |
+| POST   | `/operator/discount-codes`                    | `CreateDiscountCodeBody` | `DiscountCodeDto` (409 if the code exists)  |
+| PATCH  | `/operator/discount-codes/:id`                | `UpdateDiscountCodeBody` | `DiscountCodeDto`                           |
 
 Trip extras (`CreateProductBody` / `UpdateProductBody`, also for trips from the operator's own
 system): `customerNote` is shown on the trip page, the ticket, the PDF and the confirmation email;
@@ -82,6 +86,23 @@ toward the plan's tiers, and a negotiated affiliate rate still wins; the rate is
 commission entry); `translations` holds the trip's texts per language. Public and affiliate
 routes return the trip in the `Accept-Language` language where it is translated, and in the
 operator's language otherwise; operators get their own texts plus `translations`.
+
+Extras: a price with `kind: 'extra'` (lunch, a hotel transfer, photos) is sold with the tickets
+but takes no seat; a trip needs at least one `ticket` price and a booking at least one seat.
+`commissionable: false` leaves an extra out of the affiliate's commission base. Trips from the
+operator's own system have no extras (their prices come from that system).
+
+Discount codes: a percentage (`percentBps`, at most 90%) or a fixed amount (`amountMinor`) off
+the booking total, never more than 90% of it. A code can be limited to some trips, to booking
+days (`validFrom`/`validUntil`, the day the customer books in the operator's timezone) and to a
+number of bookings (`maxUses`; pending and confirmed bookings hold a use, cancelled and expired
+ones give it back). A code with an `affiliateId` makes the booking that affiliate's (channel
+`promo_code`, over the link the customer came through) and stops working when the affiliate is
+not active; an affiliate booking for a customer can use the operator's codes and their own, not
+another affiliate's. The discount is spread over the booking's lines in proportion to their
+price, so VAT and the commission base shrink with it; the commission base is stored on the
+booking and the month close uses it too. Refused codes answer 400 with `code`
+`errors.discounts.invalid`, `notToday`, `notForTrip`, `usedUp` or `otherAffiliate`.
 
 ## Boarding scanner (roles `scanner`, `owner`, `staff`)
 
@@ -101,6 +122,7 @@ A `scanner` account sees nothing else: besides this route it can only call
 | GET    | `/public/tenants/:slug/products/:productSlug`       |                        | `ProductDto`                                |
 | GET    | `/public/tenants/:slug/products/:productSlug/slots` | `?from&to`             | `SlotDto[]`                                 |
 | POST   | `/public/tenants/:slug/checkout`                    | `PublicCheckoutBody`   | `CheckoutResultDto`                         |
+| GET    | `/public/tenants/:slug/discount-codes/:code`        | `?productId`           | `DiscountPreviewDto` (400 with the reason)  |
 | GET    | `/public/tickets/:bookingId`                        | `?k=<ticket key>&lang` | `TicketDto`                                 |
 | GET    | `/public/tickets/:bookingId/pdf`                    | `?k&lang&download=1`   | PDF ticket (409 if the ticket is not valid) |
 | GET    | `/public/tickets/:bookingId/calendar.ics`           | `?k&lang`              | iCalendar event (409 if not valid)          |

@@ -69,7 +69,8 @@
       "qrShort": "QR",
       "book": "Jetzt buchen",
       "bookShort": "Buchen"
-    }
+    },
+    "discountCode": "Code {code}: −{amount}"
   },
   "labels": {
     "bookingStatus": {
@@ -205,7 +206,8 @@
       "ticket": "Ticket nicht gefunden",
       "user": "Benutzer nicht gefunden",
       "scannerAccount": "Scanner-Konto nicht gefunden",
-      "contactRequest": "Nachricht nicht gefunden"
+      "contactRequest": "Nachricht nicht gefunden",
+      "discountCode": "Rabattcode nicht gefunden"
     },
     "auth": {
       "signInAgain": "bitte erneut anmelden",
@@ -318,6 +320,15 @@
     },
     "contact": {
       "tooMany": "Sie haben uns bereits mehrere Nachrichten gesendet. Wir antworten Ihnen bald."
+    },
+    "discounts": {
+      "invalid": "diesen Rabattcode gibt es nicht oder er gilt nicht mehr",
+      "notToday": "dieser Rabattcode kann heute nicht verwendet werden",
+      "notForTrip": "dieser Rabattcode gilt nicht für diese Tour",
+      "usedUp": "dieser Rabattcode ist aufgebraucht",
+      "otherAffiliate": "dieser Rabattcode gehört einem anderen Partner",
+      "codeTaken": "den Code {code} gibt es bereits",
+      "datesReversed": "der letzte Tag liegt vor dem ersten"
     }
   },
   "auth": {
@@ -533,7 +544,27 @@
       "optional": "optional",
       "choose": "Bitte wählen…",
       "required": "Bitte beantworten Sie diese Frage."
-    }
+    },
+    "extras": "Extras",
+    "extrasHint": "Optional, kommt zu Ihrer Buchung hinzu.",
+    "subtotal": "Zwischensumme",
+    "discountLine": "Code {code}",
+    "discount": {
+      "question": "Haben Sie einen Rabattcode?",
+      "label": "Rabattcode",
+      "apply": "Einlösen",
+      "remove": "Code entfernen",
+      "applied": "Code {code}: {discount}",
+      "empty": "Geben Sie den Code ein.",
+      "yourCodes": "Ihre Codes",
+      "invalid": "Diesen Code gibt es nicht oder er gilt nicht mehr.",
+      "notToday": "Dieser Code kann heute nicht verwendet werden.",
+      "notForTrip": "Dieser Code gilt nicht für diese Tour.",
+      "usedUp": "Dieser Code ist aufgebraucht.",
+      "otherAffiliate": "Dieser Code gehört einem anderen Partner: Verwenden Sie einen eigenen oder einen allgemeinen Code."
+    },
+    "addExtra": "Hinzufügen: {label}",
+    "removeExtra": "Entfernen: {label}"
   },
   "ticket": {
     "title": "Ihr Ticket",
@@ -757,6 +788,15 @@
     "customerMessage": {
       "pay": "Hallo {name}! Ihre Buchung für {product} am {day} um {time} wartet. Bezahlen Sie hier, um Ihr Ticket zu erhalten: {url}",
       "ticket": "Hallo {name}! Ihr Ticket für {product} am {day} um {time}: {url}"
+    },
+    "codes": {
+      "title": "Ihre Rabattcodes",
+      "description": "Geben Sie sie Ihren Gästen. Wer mit einem Ihrer Codes bucht, bringt Ihnen Provision, auch wenn er selbst am Handy bucht.",
+      "until": "gültig bis {day}",
+      "uses_one": "einmal verwendet",
+      "uses_other": "{count}-mal verwendet",
+      "shareTitle": "Buchen bei {name}",
+      "shareText": "Buchen Sie mit dem Code {code} und zahlen Sie weniger: {discount}."
     }
   },
   "kit": {
@@ -837,7 +877,8 @@
       "sections": "Bereiche",
       "menu": "Menü",
       "tenant": "Anbieter",
-      "departures": "Passagierlisten"
+      "departures": "Passagierlisten",
+      "discounts": "Rabattcodes"
     },
     "dashboard": {
       "title": "Übersicht",
@@ -1127,7 +1168,9 @@
       "keep": "Buchung behalten",
       "cancelling": "Wird storniert…",
       "confirmCancel": "Buchung stornieren",
-      "csvAnswers": "Antworten"
+      "csvAnswers": "Antworten",
+      "csvDiscountCode": "Rabattcode",
+      "csvDiscount": "Rabatt"
     },
     "billing": {
       "title": "Abonnement",
@@ -1213,6 +1256,63 @@
       "csvStatus": "Status",
       "csvBoarded": "An Bord um",
       "csvFile": "passagiere-{date}-{time}.csv"
+    },
+    "discounts": {
+      "title": "Rabattcodes",
+      "description": "Kunden geben den Code beim Buchen ein und zahlen weniger. Ein Code für einen Partner (z. B. 10 % Rabatt für die Gäste eines Hotels) bringt ihm die Buchung und die Provision, egal wo der Kunde bucht.",
+      "newTitle": "Neuer Code",
+      "created": "Code {code} erstellt",
+      "createdHelp": "Kunden geben ihn auf der Buchungsseite unter „Haben Sie einen Rabattcode?“ ein. Der zugehörige Partner sieht ihn in seiner App unter Links.",
+      "listTitle": "Ihre Codes",
+      "empty": "Sie haben noch keinen Code erstellt.",
+      "editTitle": "Code {code} bearbeiten",
+      "stateActive": "Aktiv",
+      "statePaused": "Pausiert",
+      "stateScheduled": "Geplant",
+      "stateExpired": "Abgelaufen",
+      "stateUsedUp": "Aufgebraucht",
+      "forAffiliate": "Für {name}",
+      "forEveryone": "Ihr eigener Code, für alle Kunden",
+      "affiliateInactive": "der Partner ist nicht aktiv, der Code funktioniert nicht",
+      "edit": "Bearbeiten",
+      "pause": "Pausieren",
+      "resume": "Fortsetzen",
+      "trips": "Touren",
+      "allTrips": "Alle",
+      "valid": "Gültig",
+      "validRange": "{from} – {until}",
+      "validFromOnly": "ab {from}",
+      "validUntilOnly": "bis {until}",
+      "validAlways": "Jederzeit",
+      "uses": "Verwendet",
+      "usesOf": "{uses} von {max}",
+      "revenue": "Umsatz",
+      "code": "Code",
+      "codeHint": "Was Kunden eingeben: 3–24 Buchstaben, Ziffern oder Bindestriche, z. B. SOMMER10.",
+      "kind": "Rabatt",
+      "kindPercent": "Prozent",
+      "kindAmount": "Fester Betrag ({currency})",
+      "percent": "Prozent (%)",
+      "percentHint": "Höchstens 90 %.",
+      "amount": "Betrag ({currency})",
+      "amountHint": "Wird vom Gesamtbetrag der Buchung abgezogen.",
+      "affiliate": "Partner",
+      "affiliateHint": "Buchungen mit diesem Code gehören ihm, mit seiner Provision. Es erscheinen nur Partner mit aktiviertem Konto.",
+      "noAffiliate": "Keiner (Ihr eigener Code)",
+      "tripsHint": "Nichts angehakt: gilt für alle Touren.",
+      "validFrom": "Gültig ab",
+      "validUntil": "Gültig bis",
+      "validHint": "Die Tage, an denen Kunden damit buchen können, unabhängig vom Tourdatum.",
+      "maxUses": "Wie oft er verwendet werden kann",
+      "maxUsesHint": "Leer: unbegrenzt. Eine stornierte oder unbezahlte Buchung gibt ihre Verwendung zurück.",
+      "errCode": "Verwenden Sie 3–24 Buchstaben, Ziffern oder Bindestriche.",
+      "errPercent": "Geben Sie einen Prozentsatz zwischen 0,01 und 90 ein.",
+      "errAmount": "Geben Sie einen Betrag über null ein.",
+      "errMaxUses": "Geben Sie eine ganze Zahl ab 1 ein.",
+      "errDates": "Der letzte Tag liegt vor dem ersten.",
+      "errTaken": "Den Code {code} gibt es bereits.",
+      "save": "Speichern",
+      "create": "Code erstellen"
     }
   },
   "admin": {
@@ -1757,7 +1857,9 @@
       "saving": "Wird gespeichert…",
       "pause": "Pausieren",
       "resume": "Verkauf fortsetzen",
-      "viewPublic": "Kundenseite ansehen"
+      "viewPublic": "Kundenseite ansehen",
+      "extraTag": "Extra",
+      "extraNoCommission": "Extra, ohne Provision"
     },
     "productForm": {
       "defaultAdult": "Erwachsener",
@@ -1769,8 +1871,8 @@
       "errPriceAmount": "Geben Sie den Preis ein, z. B. 120 oder 99,50.",
       "errPriceTax": "MwSt.: ein Prozentsatz zwischen 0 und 100.",
       "errPriceSeats": "Belegte Plätze: zwischen 0 und 10.",
-      "errPricesMin": "Fügen Sie mindestens einen Preis hinzu.",
-      "errPricesMax": "Höchstens 20 Ticketarten.",
+      "errPricesMin": "Fügen Sie mindestens eine Ticketart hinzu.",
+      "errPricesMax": "Höchstens 30 Ticketarten und Extras.",
       "errSlugTaken": "Eine andere Tour verwendet bereits diese Adresse. Wählen Sie eine andere.",
       "name": "Name",
       "nameHint": "Z. B. „Bootstour bei Sonnenuntergang“.",
@@ -1794,7 +1896,17 @@
       "saving": "Wird gespeichert…",
       "saveChanges": "Änderungen speichern",
       "saveTrip": "Tour speichern",
-      "newTrip": "Neue Tour"
+      "newTrip": "Neue Tour",
+      "extrasLegend": "Extras ({currency})",
+      "extrasHelp": "Was Kunden zur Buchung hinzufügen können: Mittagessen, Hoteltransfer, Fotos. Sie belegen keinen Platz.",
+      "extra": "Extra",
+      "extraPlaceholder": "z. B. Mittagessen an Bord",
+      "addExtra": "Extra hinzufügen",
+      "extraCommission": "Partner erhalten darauf Provision",
+      "extraCommissionHint": "Abwählen, wenn Sie daran nichts verdienen, z. B. ein Transfer, den Sie dem Fahrer zahlen.",
+      "removeExtra": "Extra {number} entfernen",
+      "removeExtraNamed": "{label} entfernen",
+      "errExtraLabel": "Geben Sie dem Extra einen Namen."
     },
     "slots": {
       "weekdayShort": {
@@ -2047,7 +2159,7 @@
       "languageOption": "{language} ({done}/{total})",
       "progress": "{done} von {total} Texten übersetzt",
       "originalText": "Original: {text}",
-      "ticketNames": "Ticketarten",
+      "ticketNames": "Tickets und Extras",
       "questionText": "Text der Frage",
       "untranslatedNote": "Was Sie leer lassen, erscheint in Ihrer Sprache. Die Übersetzungen aller Sprachen werden zusammen gespeichert.",
       "saveTranslations": "Übersetzungen speichern",

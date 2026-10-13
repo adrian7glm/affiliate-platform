@@ -34,7 +34,11 @@ import type {
   ClosePeriodResultDto,
   CommissionPlanDto,
   CommissionReportDto,
+  CreateDiscountCodeBody,
   CreateLinkBody,
+  DiscountCodeDto,
+  DiscountPreviewDto,
+  UpdateDiscountCodeBody,
   CreatePlanBody,
   CreateProductBody,
   CreateSlotsBody,
@@ -98,6 +102,8 @@ export const affiliateApi = {
   createBooking: (body: AssistedBookingBody, o?: Opts) =>
     apiFetch<CheckoutResultDto>('/affiliate/bookings', { ...o, method: 'POST', body }),
   bookings: (o?: Opts) => apiFetch<BookingDto[]>('/affiliate/bookings', o),
+  /** The affiliate's own discount codes, to give to their guests. */
+  discountCodes: (o?: Opts) => apiFetch<DiscountCodeDto[]>('/affiliate/discount-codes', o),
 };
 
 export const operatorApi = {
@@ -203,6 +209,15 @@ export const operatorApi = {
     apiFetch<ScannerAccountDto>('/operator/scanners', { ...o, method: 'POST', body }),
   removeScanner: (userId: string, o?: Opts) =>
     apiFetch<void>(`/operator/scanners/${enc(userId)}`, { ...o, method: 'DELETE' }),
+  discountCodes: (o?: Opts) => apiFetch<DiscountCodeDto[]>('/operator/discount-codes', o),
+  createDiscountCode: (body: CreateDiscountCodeBody, o?: Opts) =>
+    apiFetch<DiscountCodeDto>('/operator/discount-codes', { ...o, method: 'POST', body }),
+  updateDiscountCode: (id: string, body: UpdateDiscountCodeBody, o?: Opts) =>
+    apiFetch<DiscountCodeDto>(`/operator/discount-codes/${enc(id)}`, {
+      ...o,
+      method: 'PATCH',
+      body,
+    }),
 };
 
 /** The boarding scanner app (scanner accounts and operator staff). */
@@ -248,6 +263,13 @@ export const publicApi = {
   /** The trip as a calendar event (.ics) for Apple Calendar, Outlook and phones. */
   ticketCalendarUrl: (bookingId: string, key: string, lang: string) =>
     buildUrl(API_URL, `/public/tickets/${enc(bookingId)}/calendar.ics`, { k: key, lang }),
+  /** Whether a discount code works for a trip today (the error says why not). */
+  discount: (slug: string, code: string, productId: string, o?: Opts) =>
+    apiFetch<DiscountPreviewDto>(`/public/tenants/${enc(slug)}/discount-codes/${enc(code)}`, {
+      ...o,
+      auth: false,
+      query: { productId },
+    }),
   contact: (body: ContactRequestBody, o?: Opts) =>
     apiFetch<void>('/public/contact', { ...o, method: 'POST', body, auth: false }),
   devPaymentSucceed: (bookingId: string, key: string, o?: Opts) =>

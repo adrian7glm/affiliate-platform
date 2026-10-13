@@ -69,7 +69,8 @@
       "qrShort": "QR",
       "book": "Book now",
       "bookShort": "Book"
-    }
+    },
+    "discountCode": "code {code}: −{amount}"
   },
   "labels": {
     "bookingStatus": {
@@ -205,7 +206,8 @@
       "ticket": "ticket not found",
       "user": "user not found",
       "scannerAccount": "scanner account not found",
-      "contactRequest": "message not found"
+      "contactRequest": "message not found",
+      "discountCode": "discount code not found"
     },
     "auth": {
       "signInAgain": "sign in again",
@@ -318,6 +320,15 @@
     },
     "contact": {
       "tooMany": "You have already sent us several messages. We will answer soon."
+    },
+    "discounts": {
+      "invalid": "this discount code does not exist or no longer works",
+      "notToday": "this discount code cannot be used today",
+      "notForTrip": "this discount code is not valid for this trip",
+      "usedUp": "this discount code has been used up",
+      "otherAffiliate": "this discount code belongs to another affiliate",
+      "codeTaken": "the code {code} already exists",
+      "datesReversed": "the last day is before the first"
     }
   },
   "auth": {
@@ -533,7 +544,27 @@
       "optional": "optional",
       "choose": "Choose…",
       "required": "Please answer this question."
-    }
+    },
+    "extras": "Extras",
+    "extrasHint": "Optional, added to your booking.",
+    "subtotal": "Subtotal",
+    "discountLine": "Code {code}",
+    "discount": {
+      "question": "Have a discount code?",
+      "label": "Discount code",
+      "apply": "Apply",
+      "remove": "Remove code",
+      "applied": "Code {code}: {discount}",
+      "empty": "Type the code.",
+      "yourCodes": "Your codes",
+      "invalid": "This code does not exist or no longer works.",
+      "notToday": "This code cannot be used today.",
+      "notForTrip": "This code is not valid for this trip.",
+      "usedUp": "This code has been used up.",
+      "otherAffiliate": "This code belongs to another affiliate: use one of yours or one that isn't an affiliate's."
+    },
+    "addExtra": "Add: {label}",
+    "removeExtra": "Remove: {label}"
   },
   "ticket": {
     "title": "Your ticket",
@@ -757,6 +788,15 @@
     "customerMessage": {
       "pay": "Hi {name}! Your booking for {product} on {day} at {time} is waiting. Pay here to get your ticket: {url}",
       "ticket": "Hi {name}! Your ticket for {product} on {day} at {time}: {url}"
+    },
+    "codes": {
+      "title": "Your discount codes",
+      "description": "Give them to your guests. Whoever books with one of your codes earns you commission, even when they book on their own phone.",
+      "until": "valid until {day}",
+      "uses_one": "used once",
+      "uses_other": "used {count} times",
+      "shareTitle": "Book with {name}",
+      "shareText": "Book with the code {code} and pay less: {discount}."
     }
   },
   "kit": {
@@ -837,7 +877,8 @@
       "sections": "Sections",
       "menu": "Menu",
       "tenant": "Operator",
-      "departures": "Passenger lists"
+      "departures": "Passenger lists",
+      "discounts": "Discount codes"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1127,7 +1168,9 @@
       "keep": "Keep the booking",
       "cancelling": "Cancelling…",
       "confirmCancel": "Cancel the booking",
-      "csvAnswers": "Answers"
+      "csvAnswers": "Answers",
+      "csvDiscountCode": "Discount code",
+      "csvDiscount": "Discount"
     },
     "billing": {
       "title": "Subscription",
@@ -1213,6 +1256,63 @@
       "csvStatus": "Status",
       "csvBoarded": "Boarded at",
       "csvFile": "passengers-{date}-{time}.csv"
+    },
+    "discounts": {
+      "title": "Discount codes",
+      "description": "Customers type the code when they book and pay less. A code given to an affiliate (e.g. 10% off for a hotel’s guests) brings them the booking and its commission, wherever the customer books.",
+      "newTitle": "New code",
+      "created": "Code {code} created",
+      "createdHelp": "Customers type it on the booking page, under “Have a discount code?”. Its affiliate sees it in their app, under Links.",
+      "listTitle": "Your codes",
+      "empty": "You haven't created any codes yet.",
+      "editTitle": "Edit code {code}",
+      "stateActive": "Active",
+      "statePaused": "Paused",
+      "stateScheduled": "Scheduled",
+      "stateExpired": "Expired",
+      "stateUsedUp": "Used up",
+      "forAffiliate": "For {name}",
+      "forEveryone": "Your own code, for any customer",
+      "affiliateInactive": "the affiliate isn't active, the code doesn't work",
+      "edit": "Edit",
+      "pause": "Pause",
+      "resume": "Resume",
+      "trips": "Trips",
+      "allTrips": "All",
+      "valid": "Valid",
+      "validRange": "{from} – {until}",
+      "validFromOnly": "from {from}",
+      "validUntilOnly": "until {until}",
+      "validAlways": "Any time",
+      "uses": "Used",
+      "usesOf": "{uses} of {max}",
+      "revenue": "Sales",
+      "code": "Code",
+      "codeHint": "What customers type: 3–24 letters, digits or dashes, e.g. SUMMER10.",
+      "kind": "Discount",
+      "kindPercent": "Percentage",
+      "kindAmount": "Fixed amount ({currency})",
+      "percent": "Percentage (%)",
+      "percentHint": "At most 90%.",
+      "amount": "Amount ({currency})",
+      "amountHint": "Taken off the booking total.",
+      "affiliate": "Affiliate",
+      "affiliateHint": "Bookings with this code become theirs, with their commission. Only affiliates who activated their account are listed.",
+      "noAffiliate": "None (your own code)",
+      "tripsHint": "Nothing ticked: it works for every trip.",
+      "validFrom": "Valid from",
+      "validUntil": "Valid until",
+      "validHint": "The days customers can book with it, whenever the trip is.",
+      "maxUses": "How many times it can be used",
+      "maxUsesHint": "Empty: no limit. A cancelled or unpaid booking gives its use back.",
+      "errCode": "Use 3–24 letters, digits or dashes.",
+      "errPercent": "Enter a percentage between 0.01 and 90.",
+      "errAmount": "Enter an amount above zero.",
+      "errMaxUses": "Enter a whole number, at least 1.",
+      "errDates": "The last day is before the first.",
+      "errTaken": "The code {code} already exists.",
+      "save": "Save",
+      "create": "Create the code"
     }
   },
   "admin": {
@@ -1757,7 +1857,9 @@
       "saving": "Saving…",
       "pause": "Pause",
       "resume": "Resume sales",
-      "viewPublic": "View the customer page"
+      "viewPublic": "View the customer page",
+      "extraTag": "extra",
+      "extraNoCommission": "extra, no commission"
     },
     "productForm": {
       "defaultAdult": "Adult",
@@ -1769,8 +1871,8 @@
       "errPriceAmount": "Enter the price, e.g. 120 or 99.50.",
       "errPriceTax": "VAT: a percentage between 0 and 100.",
       "errPriceSeats": "Seats taken: between 0 and 10.",
-      "errPricesMin": "Add at least one price.",
-      "errPricesMax": "At most 20 ticket types.",
+      "errPricesMin": "Add at least one ticket type.",
+      "errPricesMax": "At most 30 ticket types and extras.",
       "errSlugTaken": "Another trip already uses this address. Choose a different one.",
       "name": "Name",
       "nameHint": "E.g. “Sunset boat trip”.",
@@ -1794,7 +1896,17 @@
       "saving": "Saving…",
       "saveChanges": "Save changes",
       "saveTrip": "Save the trip",
-      "newTrip": "New trip"
+      "newTrip": "New trip",
+      "extrasLegend": "Extras ({currency})",
+      "extrasHelp": "What customers can add to their booking: lunch, a hotel transfer, photos. They take no seat.",
+      "extra": "Extra",
+      "extraPlaceholder": "e.g. Lunch on board",
+      "addExtra": "Add an extra",
+      "extraCommission": "Affiliates earn commission on it",
+      "extraCommissionHint": "Untick it for what you don't earn on, e.g. a transfer you pay the driver for.",
+      "removeExtra": "Remove extra {number}",
+      "removeExtraNamed": "Remove {label}",
+      "errExtraLabel": "Name the extra."
     },
     "slots": {
       "weekdayShort": {
@@ -2047,7 +2159,7 @@
       "languageOption": "{language} ({done}/{total})",
       "progress": "{done} of {total} texts translated",
       "originalText": "Original: {text}",
-      "ticketNames": "Ticket names",
+      "ticketNames": "Tickets and extras",
       "questionText": "Question text",
       "untranslatedNote": "Whatever you leave empty is shown in your language. The translations into all languages are saved together.",
       "saveTranslations": "Save the translations",

@@ -289,7 +289,15 @@ function ProductCard({
               <tr key={price.id} className="border-b border-line last:border-0">
                 <th scope="row" className="py-1.5 font-normal">
                   {price.label}
-                  {price.seats !== 1 ? (
+                  {price.kind === 'extra' ? (
+                    <span className="text-muted">
+                      {' '}
+                      ·{' '}
+                      {price.commissionable
+                        ? t('catalog.products.extraTag')
+                        : t('catalog.products.extraNoCommission')}
+                    </span>
+                  ) : price.seats !== 1 ? (
                     <span className="text-muted">
                       {' '}
                       ·{' '}

@@ -57,6 +57,13 @@
       "when": 1791855142799,
       "tag": "0009_operator_customization",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791866211706,
+      "tag": "0011_extras_discounts",
+      "breakpoints": true
     }
   ]
 }

@@ -32,11 +32,13 @@ import { DomainError, NotFound } from '../common/errors';
 import { type Tenant, TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
+import { DiscountsService } from '../discounts/discounts.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from '../payments/gateway';
 import { SourcesService } from '../sources/sources.service';
 import { type Attribution, LinksService } from '../tracking/links.service';
+import { priceBooking } from './pricing';
 import { type CancellationNotice, TicketsService } from './tickets.service';
 
 export type Booking = typeof bookings.$inferSelect;
@@ -52,6 +54,7 @@ interface CreateInput {
   createdByUserId: string | null;
   paymentMode: 'online' | 'on_site';
   termsAcceptedAt?: Date | null;
+  discountCode?: string;
 }
 
 /**
@@ -92,11 +95,6 @@ export function bookingAnswers(
   });
 }
 
-/** VAT included in a gross amount. */
-function includedTax(grossMinor: number, taxRateBps: number): number {
-  return Math.round((grossMinor * taxRateBps) / (10_000 + taxRateBps));
-}
-
 @Injectable()
 export class BookingService {
   private readonly logger = new Logger('Booking');
@@ -114,6 +112,7 @@ export class BookingService {
     private readonly tickets: TicketsService,
     private readonly notifications: NotificationsService,
     private readonly sources: SourcesService,
+    private readonly discounts: DiscountsService,
   ) {}
 
   ticketUrl(bookingId: string): string {
@@ -134,6 +133,7 @@ export class BookingService {
       createdByUserId: null,
       paymentMode: 'online',
       termsAcceptedAt: this.clock.now(),
+      discountCode: body.discountCode,
     });
   }
 
@@ -163,6 +163,7 @@ export class BookingService {
       attribution: { affiliateId, linkId: null },
       createdByUserId: userId,
       paymentMode: body.payment === 'on_site' ? 'on_site' : 'online',
+      discountCode: body.discountCode,
     });
     // Pay-on-site bookings get their ticket when it is issued; online ones get the payment link.
     // The phone first: the customer is standing at the desk and reads an SMS at once.
@@ -209,13 +210,21 @@ export class BookingService {
 
     const answers = bookingAnswers(product, input.answers, input.customer.locale);
     const lines = prices.map((price) => ({ price, quantity: quantities.get(price.id)! }));
-    const seats = lines.reduce((sum, l) => sum + l.quantity * l.price.seats, 0);
-    const totalMinor = lines.reduce((sum, l) => sum + l.quantity * l.price.amountMinor, 0);
-    const taxMinor = lines.reduce(
-      (sum, l) => sum + includedTax(l.quantity * l.price.amountMinor, l.price.taxRateBps),
-      0,
-    );
+    const code = await this.discounts.forBooking(this.db, tenant, input.discountCode, product.id);
+    const amounts = priceBooking(lines, code);
+    const { seats, totalMinor } = amounts;
     if (seats < 1) throw new DomainError('errors.booking.noSeats', HttpStatus.BAD_REQUEST);
+
+    // A code that belongs to an affiliate makes the booking theirs, over the link the customer
+    // came through; an affiliate booking for a customer can't use another affiliate's code.
+    let { channel, attribution } = input;
+    if (code?.affiliateId && code.affiliateId !== attribution?.affiliateId) {
+      if (channel === 'affiliate_assisted') {
+        throw new DomainError('errors.discounts.otherAffiliate', HttpStatus.BAD_REQUEST);
+      }
+      channel = 'promo_code';
+      attribution = { affiliateId: code.affiliateId, linkId: null };
+    }
 
     const onSite = input.paymentMode === 'on_site';
     const holdExpiresAt = new Date(now.getTime() + this.config.HOLD_MINUTES * 60_000);
@@ -228,6 +237,7 @@ export class BookingService {
 
     const booking = await this.db
       .transaction(async (tx) => {
+        if (code) await this.discounts.claim(tx, code);
         const holdId = await this.availability.hold(
           tx,
           slot,
@@ -243,9 +253,9 @@ export class BookingService {
           holdId,
           startsAt: slot.startsAt,
           status: onSite ? 'confirmed' : 'pending_payment',
-          channel: input.channel,
-          affiliateId: input.attribution?.affiliateId ?? null,
-          linkId: input.attribution?.linkId ?? null,
+          channel,
+          affiliateId: attribution?.affiliateId ?? null,
+          linkId: attribution?.linkId ?? null,
           createdByUserId: input.createdByUserId,
           customerName: input.customer.name,
           customerEmail: input.customer.email ?? null,
@@ -256,7 +266,12 @@ export class BookingService {
           seats,
           currency: tenant.currency,
           totalMinor,
-          taxMinor,
+          taxMinor: amounts.taxMinor,
+          discountCodeId: code?.id ?? null,
+          discountCode: code?.code ?? null,
+          discountMinor: amounts.discountMinor,
+          commissionGrossMinor: amounts.commissionGrossMinor,
+          commissionTaxMinor: amounts.commissionTaxMinor,
           platformFeeMinor: applyRate(totalMinor, tenant.platformFeeBps),
           paymentMode: input.paymentMode,
           termsAcceptedAt: input.termsAcceptedAt ?? null,
@@ -295,16 +310,28 @@ export class BookingService {
         // The payment page is in the customer's language: so is the trip on it, where translated.
         const locale = booking.customerLocale;
         const tripName = localizedTexts(product, locale).name;
+        const label = (l: (typeof lines)[number]) =>
+          localizedPriceLabel(product.translations, locale, l.price.id, l.price.label);
         const session = await this.gateway.createCheckout({
           bookingId: booking.id,
           tenantId: tenant.id,
           reference: booking.reference,
           currency: tenant.currency,
-          lines: lines.map((l) => ({
-            name: `${tripName} · ${localizedPriceLabel(product.translations, locale, l.price.id, l.price.label)}`,
-            unitAmountMinor: l.price.amountMinor,
-            quantity: l.quantity,
-          })),
+          // The payment page can't show a discount next to the lines: one line with the total.
+          lines:
+            code && amounts.discountMinor > 0
+              ? [
+                  {
+                    name: `${tripName} · ${lines.map((l) => `${l.quantity} × ${label(l)}`).join(', ')} · ${code.code}`,
+                    unitAmountMinor: totalMinor,
+                    quantity: 1,
+                  },
+                ]
+              : lines.map((l) => ({
+                  name: `${tripName} · ${label(l)}`,
+                  unitAmountMinor: l.price.amountMinor,
+                  quantity: l.quantity,
+                })),
           totalMinor,
           customerEmail: booking.customerEmail,
           locale: booking.customerLocale,
@@ -689,6 +716,8 @@ export class BookingService {
           seats: b.seats,
           customerName: b.customerName,
           totalMinor: b.totalMinor,
+          discountCode: b.discountCode,
+          discountMinor: b.discountMinor,
           currency: b.currency,
           paymentMode: b.paymentMode,
           affiliateName: row.affiliateName,

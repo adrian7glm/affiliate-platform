@@ -141,9 +141,14 @@ export class CatalogService {
         throw new DomainError('errors.catalog.slugTaken', HttpStatus.CONFLICT, undefined, {
           slug: body.slug,
         });
-      await tx
-        .insert(productPrices)
-        .values(body.prices.map((price) => ({ ...price, tenantId, productId: product.id })));
+      await tx.insert(productPrices).values(
+        body.prices.map((price) => ({
+          ...price,
+          seats: price.kind === 'extra' ? 0 : price.seats,
+          tenantId,
+          productId: product.id,
+        })),
+      );
       return product.id;
     });
     return this.productDto(tenantId, id);
@@ -246,7 +251,10 @@ export class CatalogService {
         label: price.label,
         amountMinor: price.amountMinor,
         taxRateBps: price.taxRateBps,
-        seats: price.seats,
+        // Extras take no seat.
+        seats: price.kind === 'extra' ? 0 : price.seats,
+        kind: price.kind,
+        commissionable: price.commissionable,
         active: true,
       };
       if (price.id) {
@@ -553,6 +561,8 @@ export function toPriceDto(price: Price, label = price.label): PriceDto {
     amountMinor: price.amountMinor,
     taxRateBps: price.taxRateBps,
     seats: price.seats,
+    kind: price.kind,
+    commissionable: price.commissionable,
   };
 }
 
@@ -567,7 +577,7 @@ export function toProductDto(
     toPriceDto(price, localizedPriceLabel(product.translations, lang, price.id, price.label)),
   );
   const seatPrices = priceDtos
-    .filter((p) => p.seats > 0 && p.amountMinor > 0)
+    .filter((p) => p.kind === 'ticket' && p.seats > 0 && p.amountMinor > 0)
     .map((p) => p.amountMinor);
   return {
     id: product.id,

@@ -383,7 +383,11 @@ export class CommissionsService implements OnModuleInit {
     // A trip with its own rate pays it to every affiliate, except one with a negotiated rate:
     // what was agreed with them personally applies to every trip.
     const [trip] = await tx
-      .select({ rateBps: products.commissionRateBps })
+      .select({
+        rateBps: products.commissionRateBps,
+        grossMinor: bookings.commissionGrossMinor,
+        taxMinor: bookings.commissionTaxMinor,
+      })
       .from(bookings)
       .innerJoin(products, eq(products.id, bookings.productId))
       .where(eq(bookings.id, event.bookingId));
@@ -392,8 +396,9 @@ export class CommissionsService implements OnModuleInit {
       resolved.plan,
       {
         bookingId: event.bookingId,
-        grossMinor: event.totalMinor,
-        taxMinor: event.taxMinor,
+        // Extras without commission are left out of the base; older bookings: the whole total.
+        grossMinor: trip?.grossMinor ?? event.totalMinor,
+        taxMinor: trip?.taxMinor ?? event.taxMinor,
         tripRateBps,
       },
       before?.count ?? 0,
@@ -853,8 +858,8 @@ export class CommissionsService implements OnModuleInit {
         const sales: Sale[] = bookingRows.map((b) => ({
           bookingId: b.id,
           paidAt: b.paidAt!,
-          grossMinor: b.totalMinor,
-          taxMinor: b.taxMinor,
+          grossMinor: b.commissionGrossMinor ?? b.totalMinor,
+          taxMinor: b.commissionTaxMinor ?? b.taxMinor,
           cancelled: b.status !== 'confirmed',
           // The trip rate frozen when the sale was recorded.
           tripRateBps:

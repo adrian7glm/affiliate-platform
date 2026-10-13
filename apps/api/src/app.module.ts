@@ -8,6 +8,7 @@ import { CommissionsModule } from './commissions/commissions.module';
 import { CommonModule } from './common/common.module';
 import { APP_CONFIG, type AppConfig } from './config';
 import { DatabaseModule } from './database/database.module';
+import { DiscountsModule } from './discounts/discounts.module';
 import { HealthController } from './health.controller';
 import { I18nModule } from './i18n/i18n.module';
 import { IdentityModule } from './identity/identity.module';
@@ -53,6 +54,7 @@ export class AppModule {
         TrackingModule,
         SourcesModule,
         CatalogModule,
+        DiscountsModule,
         PaymentsModule,
         BookingModule,
         BoardingModule,
