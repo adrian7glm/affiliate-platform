@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import type { OperatorAnalyticsDto } from '@ap/contracts';
+import type { OperatorAnalyticsDto, OperatorDashboardDto } from '@ap/contracts';
 import { AuthGuard, CurrentTenant, Roles, type TenantContext, TenantGuard } from '../common/auth';
 import { Clock } from '../common/clock';
 import { periodOrCurrent } from '../common/period';
@@ -23,5 +23,10 @@ export class AnalyticsController {
   ): Promise<OperatorAnalyticsDto> {
     const tenant = await this.tenants.get(context.tenantId);
     return this.analytics.month(tenant, periodOrCurrent(period, this.clock.now(), tenant.timezone));
+  }
+
+  @Get('dashboard')
+  async dashboard(@CurrentTenant() context: TenantContext): Promise<OperatorDashboardDto> {
+    return this.analytics.dashboard(await this.tenants.get(context.tenantId));
   }
 }

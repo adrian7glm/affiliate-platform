@@ -34,7 +34,7 @@ export async function resetDatabase(url: string): Promise<void> {
   await handle.db.execute(sql`drop schema if exists public cascade`);
   await handle.db.execute(sql`drop schema if exists drizzle cascade`);
   await handle.db.execute(sql`create schema public`);
-  await runMigrations(handle.db);
+  await runMigrations(handle);
   await handle.close();
 }
 

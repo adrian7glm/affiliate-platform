@@ -17,6 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
     "drizzle-orm": "^0.44.7",
     "pg": "^8.16.3"
   },

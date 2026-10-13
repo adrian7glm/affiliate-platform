@@ -10,10 +10,12 @@ import { OnboardingService } from './onboarding.service';
 import { OperatorPlatformController, SignupController } from './onboarding.controller';
 import { PlatformAdminGuard } from './platform-admin.guard';
 import { SubscriptionsService } from './subscriptions.service';
+import { AdminSystemController } from './system.controller';
+import { SystemService } from './system.service';
 
 /**
  * The platform owner's business: plans and fees sold to operators, operator onboarding and
- * billing, the contact page inbox, and the super-admin area. Reads other modules' tables only
+ * billing, the contact page inbox, the super-admin area and the platform's health. Reads other modules' tables only
  * for reporting.
  */
 @Module({
@@ -29,6 +31,7 @@ import { SubscriptionsService } from './subscriptions.service';
     AdminService,
     ContactService,
     PlatformAdminGuard,
+    SystemService,
   ],
   controllers: [
     AdminController,
@@ -37,6 +40,7 @@ import { SubscriptionsService } from './subscriptions.service';
     BillingWebhookController,
     PublicContactController,
     AdminContactController,
+    AdminSystemController,
   ],
   exports: [SubscriptionsService],
 })

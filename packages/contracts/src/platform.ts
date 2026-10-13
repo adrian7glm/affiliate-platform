@@ -292,3 +292,33 @@ export interface BillingRedirectDto {
   /** Where to send the browser: Stripe Checkout / Customer Portal, or back to the app. */
   url: string;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Admin: system health
+// ---------------------------------------------------------------------------------------------
+
+export interface WorkerJobDto {
+  job: string;
+  /** How often the job is meant to run. */
+  everySeconds: number;
+  lastRunAt: string | null;
+  lastError: string | null;
+  /** Not run for more than three of its intervals: the worker is probably down. */
+  stale: boolean;
+}
+
+/** An internal event (e.g. "booking paid → record the commission") that stopped being retried. */
+export interface DeadEventDto {
+  id: number;
+  type: string;
+  tenantId: string | null;
+  tenantName: string | null;
+  attempts: number;
+  lastError: string | null;
+  occurredAt: string;
+}
+
+export interface AdminSystemDto {
+  worker: { status: 'ok' | 'stale' | 'unknown'; jobs: WorkerJobDto[] };
+  deadEvents: DeadEventDto[];
+}

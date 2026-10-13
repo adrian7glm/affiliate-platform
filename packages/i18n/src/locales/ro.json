@@ -207,7 +207,8 @@
       "ticket": "biletul nu a fost găsit",
       "user": "utilizatorul nu a fost găsit",
       "scannerAccount": "contul de scanare nu a fost găsit",
-      "contactRequest": "mesajul nu a fost găsit"
+      "contactRequest": "mesajul nu a fost găsit",
+      "event": "evenimentul nu a fost găsit"
     },
     "auth": {
       "signInAgain": "conectează-te din nou",
@@ -1201,7 +1202,8 @@
       "plans": "Planuri și tarife",
       "invites": "Invitații",
       "translations": "Traduceri",
-      "contact": "Mesaje"
+      "contact": "Mesaje",
+      "system": "Sistem"
     },
     "shell": {
       "loadError": "Nu am putut încărca contul",
@@ -1464,6 +1466,25 @@
       "question": "Întrebare",
       "markHandled": "Marchează rezolvat",
       "reopen": "Mută înapoi la răspuns"
+    },
+    "system": {
+      "title": "Starea sistemului",
+      "description": "Dacă lucrul din fundal rulează (bilete, SMS-uri, comisioane, sincronizări) și ce evenimente interne s-au oprit.",
+      "workerTitle": "Lucrul din fundal",
+      "workerOk": "Totul rulează.",
+      "workerStale": "Unele lucrări nu au mai rulat de ceva timp. Verifică dacă procesul worker este pornit.",
+      "workerUnknown": "Lucrul din fundal nu a rulat niciodată. Pornește procesul worker.",
+      "jobOk": "Rulează",
+      "jobFailed": "Ultima rulare a dat eroare",
+      "jobStale": "Oprit",
+      "lastRun": "ultima rulare: {when}",
+      "neverRun": "nu a rulat încă",
+      "eventsTitle": "Evenimente oprite ({count})",
+      "noEvents": "Niciun eveniment oprit. Toate s-au procesat.",
+      "eventsHelp": "Aceste evenimente au eșuat de 10 ori și nu se mai reîncearcă singure. Pot însemna un comision neînregistrat sau un bilet netrimis. Repară cauza (de exemplu sistemul operatorului nu răspundea), apoi apasă Reîncearcă.",
+      "noOperator": "Platforma",
+      "attempts": "Încercări: {count}",
+      "retry": "Reîncearcă"
     }
   },
   "signup": {
@@ -1719,6 +1740,14 @@
       "company": "Firmă",
       "action": "Vezi toate cererile",
       "sms": "{topic} de la {name}: {contact}"
+    },
+    "systemAlert": {
+      "subject": "Atenție: evenimentul {type} s-a oprit",
+      "intro": "Evenimentul intern {type} (nr. {id}) a eșuat de 10 ori și nu se mai reîncearcă singur.",
+      "error": "Ultima eroare: {error}",
+      "next": "Repară cauza, apoi reîncearcă evenimentul din panoul de admin.",
+      "action": "Deschide starea sistemului",
+      "sms": "Atentie: evenimentul {type} s-a oprit. Vezi {url}"
     }
   },
   "catalog": {

@@ -35,6 +35,12 @@ const SYNC_DAYS = 60;
 const REFRESH_AFTER_MS = 60_000;
 /** Hold taken again for a payment that arrived after the first hold expired. */
 const LATE_HOLD_SECONDS = 300;
+/** Operators' systems synced at the same time by the background job. */
+const SYNC_CONCURRENCY = 4;
+/** A whole sync of one operator (all its trips) may take this long before it is given up on. */
+const SYNC_TIMEOUT_MS = 2 * 60_000;
+/** Departures written per statement. */
+const SLOT_BATCH = 200;
 
 function slugify(name: string): string {
   const slug = name
@@ -45,6 +51,14 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
   return slug || 'excursie';
+}
+
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer after ${ms / 1000} s`)), ms);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
 }
 
 function message(error: unknown): string {
@@ -179,19 +193,27 @@ export class SourcesService {
     return { products: remote.length, slots: slotCount };
   }
 
-  /** Background sync of every connected system. */
+  /**
+   * Background sync of every connected system, a few at a time: a slow or unreachable system
+   * delays only its own operator, and is given up on after SYNC_TIMEOUT_MS until the next run.
+   */
   async syncAll(): Promise<void> {
     const rows = await this.db
       .select()
       .from(availabilitySources)
       .where(and(eq(availabilitySources.kind, 'rest'), eq(availabilitySources.active, true)));
-    for (const source of rows) {
-      try {
-        await this.sync(source.tenantId, source.id);
-      } catch (error) {
-        this.logger.warn(`sync of source ${source.id} failed: ${message(error)}`);
+    let next = 0;
+    const worker = async () => {
+      while (next < rows.length) {
+        const source = rows[next++]!;
+        try {
+          await withTimeout(this.sync(source.tenantId, source.id), SYNC_TIMEOUT_MS);
+        } catch (error) {
+          this.logger.warn(`sync of source ${source.id} failed: ${message(error)}`);
+        }
       }
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(SYNC_CONCURRENCY, rows.length) }, worker));
   }
 
   /**
@@ -300,27 +322,31 @@ export class SourcesService {
   ): Promise<number> {
     const remote = await provider.getAvailability(product.externalId!, from, to);
     const now = this.clock.now();
-    for (const slot of remote) {
-      const reserved = Math.max(0, slot.capacity - Math.min(slot.available, slot.capacity));
+    // One statement per batch of departures instead of one per departure. A departure listed
+    // twice by the operator's system would make Postgres refuse the batch: the last one wins.
+    const unique = [...new Map(remote.map((slot) => [slot.startsAt.getTime(), slot])).values()];
+    for (let i = 0; i < unique.length; i += SLOT_BATCH) {
       await this.db
         .insert(slots)
-        .values({
-          tenantId: product.tenantId,
-          productId: product.id,
-          externalId: slot.externalId,
-          startsAt: slot.startsAt,
-          endsAt: slot.endsAt,
-          capacity: slot.capacity,
-          reserved,
-          syncedAt: now,
-        })
+        .values(
+          unique.slice(i, i + SLOT_BATCH).map((slot) => ({
+            tenantId: product.tenantId,
+            productId: product.id,
+            externalId: slot.externalId,
+            startsAt: slot.startsAt,
+            endsAt: slot.endsAt,
+            capacity: slot.capacity,
+            reserved: Math.max(0, slot.capacity - Math.min(slot.available, slot.capacity)),
+            syncedAt: now,
+          })),
+        )
         .onConflictDoUpdate({
           target: [slots.productId, slots.startsAt],
           set: {
-            externalId: slot.externalId,
-            endsAt: slot.endsAt,
-            capacity: slot.capacity,
-            reserved,
+            externalId: sql`excluded.external_id`,
+            endsAt: sql`excluded.ends_at`,
+            capacity: sql`excluded.capacity`,
+            reserved: sql`excluded.reserved`,
             closed: false,
             syncedAt: now,
           },

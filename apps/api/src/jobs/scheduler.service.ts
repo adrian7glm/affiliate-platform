@@ -5,38 +5,53 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
+import type { Database } from '@ap/db';
 import { BookingService } from '../booking/booking.service';
-import { CommissionsService } from '../commissions/commissions.service';
+import { Clock } from '../common/clock';
+import { reportError } from '../common/error-reporting';
+import { CommissionLedgerService } from '../commissions/ledger.service';
 import { APP_CONFIG, type AppConfig } from '../config';
+import { DB } from '../database/database.module';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
 import { SourcesService } from '../sources/sources.service';
+import { CleanupService } from './cleanup.service';
+import { JOBS, type JobName, recordHeartbeat } from './jobs';
+
+/** A job's heartbeat is written at most this often (the outbox runs every 3 seconds). */
+const HEARTBEAT_EVERY_MS = 30_000;
 
 /**
- * Background work, run in the API process when WORKER_ENABLED=true. The same jobs can move to a
- * dedicated worker process later without changes: they only use the services below.
+ * Background work, run when WORKER_ENABLED=true: in the API process for local development, or in
+ * the dedicated worker process (`node dist/worker.js`) in production, so the public API never
+ * waits behind a slow job and a second API server does not run every job twice.
  */
 @Injectable()
 export class SchedulerService implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger('Scheduler');
   private readonly timers: NodeJS.Timeout[] = [];
+  private readonly lastHeartbeat = new Map<JobName, number>();
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(DB) private readonly db: Database,
+    private readonly clock: Clock,
     private readonly outbox: Outbox,
     private readonly bookingService: BookingService,
-    private readonly commissions: CommissionsService,
+    private readonly commissions: CommissionLedgerService,
     private readonly sources: SourcesService,
     private readonly notifications: NotificationsService,
+    private readonly cleanup: CleanupService,
   ) {}
 
   onApplicationBootstrap(): void {
     if (!this.config.WORKER_ENABLED) return;
-    this.every('outbox', 3_000, () => this.outbox.drain());
-    this.every('send-notifications', 3_000, () => this.notifications.deliverDue());
-    this.every('expire-unpaid-bookings', 60_000, () => this.bookingService.expireUnpaid());
-    this.every('approve-commissions', 10 * 60_000, () => this.commissions.approveDue());
-    this.every('sync-availability-sources', 10 * 60_000, () => this.sources.syncAll());
+    this.every('outbox', () => this.outbox.drain());
+    this.every('send-notifications', () => this.notifications.deliverDue());
+    this.every('expire-unpaid-bookings', () => this.bookingService.expireUnpaid());
+    this.every('approve-commissions', () => this.commissions.approveDue());
+    this.every('sync-availability-sources', () => this.sources.syncAll());
+    this.every('clean-up-old-rows', () => this.cleanup.run());
     this.logger.log('background jobs started');
   }
 
@@ -44,18 +59,37 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     for (const timer of this.timers) clearInterval(timer);
   }
 
-  private every(name: string, ms: number, job: () => Promise<unknown>): void {
+  private every(name: JobName, job: () => Promise<unknown>): void {
     let running = false;
     const timer = setInterval(() => {
       if (running) return;
       running = true;
       job()
-        .catch((error: unknown) => this.logger.error(`${name} failed: ${(error as Error).message}`))
+        .then(
+          () => this.heartbeat(name, null),
+          (error: unknown) => {
+            const message = (error as Error).message;
+            this.logger.error(`${name} failed: ${message}`);
+            reportError(error, { job: name });
+            return this.heartbeat(name, message, true);
+          },
+        )
+        .catch((error: unknown) =>
+          this.logger.warn(`${name}: heartbeat not saved: ${(error as Error).message}`),
+        )
         .finally(() => {
           running = false;
         });
-    }, ms);
+    }, JOBS[name]);
     timer.unref();
     this.timers.push(timer);
+  }
+
+  private async heartbeat(name: JobName, error: string | null, force = false): Promise<void> {
+    const now = this.clock.now();
+    const last = this.lastHeartbeat.get(name) ?? 0;
+    if (!force && now.getTime() - last < HEARTBEAT_EVERY_MS) return;
+    this.lastHeartbeat.set(name, now.getTime());
+    await recordHeartbeat(this.db, name, now, error);
   }
 }

@@ -205,7 +205,8 @@
       "ticket": "ticket not found",
       "user": "user not found",
       "scannerAccount": "scanner account not found",
-      "contactRequest": "message not found"
+      "contactRequest": "message not found",
+      "event": "event not found"
     },
     "auth": {
       "signInAgain": "sign in again",
@@ -1163,7 +1164,8 @@
       "plans": "Plans and fees",
       "invites": "Invitations",
       "translations": "Translations",
-      "contact": "Messages"
+      "contact": "Messages",
+      "system": "System"
     },
     "shell": {
       "loadError": "We could not load your account",
@@ -1413,6 +1415,25 @@
       "question": "Question",
       "markHandled": "Mark as answered",
       "reopen": "Move back to answer"
+    },
+    "system": {
+      "title": "System health",
+      "description": "Whether the background work runs (tickets, SMS, commissions, syncs) and which internal events stopped.",
+      "workerTitle": "Background work",
+      "workerOk": "Everything is running.",
+      "workerStale": "Some jobs have not run for a while. Check that the worker process is running.",
+      "workerUnknown": "The background work has never run. Start the worker process.",
+      "jobOk": "Running",
+      "jobFailed": "Last run failed",
+      "jobStale": "Stopped",
+      "lastRun": "last run: {when}",
+      "neverRun": "not run yet",
+      "eventsTitle": "Stopped events ({count})",
+      "noEvents": "No stopped events. Everything was processed.",
+      "eventsHelp": "These events failed 10 times and are no longer retried on their own. They can mean a commission that was not recorded or a ticket that was not sent. Fix the cause (for example the operator's system was not answering), then press Retry.",
+      "noOperator": "Platform",
+      "attempts": "Attempts: {count}",
+      "retry": "Retry"
     }
   },
   "signup": {
@@ -1658,6 +1679,14 @@
       "company": "Company",
       "action": "See all requests",
       "sms": "{topic} from {name}: {contact}"
+    },
+    "systemAlert": {
+      "subject": "Attention: event {type} stopped",
+      "intro": "The internal event {type} (no. {id}) failed 10 times and is no longer retried on its own.",
+      "error": "Last error: {error}",
+      "next": "Fix the cause, then retry the event from the admin area.",
+      "action": "Open system health",
+      "sms": "Attention: event {type} stopped. See {url}"
     }
   },
   "catalog": {

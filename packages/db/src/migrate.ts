@@ -5,7 +5,7 @@ async function main(): Promise<void> {
   if (!url) throw new Error('DATABASE_URL is not set');
   const handle = createDb(url, { max: 1 });
   try {
-    await runMigrations(handle.db);
+    await runMigrations(handle);
     console.log('migrations applied');
   } finally {
     await handle.close();

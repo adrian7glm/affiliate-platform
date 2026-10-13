@@ -9,6 +9,7 @@ import {
 import type { ApiError } from '@ap/contracts';
 import type { Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { reportError } from './error-reporting';
 
 /** Variables of a translated error message. */
 export type ErrorVars = Readonly<Record<string, string | number>>;
@@ -68,8 +69,10 @@ export class ApiErrorFilter implements ExceptionFilter {
       body.message = this.i18n.translate(lang, body.code, body.vars);
     }
     delete body.vars;
-    if (body.statusCode >= 500)
+    if (body.statusCode >= 500) {
       this.logger.error(exception instanceof Error ? exception.stack : exception);
+      reportError(exception, { path: http.getRequest<Request>().path });
+    }
     response.status(body.statusCode).json(body);
   }
 

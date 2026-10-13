@@ -50,6 +50,13 @@
       "when": 1791848969130,
       "tag": "0006_launch_ready",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791853468452,
+      "tag": "0007_structure_fixes",
+      "breakpoints": true
     }
   ]
 }

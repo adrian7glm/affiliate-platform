@@ -25,7 +25,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB } from '../database/database.module';
-import { CommissionsService } from '../commissions/commissions.service';
+import { CommissionPlansService } from '../commissions/commission-plans.service';
 import { IdentityService } from '../identity/identity.service';
 import { LinksService } from '../tracking/links.service';
 import { SubscriptionsService } from '../platform/subscriptions.service';
@@ -43,7 +43,7 @@ export class AffiliatesService {
     private readonly clock: Clock,
     private readonly tenants: TenantsService,
     private readonly identity: IdentityService,
-    private readonly commissions: CommissionsService,
+    private readonly commissionPlans: CommissionPlansService,
     private readonly links: LinksService,
     private readonly notifications: NotificationsService,
     private readonly subscriptions: SubscriptionsService,
@@ -72,8 +72,11 @@ export class AffiliatesService {
         affiliate: affiliates,
         paidSales: sql<number>`(select count(*)::int from ${bookings} where ${col(bookings.affiliateId)} = ${col(affiliates.id)}
           and ${col(bookings.status)} = 'confirmed' and ${col(bookings.paidAt)} >= ${start} and ${col(bookings.paidAt)} < ${end})`,
-        earnedMinor: sql<number>`(select coalesce(sum(${col(commissionEntries.amountMinor)}), 0)::int from ${commissionEntries}
-          where ${col(commissionEntries.affiliateId)} = ${col(affiliates.id)} and ${col(commissionEntries.periodKey)} = ${periodKey})`,
+        earnedMinor:
+          sql<number>`(select coalesce(sum(${col(commissionEntries.amountMinor)}), 0)::bigint from ${commissionEntries}
+          where ${col(commissionEntries.affiliateId)} = ${col(affiliates.id)} and ${col(commissionEntries.periodKey)} = ${periodKey})`.mapWith(
+            Number,
+          ),
       })
       .from(affiliates)
       .where(eq(affiliates.tenantId, tenantId))
@@ -92,7 +95,7 @@ export class AffiliatesService {
   async invite(tenantId: string, body: InviteAffiliateBody): Promise<AffiliateDto> {
     const tenant = await this.tenants.get(tenantId);
     await this.subscriptions.assertCanAddAffiliate(tenantId);
-    await this.commissions.assertPlanBelongs(tenantId, body.commissionPlanId);
+    await this.commissionPlans.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.parentAffiliateId) await this.get(tenantId, body.parentAffiliateId);
     const token = randomToken();
     const row = await this.db.transaction(async (tx) => {
@@ -140,7 +143,7 @@ export class AffiliatesService {
     body: UpdateAffiliateBody,
   ): Promise<AffiliateDto> {
     const current = await this.get(tenantId, affiliateId);
-    await this.commissions.assertPlanBelongs(tenantId, body.commissionPlanId);
+    await this.commissionPlans.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.status === 'active' && current.status === 'invited') {
       throw new DomainError('errors.affiliates.notAccepted', HttpStatus.CONFLICT);
     }

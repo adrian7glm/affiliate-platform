@@ -25,9 +25,18 @@ export const outboxEvents = pgTable(
     processedAt: timestamp('processed_at', { withTimezone: true }),
     attempts: integer('attempts').notNull().default(0),
     lastError: text('last_error'),
+    /** After a failure the event waits before the next attempt (backoff); null: right away. */
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
   },
   (t) => [index('outbox_events_unprocessed').on(t.processedAt, t.id)],
 );
+
+/** Last time each background job ran, so /health can tell whether the worker is alive. */
+export const workerHeartbeats = pgTable('worker_heartbeats', {
+  job: text('job').primaryKey(),
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }).notNull(),
+  lastError: text('last_error'),
+});
 
 export const auditLog = pgTable(
   'audit_log',

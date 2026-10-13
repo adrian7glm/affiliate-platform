@@ -34,7 +34,7 @@ describe.skipIf(!url)('database schema (needs TEST_DATABASE_URL)', () => {
     await handle.db.execute(sql`drop schema if exists public cascade`);
     await handle.db.execute(sql`drop schema if exists drizzle cascade`);
     await handle.db.execute(sql`create schema public`);
-    await runMigrations(handle.db);
+    await runMigrations(handle);
 
     const { db } = handle;
     const [tenant] = await db
