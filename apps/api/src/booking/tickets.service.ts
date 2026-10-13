@@ -267,8 +267,11 @@ export class TicketsService {
       .where(eq(bookingItems.bookingId, bookingId));
     const { booking, ticket } = row;
 
+    // Paid, but the ticket is issued a moment later (outbox): still "confirming the payment", so
+    // the customer's page keeps refreshing instead of showing a cancelled ticket.
+    const issuing = booking.status === 'confirmed' && !ticket;
     const status: TicketDto['status'] =
-      booking.status === 'pending_payment'
+      booking.status === 'pending_payment' || issuing
         ? 'pending_payment'
         : !ticket || booking.status !== 'confirmed'
           ? 'void'

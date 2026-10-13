@@ -45,6 +45,9 @@ log-ul API-ului.
 Plățile folosesc implicit un procesator de test (`PAYMENTS_PROVIDER=fake`): după checkout se
 deschide o pagină locală de plată, fără cont Stripe. Pentru Stripe real, setează
 `PAYMENTS_PROVIDER=stripe`, `STRIPE_SECRET_KEY` și `STRIPE_WEBHOOK_SECRET` în `apps/api/.env`.
+În Stripe (Developers → Webhooks), endpoint-ul `https://<api>/webhooks/stripe` trebuie să
+primească evenimentele `checkout.session.completed`, `checkout.session.async_payment_succeeded`
+și `charge.refunded` (o rambursare totală făcută direct din Stripe anulează biletul și comisionul).
 
 ## SMS și email
 
