@@ -8,7 +8,8 @@ import { IconCheck, IconChevronRight } from '@/components/icons';
 import { useSession } from '@/components/AuthGate';
 import { useT } from '@/components/I18nProvider';
 import { operatorPlatformApi } from '@/lib/platform-endpoints';
-import { daysUntil, onboardingStep } from '@/lib/platform-labels';
+import { formatDate } from '@/lib/dates';
+import { daysUntil, onboardingStep, salesPaused } from '@/lib/platform-labels';
 import { useApi } from '@/lib/useApi';
 import { useOperator } from './OperatorContext';
 
@@ -18,7 +19,7 @@ import { useOperator } from './OperatorContext';
  */
 export function SetupChecklist() {
   const tr = useT();
-  const { t, tp } = tr;
+  const { t, tp, lang } = tr;
   const { tenant } = useOperator();
   const { membership } = useSession();
   const [welcome, setWelcome] = useState(false);
@@ -48,7 +49,7 @@ export function SetupChecklist() {
 
       {sub?.status === 'past_due' && membership.role === 'owner' ? (
         <Alert
-          tone="warning"
+          tone={salesPaused(sub.salesPauseAt) ? 'error' : 'warning'}
           title={
             sub.currentPeriodEnd
               ? t('operator.setup.unpaidTitle')
@@ -60,7 +61,13 @@ export function SetupChecklist() {
             </ButtonLink>
           }
         >
-          {t('operator.setup.pastDueText')}
+          {salesPaused(sub.salesPauseAt)
+            ? t('operator.billing.salesPaused')
+            : sub.salesPauseAt
+              ? t('operator.billing.salesPauseOn', {
+                  date: formatDate(sub.salesPauseAt, tenant.timezone, lang),
+                })
+              : t('operator.setup.pastDueText')}
         </Alert>
       ) : null}
 

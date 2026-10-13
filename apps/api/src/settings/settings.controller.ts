@@ -14,7 +14,8 @@ import { DB } from '../database/database.module';
 
 /**
  * The operator's own settings: name, logo and color on customer pages, booking options, the
- * cancellation policy and contact details customers see before paying and on their ticket.
+ * cancellation policy and contact details customers see before paying and on their ticket, and
+ * which automatic messages the platform sends for them.
  */
 @Controller('operator/settings')
 @UseGuards(AuthGuard, TenantGuard)
@@ -60,6 +61,11 @@ export class SettingsController {
           : {}),
         ...(body.contactEmail !== undefined ? { contactEmail: body.contactEmail } : {}),
         ...(body.contactPhone !== undefined ? { contactPhone: body.contactPhone } : {}),
+        ...(body.reviewUrl !== undefined ? { reviewUrl: body.reviewUrl } : {}),
+        ...(body.remindCustomers !== undefined ? { remindCustomers: body.remindCustomers } : {}),
+        ...(body.askForReviews !== undefined ? { askForReviews: body.askForReviews } : {}),
+        ...(body.notifyAffiliates !== undefined ? { notifyAffiliates: body.notifyAffiliates } : {}),
+        ...(body.monthlyReport !== undefined ? { monthlyReport: body.monthlyReport } : {}),
       })
       .where(eq(tenants.id, tenant.id))
       .returning();
@@ -79,6 +85,11 @@ function toSettingsDto(tenant: Tenant, context: TenantContext): OperatorSettings
     cancellationPolicy: tenant.cancellationPolicy,
     contactEmail: tenant.contactEmail,
     contactPhone: tenant.contactPhone,
+    reviewUrl: tenant.reviewUrl,
+    remindCustomers: tenant.remindCustomers,
+    askForReviews: tenant.askForReviews,
+    notifyAffiliates: tenant.notifyAffiliates,
+    monthlyReport: tenant.monthlyReport,
     canEdit: context.roles.includes('owner'),
   };
 }

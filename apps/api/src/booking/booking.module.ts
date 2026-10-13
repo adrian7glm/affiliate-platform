@@ -2,6 +2,7 @@ import { Module, type OnModuleInit } from '@nestjs/common';
 import { CatalogModule } from '../catalog/catalog.module';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsModule } from '../payments/payments.module';
+import { PlatformModule } from '../platform/platform.module';
 import { SourcesModule } from '../sources/sources.module';
 import { StripeWebhookController } from '../payments/stripe-webhook.controller';
 import { TrackingModule } from '../tracking/tracking.module';
@@ -14,7 +15,7 @@ import { BookingService } from './booking.service';
 import { TicketsService } from './tickets.service';
 
 @Module({
-  imports: [CatalogModule, TrackingModule, PaymentsModule, SourcesModule],
+  imports: [CatalogModule, TrackingModule, PaymentsModule, SourcesModule, PlatformModule],
   providers: [BookingService, TicketsService],
   controllers: [
     PublicBookingController,

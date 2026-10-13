@@ -93,6 +93,11 @@ export interface SubscriptionDto {
   maxAffiliates: number | null;
   /** True when Stripe Billing manages this subscription. */
   billedByStripe: boolean;
+  /**
+   * When new bookings pause (or paused) because the subscription is unpaid: the trial end or
+   * failed payment plus the grace period. Null while nothing is owed.
+   */
+  salesPauseAt: string | null;
 }
 
 // ---------------------------------------------------------------------------------------------

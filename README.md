@@ -54,6 +54,23 @@ sunt în română sau engleză, după limba aleasă la rezervare; SMS-urile sunt
 să încapă în mai puține segmente. Toate mesajele intră într-o coadă (tabela `notifications`)
 și sunt trimise de worker cu reîncercări, deci o pană a furnizorului doar întârzie un bilet.
 
+Pe lângă acestea, worker-ul trimite singur mesajele care îi fac pe toți să revină:
+
+- **clienților**: o reamintire în seara dinaintea excursiei (ora 18, cu punctul de întâlnire și
+  biletul) și, a doua zi la ora 10, o cerere de recenzie cu linkul operatorului (Google,
+  TripAdvisor), doar celor care s-au îmbarcat când echipajul scanează biletele;
+- **afiliaților**: „ai făcut o vânzare” cu comisionul și câte vânzări mai are până la nivelul
+  următor, „mai ai X vânzări până la Y%” în ultimele 5 zile ale lunii și „ți-am plătit
+  comisionul” când operatorul marchează plata; afiliatul le poate opri din aplicație;
+- **operatorilor**: raportul lunii trecute pe 1 ale lunii, la ora 8 (rezervări, încasări, cât au
+  adus afiliații, comisioane de plătit), un email cu 3 zile înainte de sfârșitul perioadei de
+  probă, unul când abonamentul rămâne neplătit și unul când rezervările noi se opresc.
+
+Orele sunt în fusul orar al operatorului. Operatorul alege din Setări care mesaje pleacă și unde
+duce linkul de recenzie. Un abonament neplătit (probă terminată, plată eșuată sau perioadă
+plătită expirată) oprește rezervările noi după `BILLING_GRACE_DAYS` zile (implicit 7); biletele
+deja vândute rămân valabile.
+
 Local, mesajele apar în log-ul API-ului (`EMAIL_PROVIDER=console`, `SMS_PROVIDER=console`).
 Pentru trimitere reală, în `apps/api/.env`:
 

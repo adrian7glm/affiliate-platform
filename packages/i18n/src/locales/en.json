@@ -229,7 +229,8 @@
       "tripUnavailable": "this trip is not available any more",
       "unknownPrice": "unknown ticket type for this trip",
       "noSeats": "choose at least one seat",
-      "paymentsUnavailable": "payments are unavailable right now, try again in a minute"
+      "paymentsUnavailable": "payments are unavailable right now, try again in a minute",
+      "salesPaused": "this operator is not taking online bookings right now"
     },
     "departures": {
       "closed": "this departure can no longer be booked",
@@ -525,7 +526,9 @@
       "privacyNote": "We use your details only to answer you. See the {privacy}.",
       "sentTitle": "Thank you, we got your message",
       "sentText": "We will answer at {email}."
-    }
+    },
+    "bookingPausedTitle": "Online booking is not available right now",
+    "bookingPausedText": "To book this trip, contact {tenant} directly."
   },
   "ticket": {
     "title": "Your ticket",
@@ -623,7 +626,11 @@
       "recentBookings": "Recent bookings",
       "book": "Book",
       "noBookings": "No bookings yet. Show your QR code to tourists or book for them directly.",
-      "showAll": "Show all {count}"
+      "showAll": "Show all {count}",
+      "messagesTitle": "Messages",
+      "saleMessages": "Tell me about each sale and payout",
+      "saleMessagesHelp": "With your commission and how far the next level is, to {contact}.",
+      "saleMessagesHelpNoContact": "With your commission and how far the next level is."
     },
     "qr": {
       "title": "My QR code",
@@ -1151,7 +1158,9 @@
       "yourPlan": "Your plan",
       "planPrice": "/ month + {fee} / booking",
       "choose": "Choose {name}",
-      "ownerOnly": "Only the account administrator can change the plan."
+      "ownerOnly": "Only the account administrator can change the plan.",
+      "salesPauseOn": "New bookings pause on {date} if the subscription is not paid. Tickets already sold stay valid.",
+      "salesPaused": "New bookings are paused until the subscription is paid. Tickets already sold stay valid."
     }
   },
   "admin": {
@@ -1549,7 +1558,8 @@
     "qrAlt": "QR code",
     "format": {
       "when": "cccc d LLLL yyyy, HH:mm",
-      "short": "d LLL HH:mm"
+      "short": "d LLL HH:mm",
+      "day": "cccc d LLLL yyyy"
     },
     "seats_one": "{count} seat",
     "seats_other": "{count} seats",
@@ -1658,6 +1668,104 @@
       "company": "Company",
       "action": "See all requests",
       "sms": "{topic} from {name}: {contact}"
+    },
+    "tripReminder": {
+      "subject": "See you soon: {product}, {when}",
+      "intro": "A reminder that your trip with {tenant} is coming up: {product}, {when}.",
+      "meetingPoint": "Meeting point: {meetingPoint}. Please arrive a few minutes early.",
+      "showQr": "Show the QR code on your ticket when you board.",
+      "contact": "Questions? Call {phone}.",
+      "action": "Open the ticket",
+      "sms": "{tenant}: see you soon! {product}, {when}. Meeting point: {meetingPoint}. Your ticket: {url}",
+      "smsNoMeetingPoint": "{tenant}: see you soon! {product}, {when}. Your ticket: {url}"
+    },
+    "reviewRequest": {
+      "subject": "How was {product}?",
+      "thanks": "Thank you for choosing {tenant}! We hope you enjoyed {product}.",
+      "ask": "If you liked it, a short review helps a small local business a lot. It takes a minute.",
+      "link": "Leave a review: {url}",
+      "action": "Leave a review",
+      "sms": "{tenant}: thank you for joining {product}! If you enjoyed it, a short review helps us a lot: {url}"
+    },
+    "affiliateSale": {
+      "subject": "New sale: {product}, commission {amount}",
+      "intro": "You made a sale for {tenant}: {product}, {when}, {seats}.",
+      "commission": "Your commission: {amount}. It is confirmed once the trip has taken place.",
+      "month": "Sales this month: {count}.",
+      "reached": "Well done, you reached {rate}! This sale and your next ones this month earn {rate}.",
+      "toNext_one": "One more sale and you reach {rate}.",
+      "toNext_other": "{count} more sales and you reach {rate}.",
+      "link": "Your sales and earnings: {url}",
+      "action": "See my earnings",
+      "sms": "{tenant}: new sale! {product}, {when}. Your commission: {amount}.",
+      "smsReached": "{tenant}: new sale! {product}, {when}. Your commission: {amount}. You reached {rate}!",
+      "smsToNext": "{tenant}: new sale! {product}, {when}. Your commission: {amount}. {count} more to reach {rate}."
+    },
+    "tierNudge": {
+      "subject": "You are close to {rate} commission",
+      "intro_one": "One more sale this month and your commission with {tenant} goes up to {rate}.",
+      "intro_other": "{count} more sales this month and your commission with {tenant} goes up to {rate}.",
+      "resets": "The count starts again from zero on {date}.",
+      "tip": "Recommend the trip to a few more guests today: your QR code and your link are in the app.",
+      "link": "Your QR code: {url}",
+      "action": "Open my QR code",
+      "sms": "{tenant}: only {count} more this month and your commission goes up to {rate}. Your QR code: {url}"
+    },
+    "payoutPaid": {
+      "subject": "{tenant} paid your commission: {amount}",
+      "intro": "{tenant} paid your commission for {period}: {amount}.",
+      "details": "Every sale behind it is in the app: {url}",
+      "thanks": "Thank you for recommending us!",
+      "action": "See my earnings",
+      "sms": "{tenant} paid your commission for {period}: {amount}. Thank you!"
+    },
+    "monthlyReport": {
+      "subject": "{tenant}: your report for {period}",
+      "intro": "This is how {period} went for {tenant}.",
+      "compared": "Revenue compared with {previous}: {change}.",
+      "affiliates": "Your affiliates brought {amount}, {share} of your revenue.",
+      "noAffiliateSales": "No sales through affiliates this month. Affiliates with their QR code on the reception desk sell the most: print their kits from the Affiliates page.",
+      "top": "Best sellers: {list}.",
+      "payable": "Commissions to pay now: {amount}. Close the month in Payouts to see what each affiliate gets: {url}",
+      "link": "Your dashboard: {url}",
+      "action": "Open the dashboard",
+      "bookings": "Bookings",
+      "revenue": "Revenue",
+      "fromAffiliates": "Through affiliates",
+      "fromAffiliatesValue_one": "{amount} from one booking",
+      "fromAffiliatesValue_other": "{amount} from {count} bookings",
+      "commissions": "Commissions earned",
+      "activeAffiliates": "Active affiliates",
+      "sms": "{tenant}, {period}: {bookings} bookings, {revenue}. From affiliates: {affiliates}. Report: {url}"
+    },
+    "trialEnding": {
+      "subject": "Your free trial ends on {date}",
+      "intro": "The free trial for {tenant} ends on {date}.",
+      "keepSelling": "To keep selling through your affiliates without interruption, choose your plan now.",
+      "link": "Choose a plan: {url}",
+      "action": "Choose a plan",
+      "sms": "The free trial for {tenant} ends on {date}. Choose a plan to keep selling: {url}"
+    },
+    "subscriptionUnpaid": {
+      "subject": "The subscription for {tenant} is unpaid",
+      "trial": "The free trial for {tenant} has ended.",
+      "payment": "We could not take the payment for the {tenant} subscription.",
+      "expired": "The paid period of the {tenant} subscription has ended.",
+      "canceled": "The {tenant} subscription was cancelled.",
+      "pause": "Your booking pages and affiliates keep selling until {date}. After that, new bookings pause until the subscription is paid.",
+      "valid": "Tickets already sold stay valid.",
+      "link": "Pay the subscription: {url}",
+      "action": "Pay the subscription",
+      "sms": "{tenant}: the subscription is unpaid. New bookings pause on {date}. Pay here: {url}"
+    },
+    "salesPaused": {
+      "subject": "New bookings for {tenant} are paused",
+      "intro": "The subscription for {tenant} is still unpaid, so new bookings are paused: customers and affiliates cannot book until it is paid.",
+      "valid": "Tickets already sold stay valid and your console keeps working.",
+      "resume": "Bookings start again as soon as the subscription is paid.",
+      "link": "Pay the subscription: {url}",
+      "action": "Pay the subscription",
+      "sms": "{tenant}: new bookings are paused because the subscription is unpaid. Pay here to start again: {url}"
     }
   },
   "catalog": {
@@ -1906,7 +2014,23 @@
       "cancellationPolicy": "Cancellation policy",
       "cancellationPolicyHint": "When customers can cancel and get their money back. Leave empty to use the text shown in the box.",
       "errContactEmail": "Check the email address, like name@example.com.",
-      "errContactPhone": "Write the phone number with the country code, like +40 722 123 456."
+      "errContactPhone": "Write the phone number with the country code, like +40 722 123 456.",
+      "messagesTitle": "Automatic messages",
+      "messagesDescription": "Messages the platform sends for you, so customers show up, come back and recommend you, and affiliates keep selling.",
+      "messages": {
+        "remindCustomers": "Reminder the evening before the trip",
+        "remindCustomersHelp": "At 18:00 the day before departure, customers get the time, the meeting point and their ticket again (by email, or SMS if they left only a phone).",
+        "askForReviews": "Ask for a review after the trip",
+        "askForReviewsHelp": "At 10:00 the day after the trip, customers who boarded get a thank-you with your review link.",
+        "notifyAffiliates": "Tell affiliates about each sale and payout",
+        "notifyAffiliatesHelp": "Affiliates get an SMS or email when they make a sale (with their commission and how far the next level is), near the end of the month when they are close to the next level, and when you mark their commission as paid. Each affiliate can switch it off.",
+        "monthlyReport": "Monthly report",
+        "monthlyReportHelp": "On the 1st of each month, owners get last month's bookings, revenue, what the affiliates brought and the commissions to pay."
+      },
+      "reviewUrl": "Review link",
+      "reviewUrlHint": "Your Google or TripAdvisor review page.",
+      "reviewUrlMissing": "Add your review link: without it, no review request is sent.",
+      "errReviewUrl": "Enter a full link that starts with https://"
     },
     "sources": {
       "title": "Your booking system",

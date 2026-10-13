@@ -46,6 +46,11 @@ const schema = z.object({
   /** manual: subscriptions are invoiced by hand. stripe: Stripe Billing charges operators' cards. */
   BILLING_PROVIDER: z.enum(['manual', 'stripe']).default('manual'),
   STRIPE_BILLING_WEBHOOK_SECRET: z.string().optional(),
+  /**
+   * Days an operator can keep selling after the trial ends or a payment fails. After that, new
+   * bookings pause until the subscription is paid; tickets already sold stay valid.
+   */
+  BILLING_GRACE_DAYS: z.coerce.number().int().min(0).default(7),
 });
 
 export type AppConfig = z.infer<typeof schema>;

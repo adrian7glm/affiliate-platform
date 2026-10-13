@@ -32,6 +32,16 @@ import { BillingGateway } from './billing.gateway';
 
 type PlanRow = typeof platformPlans.$inferSelect;
 type SubscriptionRow = typeof tenantSubscriptions.$inferSelect;
+export type BillingState = Pick<
+  SubscriptionRow,
+  | 'status'
+  | 'trialEndsAt'
+  | 'currentPeriodEnd'
+  | 'stripeSubscriptionId'
+  | 'pastDueSince'
+  | 'canceledAt'
+  | 'updatedAt'
+>;
 
 const DAY_MS = 86_400_000;
 
@@ -240,14 +250,54 @@ export class SubscriptionsService {
   }
 
   /**
-   * A trial that ended without a paid subscription is reported as past due. Nothing is switched
-   * off automatically: suspending an operator is always the platform owner's decision.
+   * A trial that ended without a paid subscription, or a hand-invoiced subscription past its
+   * paid-until date, is reported as past due.
    */
-  effectiveStatus(row: Pick<SubscriptionRow, 'status' | 'trialEndsAt'>): SubscriptionStatus {
-    if (row.status === 'trialing' && row.trialEndsAt && row.trialEndsAt <= this.clock.now()) {
-      return 'past_due';
+  effectiveStatus(row: BillingState): SubscriptionStatus {
+    return this.unpaidSince(row) && row.status !== 'canceled' ? 'past_due' : row.status;
+  }
+
+  /** Since when the operator owes the subscription, or null when nothing is owed. */
+  unpaidSince(row: BillingState): Date | null {
+    const now = this.clock.now();
+    switch (row.status) {
+      case 'trialing':
+        return row.trialEndsAt && row.trialEndsAt <= now ? row.trialEndsAt : null;
+      case 'active':
+        // Invoiced by hand: paid until the date the platform owner entered. Stripe renews
+        // its own subscriptions and tells us when a payment fails.
+        return !row.stripeSubscriptionId && row.currentPeriodEnd && row.currentPeriodEnd <= now
+          ? row.currentPeriodEnd
+          : null;
+      case 'past_due':
+        return row.pastDueSince ?? row.updatedAt;
+      case 'canceled':
+        return row.canceledAt ?? row.updatedAt;
     }
-    return row.status;
+  }
+
+  /**
+   * When new bookings pause because the subscription is not paid: a grace period after it
+   * became due. Tickets already sold stay valid and the operator console keeps working.
+   */
+  salesPauseAt(row: BillingState): Date | null {
+    const since = this.unpaidSince(row);
+    return since ? new Date(since.getTime() + this.config.BILLING_GRACE_DAYS * DAY_MS) : null;
+  }
+
+  /** True once an unpaid subscription is past its grace period: no new bookings. */
+  async salesPaused(tenantId: string, db: DbOrTx = this.db): Promise<boolean> {
+    const row = await this.row(tenantId, db);
+    // Operators created before subscriptions existed have none: nothing to enforce.
+    const pauseAt = row ? this.salesPauseAt(row) : null;
+    return pauseAt !== null && pauseAt <= this.clock.now();
+  }
+
+  /** Refuses a new booking once an unpaid subscription is past its grace period. */
+  async assertCanSell(tenantId: string, db: DbOrTx = this.db): Promise<void> {
+    if (await this.salesPaused(tenantId, db)) {
+      throw new DomainError('errors.booking.salesPaused', HttpStatus.CONFLICT);
+    }
   }
 
   toDto(row: SubscriptionRow, plan: PlanRow): SubscriptionDto {
@@ -264,6 +314,7 @@ export class SubscriptionsService {
       priceMinorOverride: row.priceMinorOverride,
       maxAffiliates: plan.maxAffiliates,
       billedByStripe: row.stripeSubscriptionId !== null,
+      salesPauseAt: this.salesPauseAt(row)?.toISOString() ?? null,
     };
   }
 
@@ -499,6 +550,7 @@ export class SubscriptionsService {
           .where(eq(platformPlans.stripePriceId, input.priceId))
       : [];
     const status = fromStripeStatus(input.status);
+    const now = this.clock.now();
     await this.db.transaction(async (tx) => {
       await tx
         .update(tenantSubscriptions)
@@ -509,8 +561,10 @@ export class SubscriptionsService {
           ...(plan ? { planId: plan.id } : {}),
           currentPeriodEnd: input.currentPeriodEnd ? new Date(input.currentPeriodEnd * 1000) : null,
           trialEndsAt: input.trialEnd ? new Date(input.trialEnd * 1000) : row.trialEndsAt,
-          canceledAt: status === 'canceled' ? this.clock.now() : null,
-          updatedAt: this.clock.now(),
+          canceledAt: status === 'canceled' ? (row.canceledAt ?? now) : null,
+          // The first failed payment starts the grace period; later retries do not extend it.
+          pastDueSince: status === 'past_due' ? (row.pastDueSince ?? now) : null,
+          updatedAt: now,
         })
         .where(eq(tenantSubscriptions.id, row.id));
       await this.syncFee(tx, row.tenantId);

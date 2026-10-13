@@ -19,6 +19,8 @@ import type {
   AcceptInviteBody,
   AffiliateDto,
   AffiliateHomeDto,
+  AffiliateNotificationsBody,
+  AffiliateNotificationsDto,
   AffiliateWithStatsDto,
   AssistedBookingBody,
   BookingDto,
@@ -95,6 +97,8 @@ export const affiliateApi = {
   createBooking: (body: AssistedBookingBody, o?: Opts) =>
     apiFetch<CheckoutResultDto>('/affiliate/bookings', { ...o, method: 'POST', body }),
   bookings: (o?: Opts) => apiFetch<BookingDto[]>('/affiliate/bookings', o),
+  updateNotifications: (body: AffiliateNotificationsBody, o?: Opts) =>
+    apiFetch<AffiliateNotificationsDto>('/affiliate/notifications', { ...o, method: 'PUT', body }),
 };
 
 export const operatorApi = {

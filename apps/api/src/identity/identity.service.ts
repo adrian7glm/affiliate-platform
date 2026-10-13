@@ -89,6 +89,14 @@ export class IdentityService {
     };
   }
 
+  /** The language this person uses the app in; only written when it changed. */
+  async setLocale(userId: string, locale: string): Promise<void> {
+    await this.db
+      .update(users)
+      .set({ locale })
+      .where(and(eq(users.id, userId), sql`${users.locale} is distinct from ${locale}`));
+  }
+
   async findOrCreateUser(db: DbOrTx, destination: string, name?: string): Promise<string> {
     const column = isEmail(destination) ? users.email : users.phone;
     const [existing] = await db.select({ id: users.id }).from(users).where(eq(column, destination));

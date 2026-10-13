@@ -62,6 +62,11 @@ export const onboardingStep = (
 export const CURRENCIES = ['RON', 'EUR', 'BGN', 'HUF', 'USD', 'GBP'] as const;
 
 /** Whole days from now until `iso` (0 when already past). */
+/** New bookings are paused: the unpaid subscription is past its grace period. */
+export function salesPaused(pauseAt: string | null, now: Date = new Date()): boolean {
+  return pauseAt !== null && new Date(pauseAt).getTime() <= now.getTime();
+}
+
 export function daysUntil(iso: string, now: Date = new Date()): number {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - now.getTime()) / 86_400_000));
 }

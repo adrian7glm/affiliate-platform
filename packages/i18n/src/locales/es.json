@@ -231,7 +231,8 @@
       "tripUnavailable": "esta excursión ya no está disponible",
       "unknownPrice": "tipo de billete desconocido para esta excursión",
       "noSeats": "elige al menos una plaza",
-      "paymentsUnavailable": "los pagos no están disponibles ahora, inténtalo de nuevo en un minuto"
+      "paymentsUnavailable": "los pagos no están disponibles ahora, inténtalo de nuevo en un minuto",
+      "salesPaused": "este operador no acepta reservas en línea en este momento"
     },
     "departures": {
       "closed": "esta salida ya no se puede reservar",
@@ -531,7 +532,9 @@
       "privacyNote": "Solo usamos sus datos para responderle. Consulte la {privacy}.",
       "sentTitle": "Gracias, hemos recibido su mensaje",
       "sentText": "Le responderemos en {email}."
-    }
+    },
+    "bookingPausedTitle": "La reserva en línea no está disponible en este momento",
+    "bookingPausedText": "Para reservar esta excursión, contacta directamente con {tenant}."
   },
   "ticket": {
     "title": "Su billete",
@@ -634,7 +637,11 @@
       "recentBookings": "Reservas recientes",
       "book": "Reservar",
       "noBookings": "Aún no hay reservas. Muestra tu código QR a los turistas o reserva directamente por ellos.",
-      "showAll": "Ver las {count}"
+      "showAll": "Ver las {count}",
+      "messagesTitle": "Mensajes",
+      "saleMessages": "Avisarme de cada venta y pago",
+      "saleMessagesHelp": "Con tu comisión y cuánto te falta para el siguiente nivel, a {contact}.",
+      "saleMessagesHelpNoContact": "Con tu comisión y cuánto te falta para el siguiente nivel."
     },
     "qr": {
       "title": "Mi código QR",
@@ -1189,7 +1196,9 @@
       "yourPlan": "Tu plan",
       "planPrice": "/ mes + {fee} / reserva",
       "choose": "Elegir {name}",
-      "ownerOnly": "Solo el administrador de la cuenta puede cambiar el plan."
+      "ownerOnly": "Solo el administrador de la cuenta puede cambiar el plan.",
+      "salesPauseOn": "Las nuevas reservas se pausan el {date} si la suscripción no está pagada. Los billetes ya vendidos siguen siendo válidos.",
+      "salesPaused": "Las nuevas reservas están en pausa hasta que se pague la suscripción. Los billetes ya vendidos siguen siendo válidos."
     }
   },
   "admin": {
@@ -1609,7 +1618,8 @@
     "qrAlt": "Código QR",
     "format": {
       "when": "cccc, d 'de' LLLL 'de' yyyy, HH:mm",
-      "short": "d LLL HH:mm"
+      "short": "d LLL HH:mm",
+      "day": "cccc, d 'de' LLLL 'de' yyyy"
     },
     "seats_one": "{count} plaza",
     "seats_many": "{count} plazas",
@@ -1719,6 +1729,107 @@
       "company": "Empresa",
       "action": "Ver todas las solicitudes",
       "sms": "{topic} de {name}: {contact}"
+    },
+    "tripReminder": {
+      "subject": "Hasta pronto: {product}, {when}",
+      "intro": "Te recordamos que tu excursión con {tenant} se acerca: {product}, {when}.",
+      "meetingPoint": "Punto de encuentro: {meetingPoint}. Por favor, llega unos minutos antes.",
+      "showQr": "Muestra el código QR de tu billete al embarcar.",
+      "contact": "¿Preguntas? Llama al {phone}.",
+      "action": "Abrir el billete",
+      "sms": "{tenant}: ¡hasta pronto! {product}, {when}. Punto de encuentro: {meetingPoint}. Tu billete: {url}",
+      "smsNoMeetingPoint": "{tenant}: ¡hasta pronto! {product}, {when}. Tu billete: {url}"
+    },
+    "reviewRequest": {
+      "subject": "¿Qué tal fue {product}?",
+      "thanks": "¡Gracias por elegir {tenant}! Esperamos que hayas disfrutado de {product}.",
+      "ask": "Si te gustó, una reseña breve ayuda mucho a un pequeño negocio local. Solo lleva un minuto.",
+      "link": "Deja una reseña: {url}",
+      "action": "Dejar una reseña",
+      "sms": "{tenant}: ¡gracias por venir a {product}! Si te gustó, una reseña breve nos ayuda mucho: {url}"
+    },
+    "affiliateSale": {
+      "subject": "Nueva venta: {product}, comisión {amount}",
+      "intro": "Has hecho una venta para {tenant}: {product}, {when}, {seats}.",
+      "commission": "Tu comisión: {amount}. Se confirma cuando se realiza la excursión.",
+      "month": "Ventas este mes: {count}.",
+      "reached": "¡Enhorabuena, has llegado al {rate}! Esta venta y las siguientes de este mes te dan un {rate}.",
+      "toNext_one": "Una venta más y llegas al {rate}.",
+      "toNext_many": "{count} ventas más y llegas al {rate}.",
+      "toNext_other": "{count} ventas más y llegas al {rate}.",
+      "link": "Tus ventas y ganancias: {url}",
+      "action": "Ver mis ganancias",
+      "sms": "{tenant}: ¡nueva venta! {product}, {when}. Tu comisión: {amount}.",
+      "smsReached": "{tenant}: ¡nueva venta! {product}, {when}. Tu comisión: {amount}. ¡Has llegado al {rate}!",
+      "smsToNext": "{tenant}: ¡nueva venta! {product}, {when}. Tu comisión: {amount}. {count} más para llegar al {rate}."
+    },
+    "tierNudge": {
+      "subject": "Estás cerca de una comisión del {rate}",
+      "intro_one": "Una venta más este mes y tu comisión con {tenant} sube al {rate}.",
+      "intro_many": "{count} ventas más este mes y tu comisión con {tenant} sube al {rate}.",
+      "intro_other": "{count} ventas más este mes y tu comisión con {tenant} sube al {rate}.",
+      "resets": "El recuento vuelve a cero el {date}.",
+      "tip": "Recomienda hoy la excursión a unos cuantos huéspedes más: tu código QR y tu enlace están en la aplicación.",
+      "link": "Tu código QR: {url}",
+      "action": "Abrir mi código QR",
+      "sms": "{tenant}: solo {count} más este mes y tu comisión sube al {rate}. Tu código QR: {url}"
+    },
+    "payoutPaid": {
+      "subject": "{tenant} te ha pagado la comisión: {amount}",
+      "intro": "{tenant} te ha pagado la comisión de {period}: {amount}.",
+      "details": "Todas las ventas incluidas están en la aplicación: {url}",
+      "thanks": "¡Gracias por recomendarnos!",
+      "action": "Ver mis ganancias",
+      "sms": "{tenant} te ha pagado la comisión de {period}: {amount}. ¡Gracias!"
+    },
+    "monthlyReport": {
+      "subject": "{tenant}: tu informe de {period}",
+      "intro": "Así ha ido {period} en {tenant}.",
+      "compared": "Ingresos respecto a {previous}: {change}.",
+      "affiliates": "Tus afiliados aportaron {amount}, el {share} de tus ingresos.",
+      "noAffiliateSales": "Este mes no hubo ventas a través de afiliados. Los afiliados con su código QR en la recepción son los que más venden: imprime sus kits desde la página Afiliados.",
+      "top": "Mejores vendedores: {list}.",
+      "payable": "Comisiones por pagar ahora: {amount}. Cierra el mes en Pagos para ver lo que recibe cada afiliado: {url}",
+      "link": "Tu panel: {url}",
+      "action": "Abrir el panel",
+      "bookings": "Reservas",
+      "revenue": "Ingresos",
+      "fromAffiliates": "A través de afiliados",
+      "fromAffiliatesValue_one": "{amount} de una reserva",
+      "fromAffiliatesValue_many": "{amount} de {count} reservas",
+      "fromAffiliatesValue_other": "{amount} de {count} reservas",
+      "commissions": "Comisiones generadas",
+      "activeAffiliates": "Afiliados activos",
+      "sms": "{tenant}, {period}: reservas {bookings}, ingresos {revenue}. De afiliados: {affiliates}. Informe: {url}"
+    },
+    "trialEnding": {
+      "subject": "Tu prueba gratuita termina el {date}",
+      "intro": "La prueba gratuita de {tenant} termina el {date}.",
+      "keepSelling": "Para seguir vendiendo a través de tus afiliados sin interrupciones, elige tu plan ahora.",
+      "link": "Elegir un plan: {url}",
+      "action": "Elegir un plan",
+      "sms": "La prueba gratuita de {tenant} termina el {date}. Elige un plan para seguir vendiendo: {url}"
+    },
+    "subscriptionUnpaid": {
+      "subject": "La suscripción de {tenant} no está pagada",
+      "trial": "La prueba gratuita de {tenant} ha terminado.",
+      "payment": "No hemos podido cobrar el pago de la suscripción de {tenant}.",
+      "expired": "El periodo pagado de la suscripción de {tenant} ha terminado.",
+      "canceled": "La suscripción de {tenant} se ha cancelado.",
+      "pause": "Tus páginas de reserva y tus afiliados siguen vendiendo hasta el {date}. Después, las nuevas reservas se pausan hasta que se pague la suscripción.",
+      "valid": "Los billetes ya vendidos siguen siendo válidos.",
+      "link": "Pagar la suscripción: {url}",
+      "action": "Pagar la suscripción",
+      "sms": "{tenant}: la suscripción no está pagada. Las nuevas reservas se pausan el {date}. Paga aquí: {url}"
+    },
+    "salesPaused": {
+      "subject": "Las nuevas reservas de {tenant} están en pausa",
+      "intro": "La suscripción de {tenant} sigue sin pagarse, así que las nuevas reservas están en pausa: clientes y afiliados no pueden reservar hasta que se pague.",
+      "valid": "Los billetes ya vendidos siguen siendo válidos y tu panel sigue funcionando.",
+      "resume": "Las reservas se reanudan en cuanto se paga la suscripción.",
+      "link": "Pagar la suscripción: {url}",
+      "action": "Pagar la suscripción",
+      "sms": "{tenant}: las nuevas reservas están en pausa porque la suscripción no está pagada. Paga aquí para reanudarlas: {url}"
     }
   },
   "catalog": {
@@ -1980,7 +2091,23 @@
       "cancellationPolicy": "Política de cancelación",
       "cancellationPolicyHint": "Cuándo pueden cancelar los clientes y recuperar su dinero. Déjalo vacío para usar el texto que aparece en el cuadro.",
       "errContactEmail": "Revisa el correo electrónico, como nombre@ejemplo.com.",
-      "errContactPhone": "Escribe el teléfono con el prefijo del país, como +40 722 123 456."
+      "errContactPhone": "Escribe el teléfono con el prefijo del país, como +40 722 123 456.",
+      "messagesTitle": "Mensajes automáticos",
+      "messagesDescription": "Mensajes que la plataforma envía por ti, para que los clientes acudan, vuelvan y te recomienden, y los afiliados sigan vendiendo.",
+      "messages": {
+        "remindCustomers": "Recordatorio la víspera de la excursión",
+        "remindCustomersHelp": "A las 18:00 del día anterior a la salida, los clientes reciben de nuevo la hora, el punto de encuentro y su billete (por correo, o por SMS si solo dejaron un teléfono).",
+        "askForReviews": "Pedir una reseña después de la excursión",
+        "askForReviewsHelp": "A las 10:00 del día siguiente a la excursión, los clientes que embarcaron reciben un agradecimiento con tu enlace de reseñas.",
+        "notifyAffiliates": "Avisar a los afiliados de cada venta y pago",
+        "notifyAffiliatesHelp": "Los afiliados reciben un SMS o un correo cuando hacen una venta (con su comisión y cuánto les falta para el siguiente nivel), hacia final de mes cuando están cerca del siguiente nivel, y cuando marcas su comisión como pagada. Cada afiliado puede desactivarlo.",
+        "monthlyReport": "Informe mensual",
+        "monthlyReportHelp": "El día 1 de cada mes, los propietarios reciben las reservas, los ingresos, lo que aportaron los afiliados y las comisiones por pagar del mes anterior."
+      },
+      "reviewUrl": "Enlace de reseñas",
+      "reviewUrlHint": "Tu página de reseñas de Google o TripAdvisor.",
+      "reviewUrlMissing": "Añade tu enlace de reseñas: sin él no se envía ninguna petición de reseña.",
+      "errReviewUrl": "Escribe un enlace completo que empiece por https://"
     },
     "sources": {
       "title": "Tu sistema de reservas",

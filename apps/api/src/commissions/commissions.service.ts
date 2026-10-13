@@ -525,13 +525,15 @@ export class CommissionsService implements OnModuleInit {
   // Affiliate views
   // ----------------------------------------------------------------------------------------------
 
-  private async paidSalesCount(
+  /** Paid, non-cancelled sales of an affiliate in a month: what the tiers count. */
+  async paidSalesCount(
     affiliateId: string,
-    tenant: Tenant,
+    tenant: Pick<Tenant, 'timezone'>,
     periodKey: string,
+    db: DbOrTx = this.db,
   ): Promise<number> {
     const { start, end } = periodRange(periodKey, tenant.timezone);
-    const [row] = await this.db
+    const [row] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(bookings)
       .where(
@@ -585,7 +587,12 @@ export class CommissionsService implements OnModuleInit {
     const [primaryLink] = await this.links.list(affiliateId, [linkId]);
 
     return {
-      affiliate: { id: affiliate.id, displayName: affiliate.displayName, status: affiliate.status },
+      affiliate: {
+        id: affiliate.id,
+        displayName: affiliate.displayName,
+        status: affiliate.status,
+        notifySales: affiliate.notifySales,
+      },
       tenant: {
         id: tenant.id,
         slug: tenant.slug,
@@ -963,6 +970,15 @@ export class CommissionsService implements OnModuleInit {
           .where(
             and(eq(commissionEntries.payoutId, payoutId), eq(commissionEntries.status, 'approved')),
           );
+        await this.outbox.publish(tx, {
+          type: 'payout.paid',
+          tenantId,
+          payoutId,
+          affiliateId: payout.affiliateId,
+          periodKey: payout.periodKey,
+          amountMinor: payout.amountMinor,
+          currency: payout.currency,
+        });
       }
       return payout.periodKey;
     });

@@ -21,16 +21,17 @@ Errors: `{ statusCode, error, message, details? }`.
 
 ## Affiliate (role `affiliate`)
 
-| Method | Path                            | Body / query                     | Response            |
-| ------ | ------------------------------- | -------------------------------- | ------------------- |
-| GET    | `/affiliate/home`               |                                  | `AffiliateHomeDto`  |
-| GET    | `/affiliate/earnings`           | `?period=YYYY-MM`                | `EarningsDto`       |
-| GET    | `/affiliate/links`              |                                  | `LinkDto[]`         |
-| POST   | `/affiliate/links`              | `CreateLinkBody`                 | `LinkDto`           |
-| GET    | `/affiliate/products`           |                                  | `ProductDto[]`      |
-| GET    | `/affiliate/products/:id/slots` | `?from=YYYY-MM-DD&to=YYYY-MM-DD` | `SlotDto[]`         |
-| POST   | `/affiliate/bookings`           | `AssistedBookingBody`            | `CheckoutResultDto` |
-| GET    | `/affiliate/bookings`           |                                  | `BookingDto[]`      |
+| Method | Path                            | Body / query                     | Response                    |
+| ------ | ------------------------------- | -------------------------------- | --------------------------- |
+| GET    | `/affiliate/home`               |                                  | `AffiliateHomeDto`          |
+| GET    | `/affiliate/earnings`           | `?period=YYYY-MM`                | `EarningsDto`               |
+| GET    | `/affiliate/links`              |                                  | `LinkDto[]`                 |
+| POST   | `/affiliate/links`              | `CreateLinkBody`                 | `LinkDto`                   |
+| GET    | `/affiliate/products`           |                                  | `ProductDto[]`              |
+| GET    | `/affiliate/products/:id/slots` | `?from=YYYY-MM-DD&to=YYYY-MM-DD` | `SlotDto[]`                 |
+| POST   | `/affiliate/bookings`           | `AssistedBookingBody`            | `CheckoutResultDto`         |
+| GET    | `/affiliate/bookings`           |                                  | `BookingDto[]`              |
+| PUT    | `/affiliate/notifications`      | `AffiliateNotificationsBody`     | `AffiliateNotificationsDto` |
 
 ## Operator (roles `owner`, `staff`)
 
@@ -140,6 +141,11 @@ Platform admin (users with `isPlatformAdmin`, set at sign-in for `PLATFORM_ADMIN
 | POST   | `/admin/contact-requests/:id/handled` | `SetContactHandledBody`    | `ContactRequestDto`    |
 
 A suspended operator gets 403 on every operator and affiliate route, and 404 on its public pages.
+An unpaid subscription (trial ended, failed card payment, or a hand-invoiced paid-until date in
+the past) is reported as `past_due` with `salesPauseAt` = the date it became unpaid plus
+`BILLING_GRACE_DAYS` (default 7). From then on new bookings, public and by affiliates, get 409
+`errors.booking.salesPaused` and `GET /public/tenants/:slug` returns `bookingPaused: true`;
+tickets already sold, scanning and the operator console keep working.
 Stripe Billing (`BILLING_PROVIDER=stripe`) posts subscription events to
 `POST /webhooks/stripe/billing`, signed with `STRIPE_BILLING_WEBHOOK_SECRET`.
 

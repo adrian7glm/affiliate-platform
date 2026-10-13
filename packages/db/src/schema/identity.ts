@@ -44,6 +44,16 @@ export const tenants = pgTable('tenants', {
   /** How customers reach the operator (ticket page, legal pages). */
   contactEmail: text('contact_email'),
   contactPhone: text('contact_phone'),
+  /** Where happy customers leave a review (Google, TripAdvisor); asked the day after the trip. */
+  reviewUrl: text('review_url'),
+  /** Automatic messages the operator can switch off: departure reminder to customers... */
+  remindCustomers: boolean('remind_customers').notNull().default(true),
+  /** ...the review request after the trip (needs review_url)... */
+  askForReviews: boolean('ask_for_reviews').notNull().default(true),
+  /** ..."you made a sale" and "your commission was paid" to affiliates... */
+  notifyAffiliates: boolean('notify_affiliates').notNull().default(true),
+  /** ...and the monthly report to the owners. */
+  monthlyReport: boolean('monthly_report').notNull().default(true),
   /** Suspended operators cannot sign in to their console and their booking pages are offline. */
   status: tenantStatusEnum('status').notNull().default('active'),
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
@@ -59,6 +69,8 @@ export const users = pgTable(
     email: text('email').unique(),
     phone: text('phone').unique(),
     name: text('name'),
+    /** Language of the app at the last sign-in: messages to this person are written in it. */
+    locale: text('locale'),
     isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
     createdAt: createdAt(),
   },

@@ -10,6 +10,7 @@ import { CommissionsService } from '../commissions/commissions.service';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
+import { RetentionService } from '../retention/retention.service';
 import { SourcesService } from '../sources/sources.service';
 
 /**
@@ -28,6 +29,7 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     private readonly commissions: CommissionsService,
     private readonly sources: SourcesService,
     private readonly notifications: NotificationsService,
+    private readonly retention: RetentionService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -37,6 +39,8 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     this.every('expire-unpaid-bookings', 60_000, () => this.bookingService.expireUnpaid());
     this.every('approve-commissions', 10 * 60_000, () => this.commissions.approveDue());
     this.every('sync-availability-sources', 10 * 60_000, () => this.sources.syncAll());
+    // Reminders, review requests, monthly reports, billing warnings: each is sent once.
+    this.every('retention-messages', 5 * 60_000, () => this.retention.runDue());
     this.logger.log('background jobs started');
   }
 

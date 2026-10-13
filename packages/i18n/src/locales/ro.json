@@ -231,7 +231,8 @@
       "tripUnavailable": "această excursie nu mai este disponibilă",
       "unknownPrice": "tip de bilet necunoscut pentru această excursie",
       "noSeats": "alege cel puțin un loc",
-      "paymentsUnavailable": "plățile nu sunt disponibile acum, încearcă din nou peste un minut"
+      "paymentsUnavailable": "plățile nu sunt disponibile acum, încearcă din nou peste un minut",
+      "salesPaused": "acest operator nu primește rezervări online momentan"
     },
     "departures": {
       "closed": "pentru această plecare nu se mai pot face rezervări",
@@ -531,7 +532,9 @@
       "privacyNote": "Folosim datele tale doar ca să-ți răspundem. Vezi {privacy}.",
       "sentTitle": "Mulțumim, am primit mesajul",
       "sentText": "Îți răspundem la {email}."
-    }
+    },
+    "bookingPausedTitle": "Rezervarea online nu este disponibilă momentan",
+    "bookingPausedText": "Ca să rezervi această excursie, contactează direct {tenant}."
   },
   "ticket": {
     "title": "Biletul tău",
@@ -634,7 +637,11 @@
       "recentBookings": "Rezervări recente",
       "book": "Rezervă",
       "noBookings": "Încă nu ai rezervări. Arată codul QR turiștilor sau rezervă direct pentru ei.",
-      "showAll": "Arată toate cele {count}"
+      "showAll": "Arată toate cele {count}",
+      "messagesTitle": "Mesaje",
+      "saleMessages": "Anunță-mă la fiecare vânzare și plată",
+      "saleMessagesHelp": "Cu comisionul și cât mai ai până la nivelul următor, la {contact}.",
+      "saleMessagesHelpNoContact": "Cu comisionul și cât mai ai până la nivelul următor."
     },
     "qr": {
       "title": "Codul meu QR",
@@ -1189,7 +1196,9 @@
       "yourPlan": "Planul tău",
       "planPrice": "/ lună + {fee} / rezervare",
       "choose": "Alege {name}",
-      "ownerOnly": "Doar administratorul contului poate schimba planul."
+      "ownerOnly": "Doar administratorul contului poate schimba planul.",
+      "salesPauseOn": "Rezervările noi se opresc pe {date} dacă abonamentul nu este plătit. Biletele deja vândute rămân valabile.",
+      "salesPaused": "Rezervările noi sunt oprite până se plătește abonamentul. Biletele deja vândute rămân valabile."
     }
   },
   "admin": {
@@ -1609,7 +1618,8 @@
     "qrAlt": "Cod QR",
     "format": {
       "when": "cccc, d LLLL yyyy, 'ora' HH:mm",
-      "short": "d LLL HH:mm"
+      "short": "d LLL HH:mm",
+      "day": "cccc, d LLLL yyyy"
     },
     "seats_one": "{count} loc",
     "seats_few": "{count} locuri",
@@ -1719,6 +1729,107 @@
       "company": "Firmă",
       "action": "Vezi toate cererile",
       "sms": "{topic} de la {name}: {contact}"
+    },
+    "tripReminder": {
+      "subject": "Ne vedem curând: {product}, {when}",
+      "intro": "Îți reamintim că excursia ta cu {tenant} se apropie: {product}, {when}.",
+      "meetingPoint": "Punct de întâlnire: {meetingPoint}. Te rugăm să ajungi cu câteva minute mai devreme.",
+      "showQr": "La îmbarcare arată codul QR din bilet.",
+      "contact": "Întrebări? Sună la {phone}.",
+      "action": "Deschide biletul",
+      "sms": "{tenant}: ne vedem curând! {product}, {when}. Punct de întâlnire: {meetingPoint}. Biletul tău: {url}",
+      "smsNoMeetingPoint": "{tenant}: ne vedem curând! {product}, {when}. Biletul tău: {url}"
+    },
+    "reviewRequest": {
+      "subject": "Cum a fost {product}?",
+      "thanks": "Îți mulțumim că ai ales {tenant}! Sperăm că ți-a plăcut {product}.",
+      "ask": "Dacă ți-a plăcut, o recenzie scurtă ajută mult o afacere locală mică. Durează un minut.",
+      "link": "Lasă o recenzie: {url}",
+      "action": "Lasă o recenzie",
+      "sms": "{tenant}: mulțumim că ai fost la {product}! Dacă ți-a plăcut, o recenzie scurtă ne ajută mult: {url}"
+    },
+    "affiliateSale": {
+      "subject": "Vânzare nouă: {product}, comision {amount}",
+      "intro": "Ai făcut o vânzare pentru {tenant}: {product}, {when}, {seats}.",
+      "commission": "Comisionul tău: {amount}. Se confirmă după ce are loc excursia.",
+      "month": "Vânzări luna aceasta: {count}.",
+      "reached": "Bravo, ai ajuns la {rate}! Vânzarea asta și următoarele din luna aceasta îți aduc {rate}.",
+      "toNext_one": "Încă o vânzare și ajungi la {rate}.",
+      "toNext_few": "Încă {count} vânzări și ajungi la {rate}.",
+      "toNext_other": "Încă {count} de vânzări și ajungi la {rate}.",
+      "link": "Vânzările și câștigurile tale: {url}",
+      "action": "Vezi câștigurile",
+      "sms": "{tenant}: vânzare nouă! {product}, {when}. Comisionul tău: {amount}.",
+      "smsReached": "{tenant}: vânzare nouă! {product}, {when}. Comisionul tău: {amount}. Ai ajuns la {rate}!",
+      "smsToNext": "{tenant}: vânzare nouă! {product}, {when}. Comisionul tău: {amount}. Încă {count} și ajungi la {rate}."
+    },
+    "tierNudge": {
+      "subject": "Ești aproape de comisionul de {rate}",
+      "intro_one": "Încă o vânzare luna aceasta și comisionul tău la {tenant} crește la {rate}.",
+      "intro_few": "Încă {count} vânzări luna aceasta și comisionul tău la {tenant} crește la {rate}.",
+      "intro_other": "Încă {count} de vânzări luna aceasta și comisionul tău la {tenant} crește la {rate}.",
+      "resets": "Numărătoarea pornește de la zero pe {date}.",
+      "tip": "Recomandă excursia încă unor oaspeți azi: codul QR și linkul tău sunt în aplicație.",
+      "link": "Codul tău QR: {url}",
+      "action": "Deschide codul QR",
+      "sms": "{tenant}: încă {count} luna aceasta și comisionul tău crește la {rate}. Codul tău QR: {url}"
+    },
+    "payoutPaid": {
+      "subject": "{tenant} ți-a plătit comisionul: {amount}",
+      "intro": "{tenant} ți-a plătit comisionul pentru {period}: {amount}.",
+      "details": "Toate vânzările din spatele lui sunt în aplicație: {url}",
+      "thanks": "Mulțumim că ne recomanzi!",
+      "action": "Vezi câștigurile",
+      "sms": "{tenant} ți-a plătit comisionul pentru {period}: {amount}. Mulțumim!"
+    },
+    "monthlyReport": {
+      "subject": "{tenant}: raportul pentru {period}",
+      "intro": "Iată cum a fost {period} la {tenant}.",
+      "compared": "Încasări față de {previous}: {change}.",
+      "affiliates": "Afiliații tăi au adus {amount}, adică {share} din încasări.",
+      "noAffiliateSales": "Nicio vânzare prin afiliați luna aceasta. Afiliații care au codul QR pe recepție vând cel mai mult: tipărește-le kiturile din pagina Afiliați.",
+      "top": "Cei mai buni vânzători: {list}.",
+      "payable": "Comisioane de plătit acum: {amount}. Închide luna în Plăți ca să vezi cât primește fiecare afiliat: {url}",
+      "link": "Panoul tău: {url}",
+      "action": "Deschide panoul",
+      "bookings": "Rezervări",
+      "revenue": "Încasări",
+      "fromAffiliates": "Prin afiliați",
+      "fromAffiliatesValue_one": "{amount} dintr-o rezervare",
+      "fromAffiliatesValue_few": "{amount} din {count} rezervări",
+      "fromAffiliatesValue_other": "{amount} din {count} de rezervări",
+      "commissions": "Comisioane câștigate",
+      "activeAffiliates": "Afiliați activi",
+      "sms": "{tenant}, {period}: rezervări {bookings}, încasări {revenue}. Prin afiliați: {affiliates}. Raport: {url}"
+    },
+    "trialEnding": {
+      "subject": "Perioada de probă gratuită se termină pe {date}",
+      "intro": "Perioada de probă gratuită pentru {tenant} se termină pe {date}.",
+      "keepSelling": "Ca să vinzi în continuare prin afiliați fără întreruperi, alege-ți acum planul.",
+      "link": "Alege planul: {url}",
+      "action": "Alege planul",
+      "sms": "Perioada de probă pentru {tenant} se termină pe {date}. Alege un plan ca să vinzi în continuare: {url}"
+    },
+    "subscriptionUnpaid": {
+      "subject": "Abonamentul pentru {tenant} nu este plătit",
+      "trial": "Perioada de probă gratuită pentru {tenant} s-a încheiat.",
+      "payment": "Nu am putut încasa plata abonamentului pentru {tenant}.",
+      "expired": "Perioada plătită a abonamentului pentru {tenant} s-a încheiat.",
+      "canceled": "Abonamentul pentru {tenant} a fost anulat.",
+      "pause": "Paginile de rezervare și afiliații tăi vând în continuare până pe {date}. După aceea, rezervările noi se opresc până se plătește abonamentul.",
+      "valid": "Biletele deja vândute rămân valabile.",
+      "link": "Plătește abonamentul: {url}",
+      "action": "Plătește abonamentul",
+      "sms": "{tenant}: abonamentul nu este plătit. Rezervările noi se opresc pe {date}. Plătește aici: {url}"
+    },
+    "salesPaused": {
+      "subject": "Rezervările noi pentru {tenant} sunt oprite",
+      "intro": "Abonamentul pentru {tenant} nu este încă plătit, așa că rezervările noi sunt oprite: clienții și afiliații nu pot rezerva până la plată.",
+      "valid": "Biletele deja vândute rămân valabile, iar panoul tău funcționează în continuare.",
+      "resume": "Rezervările pornesc din nou imediat ce abonamentul este plătit.",
+      "link": "Plătește abonamentul: {url}",
+      "action": "Plătește abonamentul",
+      "sms": "{tenant}: rezervările noi sunt oprite pentru că abonamentul nu este plătit. Plătește aici ca să pornească din nou: {url}"
     }
   },
   "catalog": {
@@ -1980,7 +2091,23 @@
       "cancellationPolicy": "Politica de anulare",
       "cancellationPolicyHint": "Când pot anula clienții și ce bani primesc înapoi. Lasă gol ca să folosești textul din casetă.",
       "errContactEmail": "Verifică adresa de email, de forma nume@exemplu.ro.",
-      "errContactPhone": "Scrie numărul cu prefixul țării, de forma +40 722 123 456."
+      "errContactPhone": "Scrie numărul cu prefixul țării, de forma +40 722 123 456.",
+      "messagesTitle": "Mesaje automate",
+      "messagesDescription": "Mesaje pe care platforma le trimite în locul tău, ca clienții să vină, să revină și să te recomande, iar afiliații să vândă în continuare.",
+      "messages": {
+        "remindCustomers": "Reamintire cu o seară înainte de excursie",
+        "remindCustomersHelp": "La ora 18:00 în ziua dinaintea plecării, clienții primesc din nou ora, punctul de întâlnire și biletul (pe email sau prin SMS dacă au lăsat doar telefonul).",
+        "askForReviews": "Cerere de recenzie după excursie",
+        "askForReviewsHelp": "La ora 10:00 a doua zi după excursie, clienții care au urcat la bord primesc un mesaj de mulțumire cu linkul tău de recenzii.",
+        "notifyAffiliates": "Anunță afiliații la fiecare vânzare și plată",
+        "notifyAffiliatesHelp": "Afiliații primesc un SMS sau un email când fac o vânzare (cu comisionul și cât mai au până la nivelul următor), spre sfârșitul lunii când sunt aproape de nivelul următor și când le marchezi comisionul ca plătit. Fiecare afiliat le poate opri.",
+        "monthlyReport": "Raport lunar",
+        "monthlyReportHelp": "Pe 1 ale fiecărei luni, proprietarii primesc rezervările, încasările, ce au adus afiliații și comisioanele de plătit din luna trecută."
+      },
+      "reviewUrl": "Link pentru recenzii",
+      "reviewUrlHint": "Pagina ta de recenzii de pe Google sau TripAdvisor.",
+      "reviewUrlMissing": "Adaugă linkul pentru recenzii: fără el nu se trimite nicio cerere de recenzie.",
+      "errReviewUrl": "Scrie un link complet, care începe cu https://"
     },
     "sources": {
       "title": "Sistemul tău de rezervări",

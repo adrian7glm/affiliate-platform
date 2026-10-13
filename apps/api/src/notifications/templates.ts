@@ -59,6 +59,82 @@ export interface TemplateParams {
     message: string;
     url: string;
   };
+  // Retention: messages nobody asked for, sent so customers show up, come back and talk about
+  // the trip, affiliates keep selling, and operators see what the platform brings them.
+  trip_reminder: TripParams & {
+    customerName: string;
+    meetingPoint: string | null;
+    url: string;
+    contactPhone: string | null;
+  };
+  review_request: {
+    tenantName: string;
+    productName: string;
+    customerName: string;
+    reviewUrl: string;
+  };
+  affiliate_sale: {
+    tenantName: string;
+    productName: string;
+    startsAt: string;
+    timezone: string;
+    seats: number;
+    commissionMinor: number;
+    currency: string;
+    /** Paid sales this month, this one included. */
+    salesThisMonth: number;
+    /** Set when this sale opened a higher commission level. */
+    reachedRateBps: number | null;
+    /** Sales still needed for the next level; null on the top level or a fixed rate. */
+    salesToNextTier: number | null;
+    nextRateBps: number | null;
+    url: string;
+  };
+  affiliate_tier_nudge: {
+    tenantName: string;
+    salesToNextTier: number;
+    nextRateBps: number;
+    /** ISO date-time when the monthly count starts again. */
+    resetsAt: string;
+    timezone: string;
+    url: string;
+  };
+  payout_paid: {
+    tenantName: string;
+    amountMinor: number;
+    currency: string;
+    periodKey: string;
+    url: string;
+  };
+  monthly_report: {
+    tenantName: string;
+    periodKey: string;
+    previousPeriodKey: string;
+    currency: string;
+    bookings: number;
+    revenueMinor: number;
+    previousRevenueMinor: number;
+    affiliateBookings: number;
+    affiliateRevenueMinor: number;
+    commissionMinor: number;
+    payableMinor: number;
+    activeAffiliates: number;
+    topAffiliates: { name: string; sales: number }[];
+    url: string;
+    payoutsUrl: string;
+  };
+  trial_ending: { tenantName: string; endsAt: string; timezone: string; url: string };
+  subscription_unpaid: {
+    tenantName: string;
+    /** trial: the free trial ended; payment: a card payment failed; expired: the paid-until
+     *  date passed; canceled: the subscription was cancelled. */
+    reason: 'trial' | 'payment' | 'expired' | 'canceled';
+    /** When new bookings pause. */
+    pauseAt: string;
+    timezone: string;
+    url: string;
+  };
+  sales_paused: { tenantName: string; url: string };
 }
 
 export type TemplateName = keyof TemplateParams;
@@ -73,6 +149,15 @@ export const TEMPLATE_NAMES = [
   'ticket',
   'booking_cancelled',
   'contact_request',
+  'trip_reminder',
+  'review_request',
+  'affiliate_sale',
+  'affiliate_tier_nudge',
+  'payout_paid',
+  'monthly_report',
+  'trial_ending',
+  'subscription_unpaid',
+  'sales_paused',
 ] as const satisfies readonly TemplateName[];
 
 export interface RenderedMessage {
@@ -316,6 +401,258 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
       sms: t('email.contactRequest.sms', { topic, name: p.name, contact: p.phone ?? p.email }),
     };
   },
+  trip_reminder: (p, tr) => {
+    const { t } = tr;
+    const when = formatWhen(p.startsAt, p.timezone, tr);
+    const vars = {
+      tenant: p.tenantName,
+      product: p.productName,
+      when: formatShort(p.startsAt, p.timezone, tr),
+      url: p.url,
+    };
+    const details: [string, string][] = [
+      [t('email.details.booking'), p.reference],
+      [t('email.details.trip'), p.productName],
+      [t('email.details.date'), when],
+    ];
+    if (p.meetingPoint) details.push([t('email.details.meetingPoint'), p.meetingPoint]);
+    return {
+      subject: t('email.tripReminder.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greetingName', { name: p.customerName }),
+      lines: [
+        t('email.tripReminder.intro', { ...vars, when }),
+        ...(p.meetingPoint
+          ? [t('email.tripReminder.meetingPoint', { meetingPoint: p.meetingPoint })]
+          : []),
+        t('email.tripReminder.showQr'),
+        t('email.ticket.link', { url: p.url }),
+        ...(p.contactPhone ? [t('email.tripReminder.contact', { phone: p.contactPhone })] : []),
+      ],
+      action: { label: t('email.tripReminder.action'), url: p.url },
+      details,
+      sms: p.meetingPoint
+        ? t('email.tripReminder.sms', { ...vars, meetingPoint: p.meetingPoint })
+        : t('email.tripReminder.smsNoMeetingPoint', vars),
+    };
+  },
+
+  review_request: (p, { t }) => {
+    const vars = { tenant: p.tenantName, product: p.productName, url: p.reviewUrl };
+    return {
+      subject: t('email.reviewRequest.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greetingName', { name: p.customerName }),
+      lines: [
+        t('email.reviewRequest.thanks', vars),
+        t('email.reviewRequest.ask'),
+        t('email.reviewRequest.link', vars),
+      ],
+      action: { label: t('email.reviewRequest.action'), url: p.reviewUrl },
+      sms: t('email.reviewRequest.sms', vars),
+    };
+  },
+
+  affiliate_sale: (p, tr) => {
+    const { t, lang } = tr;
+    const amount = formatMoney(p.commissionMinor, p.currency, lang);
+    const vars = {
+      tenant: p.tenantName,
+      product: p.productName,
+      when: formatShort(p.startsAt, p.timezone, tr),
+      amount,
+    };
+    const reached = p.reachedRateBps !== null ? formatRate(p.reachedRateBps, lang) : null;
+    const next =
+      p.salesToNextTier !== null && p.nextRateBps !== null
+        ? { count: p.salesToNextTier, rate: formatRate(p.nextRateBps, lang) }
+        : null;
+    return {
+      subject: t('email.affiliateSale.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greeting'),
+      lines: [
+        t('email.affiliateSale.intro', { ...vars, seats: t('email.seats', { count: p.seats }) }),
+        t('email.affiliateSale.commission', vars),
+        t('email.affiliateSale.month', { count: p.salesThisMonth }),
+        ...(reached ? [t('email.affiliateSale.reached', { rate: reached })] : []),
+        ...(next ? [t('email.affiliateSale.toNext', next)] : []),
+        t('email.affiliateSale.link', { url: p.url }),
+      ],
+      action: { label: t('email.affiliateSale.action'), url: p.url },
+      sms: reached
+        ? t('email.affiliateSale.smsReached', { ...vars, rate: reached })
+        : next
+          ? t('email.affiliateSale.smsToNext', { ...vars, ...next })
+          : t('email.affiliateSale.sms', vars),
+    };
+  },
+
+  affiliate_tier_nudge: (p, tr) => {
+    const { t, lang } = tr;
+    const vars = {
+      tenant: p.tenantName,
+      count: p.salesToNextTier,
+      rate: formatRate(p.nextRateBps, lang),
+      date: formatDay(p.resetsAt, p.timezone, tr),
+      url: p.url,
+    };
+    return {
+      subject: t('email.tierNudge.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greeting'),
+      lines: [
+        t('email.tierNudge.intro', vars),
+        t('email.tierNudge.resets', vars),
+        t('email.tierNudge.tip'),
+        t('email.tierNudge.link', vars),
+      ],
+      action: { label: t('email.tierNudge.action'), url: p.url },
+      sms: t('email.tierNudge.sms', vars),
+    };
+  },
+
+  payout_paid: (p, tr) => {
+    const { t, lang } = tr;
+    const vars = {
+      tenant: p.tenantName,
+      amount: formatMoney(p.amountMinor, p.currency, lang),
+      period: formatPeriodKey(p.periodKey, tr),
+    };
+    return {
+      subject: t('email.payoutPaid.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greeting'),
+      lines: [
+        t('email.payoutPaid.intro', vars),
+        t('email.payoutPaid.details', { url: p.url }),
+        t('email.payoutPaid.thanks'),
+      ],
+      action: { label: t('email.payoutPaid.action'), url: p.url },
+      sms: t('email.payoutPaid.sms', vars),
+    };
+  },
+
+  monthly_report: (p, tr) => {
+    const { t, lang } = tr;
+    const money = (minor: number) => formatMoney(minor, p.currency, lang);
+    const period = formatPeriodKey(p.periodKey, tr);
+    const vars = { tenant: p.tenantName, period };
+    const lines = [t('email.monthlyReport.intro', vars)];
+    if (p.previousRevenueMinor > 0) {
+      lines.push(
+        t('email.monthlyReport.compared', {
+          previous: formatPeriodKey(p.previousPeriodKey, tr),
+          change: formatChange(p.revenueMinor, p.previousRevenueMinor, lang),
+        }),
+      );
+    }
+    if (p.affiliateRevenueMinor > 0) {
+      lines.push(
+        t('email.monthlyReport.affiliates', {
+          amount: money(p.affiliateRevenueMinor),
+          share: formatShare(p.affiliateRevenueMinor, p.revenueMinor, lang),
+        }),
+      );
+    } else {
+      lines.push(t('email.monthlyReport.noAffiliateSales'));
+    }
+    if (p.topAffiliates.length > 0) {
+      lines.push(
+        t('email.monthlyReport.top', {
+          list: p.topAffiliates.map((a) => `${a.name} (${a.sales})`).join(', '),
+        }),
+      );
+    }
+    if (p.payableMinor > 0) {
+      lines.push(
+        t('email.monthlyReport.payable', { amount: money(p.payableMinor), url: p.payoutsUrl }),
+      );
+    }
+    lines.push(t('email.monthlyReport.link', { url: p.url }));
+    return {
+      subject: t('email.monthlyReport.subject', vars),
+      brand: p.tenantName,
+      greeting: t('email.greeting'),
+      lines,
+      action: { label: t('email.monthlyReport.action'), url: p.url },
+      details: [
+        [t('email.monthlyReport.bookings'), String(p.bookings)],
+        [t('email.monthlyReport.revenue'), money(p.revenueMinor)],
+        [
+          t('email.monthlyReport.fromAffiliates'),
+          t('email.monthlyReport.fromAffiliatesValue', {
+            amount: money(p.affiliateRevenueMinor),
+            count: p.affiliateBookings,
+          }),
+        ],
+        [t('email.monthlyReport.commissions'), money(p.commissionMinor)],
+        [t('email.monthlyReport.activeAffiliates'), String(p.activeAffiliates)],
+      ],
+      sms: t('email.monthlyReport.sms', {
+        ...vars,
+        bookings: p.bookings,
+        revenue: money(p.revenueMinor),
+        affiliates: money(p.affiliateRevenueMinor),
+        url: p.url,
+      }),
+    };
+  },
+
+  trial_ending: (p, tr) => {
+    const { t } = tr;
+    const vars = { tenant: p.tenantName, date: formatDay(p.endsAt, p.timezone, tr), url: p.url };
+    return {
+      subject: t('email.trialEnding.subject', vars),
+      greeting: t('email.greeting'),
+      lines: [
+        t('email.trialEnding.intro', vars),
+        t('email.trialEnding.keepSelling'),
+        t('email.trialEnding.link', vars),
+      ],
+      action: { label: t('email.trialEnding.action'), url: p.url },
+      sms: t('email.trialEnding.sms', vars),
+    };
+  },
+
+  subscription_unpaid: (p, tr) => {
+    const { t } = tr;
+    const vars = { tenant: p.tenantName, date: formatDay(p.pauseAt, p.timezone, tr), url: p.url };
+    const reason = {
+      trial: 'email.subscriptionUnpaid.trial',
+      payment: 'email.subscriptionUnpaid.payment',
+      expired: 'email.subscriptionUnpaid.expired',
+      canceled: 'email.subscriptionUnpaid.canceled',
+    } as const;
+    return {
+      subject: t('email.subscriptionUnpaid.subject', vars),
+      greeting: t('email.greeting'),
+      lines: [
+        t(reason[p.reason], vars),
+        t('email.subscriptionUnpaid.pause', vars),
+        t('email.subscriptionUnpaid.valid'),
+        t('email.subscriptionUnpaid.link', vars),
+      ],
+      action: { label: t('email.subscriptionUnpaid.action'), url: p.url },
+      sms: t('email.subscriptionUnpaid.sms', vars),
+    };
+  },
+
+  sales_paused: (p, { t }) => {
+    const vars = { tenant: p.tenantName, url: p.url };
+    return {
+      subject: t('email.salesPaused.subject', vars),
+      greeting: t('email.greeting'),
+      lines: [
+        t('email.salesPaused.intro', vars),
+        t('email.salesPaused.valid'),
+        t('email.salesPaused.resume'),
+        t('email.salesPaused.link', vars),
+      ],
+      action: { label: t('email.salesPaused.action'), url: p.url },
+      sms: t('email.salesPaused.sms', vars),
+    };
+  },
 };
 
 /** The departure in full, in the operator's time zone: "Tuesday 6 October 2026, 10:00". */
@@ -331,6 +668,43 @@ export function formatShort(iso: string, timezone: string, t: Translator): strin
     .setLocale(intlLocale(t.lang))
     .toFormat(t.t('email.format.short'))
     .replace('.', '');
+}
+
+/** A day in the operator's time zone: "Tuesday 6 October 2026". */
+export function formatDay(iso: string, timezone: string, t: Translator): string {
+  return DateTime.fromISO(iso, { zone: timezone })
+    .setLocale(intlLocale(t.lang))
+    .toFormat(t.t('email.format.day'));
+}
+
+/** A month: "October 2026". */
+export function formatPeriodKey(periodKey: string, t: Translator): string {
+  return DateTime.fromFormat(periodKey, 'yyyy-MM', { zone: 'UTC' })
+    .setLocale(intlLocale(t.lang))
+    .toFormat('LLLL yyyy');
+}
+
+/** A commission rate in basis points: 2000 → "20%". */
+export function formatRate(bps: number, lang: string): string {
+  return new Intl.NumberFormat(intlLocale(lang), {
+    style: 'percent',
+    maximumFractionDigits: 2,
+  }).format(bps / 10_000);
+}
+
+/** Part of a whole as a rounded percentage: "64%". */
+function formatShare(part: number, whole: number, lang: string): string {
+  return new Intl.NumberFormat(intlLocale(lang), { style: 'percent' }).format(
+    whole > 0 ? part / whole : 0,
+  );
+}
+
+/** Change from one amount to another, signed: "+12%", "-5%". */
+function formatChange(current: number, previous: number, lang: string): string {
+  return new Intl.NumberFormat(intlLocale(lang), {
+    style: 'percent',
+    signDisplay: 'exceptZero',
+  }).format((current - previous) / previous);
 }
 
 export function formatMoney(minor: number, currency: string, lang: string): string {
