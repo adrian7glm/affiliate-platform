@@ -207,7 +207,10 @@
       "ticket": "bilhete não encontrado",
       "user": "utilizador não encontrado",
       "scannerAccount": "conta de leitura não encontrada",
-      "contactRequest": "mensagem não encontrada"
+      "contactRequest": "mensagem não encontrada",
+      "webhook": "endereço de webhook não encontrado",
+      "webhookDelivery": "evento de webhook não encontrado",
+      "calendar": "calendário não encontrado"
     },
     "auth": {
       "signInAgain": "inicie sessão novamente",
@@ -222,7 +225,10 @@
       "wrongCode": "código errado"
     },
     "webhooks": {
-      "invalidSignature": "assinatura Stripe inválida"
+      "invalidSignature": "assinatura Stripe inválida",
+      "tooMany": "pode adicionar no máximo {max} endereços de webhook",
+      "httpsRequired": "o endereço tem de começar por https://",
+      "privateUrl": "o endereço tem de estar na internet pública"
     },
     "booking": {
       "invalidPaymentLink": "link de pagamento inválido",
@@ -844,7 +850,8 @@
       "area": "Gestão",
       "sections": "Secções",
       "menu": "Menu",
-      "tenant": "Operador"
+      "tenant": "Operador",
+      "integrations": "Integrações"
     },
     "dashboard": {
       "title": "Painel",
@@ -1153,7 +1160,11 @@
       "reasonPlaceholder": "por ex. Mau tempo, o passeio não se realiza",
       "keep": "Manter a reserva",
       "cancelling": "A cancelar…",
-      "confirmCancel": "Cancelar a reserva"
+      "confirmCancel": "Cancelar a reserva",
+      "csvEmail": "Email",
+      "csvPhone": "Telefone",
+      "csvTax": "IVA incluído",
+      "csvPaidAt": "Pago em"
     },
     "billing": {
       "title": "Subscrição",
@@ -2209,6 +2220,96 @@
           "text": "Para os dados da sua reserva, escreva ao operador através dos dados indicados no bilhete. Para qualquer assunto sobre {app} em si ou sobre a página de contacto, use a nossa página de contacto."
         }
       }
+    }
+  },
+  "integrations": {
+    "title": "Integrações",
+    "description": "Ligue a plataforma aos outros programas que usa: calendário, contabilidade, CRM, folhas de cálculo.",
+    "events": {
+      "bookingConfirmed": "Reserva confirmada",
+      "bookingPaid": "Reserva paga",
+      "bookingCancelled": "Reserva cancelada",
+      "ticketCheckedIn": "Passageiro embarcado",
+      "test": "Teste"
+    },
+    "exports": {
+      "title": "Folhas de cálculo (CSV)",
+      "description": "Descarregue as reservas e as comissões em ficheiros que abrem no Excel e no Google Sheets.",
+      "bookings": "Reservas",
+      "commissions": "Comissões e pagamentos"
+    },
+    "calendar": {
+      "title": "Calendário de partidas",
+      "description": "Todas as partidas com os lugares reservados, no Google Calendar, Outlook ou no calendário do telemóvel. Atualiza-se sozinho.",
+      "google": "Adicionar ao Google Calendar",
+      "appleOutlook": "Adicionar ao Apple Calendar ou Outlook",
+      "copy": "Copiar endereço",
+      "copied": "Endereço copiado",
+      "refreshNote": "O Google Calendar recarrega os calendários subscritos algumas vezes por dia, por isso uma nova reserva pode demorar algumas horas a aparecer. O Apple Calendar e o Outlook atualizam mais vezes.",
+      "privateNote": "O endereço é privado: quem o tiver vê as suas partidas e o número de lugares (sem nomes de clientes).",
+      "reset": "Mudar o endereço",
+      "resetTitle": "Mudar o endereço do calendário?",
+      "resetDescription": "Os calendários subscritos com o endereço atual deixam de ser atualizados. Adicione o calendário de novo com o novo endereço.",
+      "resetConfirm": "Mudar endereço",
+      "resetDone": "O calendário tem um novo endereço. Adicione-o de novo nas suas aplicações de calendário."
+    },
+    "webhooks": {
+      "title": "Webhooks: enviar as reservas para outros programas",
+      "description": "Quando uma reserva é confirmada, paga, cancelada ou o passageiro embarca, enviamo-la logo para um endereço à sua escolha. Funciona com Zapier, Make, n8n ou o seu próprio sistema, para que as reservas cheguem à sua contabilidade, CRM ou a uma folha do Google.",
+      "ownerOnly": "Só o titular da conta pode configurar webhooks, porque enviam os contactos dos clientes para outros programas.",
+      "zapierHelp": "Com o Zapier: crie um Zap que comece com \"Webhooks by Zapier\" e \"Catch Hook\", cole abaixo o endereço que o Zapier lhe dá e carregue em \"Enviar um teste\".",
+      "createdNotice": "Endereço adicionado: {url}. Esta é a sua chave secreta:",
+      "none": "Ainda não há endereços.",
+      "secretHelp": "O seu sistema usa-a para confirmar que as mensagens vêm mesmo de nós. Pode vê-la de novo com \"Mostrar chave secreta\".",
+      "copySecret": "Copiar chave secreta",
+      "secretCopied": "Chave secreta copiada",
+      "events": "O que enviar",
+      "addTitle": "Adicionar um endereço",
+      "addDescription": "Cole o endereço do Zapier, Make ou do seu próprio sistema.",
+      "url": "Endereço (URL)",
+      "urlHint": "Tem de começar por https://",
+      "name": "Nome",
+      "nameHint": "Para saber o que é, por exemplo \"Zapier - contabilidade\"",
+      "errUrl": "Escreva um endereço que comece por https://",
+      "add": "Adicionar endereço",
+      "adding": "A adicionar...",
+      "testOk": "O teste chegou (resposta {status}).",
+      "testFailed": "O teste não chegou: {error}",
+      "unnamed": "Webhook",
+      "active": "Ligado",
+      "off": "Desligado",
+      "sends": "Envia:",
+      "allEvents": "todos os eventos",
+      "change": "Alterar",
+      "lastAttempt": "Último envio",
+      "lastOk": "chegou",
+      "lastFailed": "falhou",
+      "never": "Ainda nada enviado",
+      "queue": "Em espera / falhados",
+      "queueCounts": "{pending} em espera, {failed} falhados",
+      "test": "Enviar um teste",
+      "testing": "A enviar...",
+      "history": "Histórico",
+      "hideHistory": "Ocultar histórico",
+      "historyEmpty": "Nada enviado nos últimos 30 dias.",
+      "showSecret": "Mostrar chave secreta",
+      "hideSecret": "Ocultar chave secreta",
+      "turnOff": "Desligar",
+      "turnOn": "Ligar",
+      "delete": "Eliminar",
+      "deleteTitle": "Eliminar este endereço?",
+      "deleteDescription": "Deixaremos de enviar reservas para {url}.",
+      "deleteConfirm": "Eliminar endereço",
+      "statusPending": "Em espera",
+      "statusSending": "A enviar",
+      "statusDelivered": "Chegou",
+      "statusFailed": "Falhou",
+      "retry": "Enviar de novo"
+    },
+    "feed": {
+      "name": "Partidas",
+      "title": "{trip} · {booked}/{capacity}",
+      "description": "Reservas: {bookings}\nLugares ocupados: {booked} de {capacity}\nLugares livres: {free}\n\n{url}"
     }
   }
 }

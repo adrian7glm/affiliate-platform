@@ -102,6 +102,17 @@ primesc o perioadă de probă pe planul implicit și un ghid de pornire în 5 pa
 facturează manual (`BILLING_PROVIDER=manual`); cu `BILLING_PROVIDER=stripe` operatorii plătesc cu
 cardul prin Stripe Billing.
 
+## Integrări cu alte programe
+
+Pagina `/o/integrations` a operatorului are:
+
+- **Calendarul plecărilor**: o adresă `.ics` la care operatorul se abonează din Google Calendar,
+  Outlook sau telefon (plecări + locuri ocupate, fără numele clienților).
+- **Webhooks**: la confirmarea, plata, anularea sau îmbarcarea unei rezervări, platforma trimite
+  un `POST` semnat la adresa aleasă (Zapier, Make, n8n, sistemul propriu), cu reîncercări timp de
+  două zile. Formatul și verificarea semnăturii: [docs/webhooks.md](docs/webhooks.md).
+- Link-uri către exporturile CSV din Rezervări și Comisioane.
+
 ## Teste
 
 ```bash

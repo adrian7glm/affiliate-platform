@@ -205,7 +205,10 @@
       "ticket": "ticket not found",
       "user": "user not found",
       "scannerAccount": "scanner account not found",
-      "contactRequest": "message not found"
+      "contactRequest": "message not found",
+      "webhook": "webhook address not found",
+      "webhookDelivery": "webhook event not found",
+      "calendar": "calendar not found"
     },
     "auth": {
       "signInAgain": "sign in again",
@@ -220,7 +223,10 @@
       "wrongCode": "wrong code"
     },
     "webhooks": {
-      "invalidSignature": "invalid Stripe signature"
+      "invalidSignature": "invalid Stripe signature",
+      "tooMany": "you can add at most {max} webhook addresses",
+      "httpsRequired": "the address must start with https://",
+      "privateUrl": "the address must be on the public internet"
     },
     "booking": {
       "invalidPaymentLink": "invalid payment link",
@@ -830,7 +836,8 @@
       "area": "Management",
       "sections": "Sections",
       "menu": "Menu",
-      "tenant": "Operator"
+      "tenant": "Operator",
+      "integrations": "Integrations"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1119,7 +1126,11 @@
       "reasonPlaceholder": "e.g. Bad weather, the trip is not going ahead",
       "keep": "Keep the booking",
       "cancelling": "Cancelling…",
-      "confirmCancel": "Cancel the booking"
+      "confirmCancel": "Cancel the booking",
+      "csvEmail": "Email",
+      "csvPhone": "Phone",
+      "csvTax": "VAT included",
+      "csvPaidAt": "Paid on"
     },
     "billing": {
       "title": "Subscription",
@@ -2127,6 +2138,96 @@
           "text": "For your booking data, write to the operator using the details on your ticket. For anything about {app} itself or the contact page, use our contact page."
         }
       }
+    }
+  },
+  "integrations": {
+    "title": "Integrations",
+    "description": "Connect the platform to the other programs you use: calendar, accounting, CRM, spreadsheets.",
+    "events": {
+      "bookingConfirmed": "Booking confirmed",
+      "bookingPaid": "Booking paid",
+      "bookingCancelled": "Booking cancelled",
+      "ticketCheckedIn": "Passenger boarded",
+      "test": "Test"
+    },
+    "exports": {
+      "title": "Spreadsheets (CSV)",
+      "description": "Download bookings and commissions as files that open in Excel and Google Sheets.",
+      "bookings": "Bookings",
+      "commissions": "Commissions and payouts"
+    },
+    "calendar": {
+      "title": "Departures calendar",
+      "description": "Every departure with its booked seats, in Google Calendar, Outlook or your phone's calendar. It updates by itself.",
+      "google": "Add to Google Calendar",
+      "appleOutlook": "Add to Apple Calendar or Outlook",
+      "copy": "Copy address",
+      "copied": "Address copied",
+      "refreshNote": "Google Calendar refreshes subscribed calendars a few times a day, so a new booking can take a few hours to show there. Apple Calendar and Outlook refresh more often.",
+      "privateNote": "The address is private: anyone who has it can see your departures and seat counts (no customer names).",
+      "reset": "Change the address",
+      "resetTitle": "Change the calendar address?",
+      "resetDescription": "Calendars subscribed with the current address stop updating. Add the calendar again with the new address.",
+      "resetConfirm": "Change address",
+      "resetDone": "The calendar has a new address. Add it again in your calendar apps."
+    },
+    "webhooks": {
+      "title": "Webhooks: send bookings to other programs",
+      "description": "When a booking is confirmed, paid, cancelled or boarded, we send it at once to an address you choose. It works with Zapier, Make, n8n or your own system, so bookings can reach your accounting, CRM or a Google Sheet.",
+      "ownerOnly": "Only the account owner can set up webhooks, because they send customers' contact details to other programs.",
+      "zapierHelp": "With Zapier: create a Zap that starts with \"Webhooks by Zapier\" and \"Catch Hook\", paste the address Zapier gives you below, then press \"Send a test\".",
+      "createdNotice": "Address added: {url}. This is its secret key:",
+      "none": "No address yet.",
+      "secretHelp": "Your system uses it to check that messages really come from us. You can see it again with \"Show secret key\".",
+      "copySecret": "Copy secret key",
+      "secretCopied": "Secret key copied",
+      "events": "What to send",
+      "addTitle": "Add an address",
+      "addDescription": "Paste the address from Zapier, Make or your own system.",
+      "url": "Address (URL)",
+      "urlHint": "It must start with https://",
+      "name": "Name",
+      "nameHint": "So you know what it is, e.g. \"Zapier - accounting\"",
+      "errUrl": "Enter an address that starts with https://",
+      "add": "Add address",
+      "adding": "Adding...",
+      "testOk": "The test arrived (answer {status}).",
+      "testFailed": "The test did not arrive: {error}",
+      "unnamed": "Webhook",
+      "active": "On",
+      "off": "Off",
+      "sends": "Sends:",
+      "allEvents": "every event",
+      "change": "Change",
+      "lastAttempt": "Last send",
+      "lastOk": "arrived",
+      "lastFailed": "failed",
+      "never": "Nothing sent yet",
+      "queue": "Waiting / failed",
+      "queueCounts": "{pending} waiting, {failed} failed",
+      "test": "Send a test",
+      "testing": "Sending...",
+      "history": "History",
+      "hideHistory": "Hide history",
+      "historyEmpty": "Nothing sent in the last 30 days.",
+      "showSecret": "Show secret key",
+      "hideSecret": "Hide secret key",
+      "turnOff": "Turn off",
+      "turnOn": "Turn on",
+      "delete": "Delete",
+      "deleteTitle": "Delete this address?",
+      "deleteDescription": "We will stop sending bookings to {url}.",
+      "deleteConfirm": "Delete address",
+      "statusPending": "Waiting",
+      "statusSending": "Sending",
+      "statusDelivered": "Arrived",
+      "statusFailed": "Failed",
+      "retry": "Send again"
+    },
+    "feed": {
+      "name": "Departures",
+      "title": "{trip} · {booked}/{capacity}",
+      "description": "Bookings: {bookings}\nSeats taken: {booked} of {capacity}\nFree seats: {free}\n\n{url}"
     }
   }
 }

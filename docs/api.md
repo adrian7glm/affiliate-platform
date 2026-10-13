@@ -69,6 +69,24 @@ Errors: `{ statusCode, error, message, details? }`.
 | GET    | `/operator/sources`                           |                        | `SourceDto[]`                       |
 | POST   | `/operator/sources` (owner)                   | `ConnectSourceBody`    | `SourceDto`                         |
 | POST   | `/operator/sources/:id/sync`                  |                        | `SyncResultDto`                     |
+| GET    | `/operator/calendar-feed`                     |                        | `CalendarFeedDto`                   |
+| POST   | `/operator/calendar-feed/reset` (owner)       |                        | `CalendarFeedDto`                   |
+
+## Webhooks (role `owner`)
+
+Addresses in the operator's other software that are told about bookings; payload, signature and
+retries in [webhooks.md](webhooks.md). Types in `packages/contracts/src/integrations.ts`.
+
+| Method | Path                                                  | Body                | Response               |
+| ------ | ----------------------------------------------------- | ------------------- | ---------------------- |
+| GET    | `/operator/webhooks`                                  |                     | `WebhookEndpointDto[]` |
+| POST   | `/operator/webhooks`                                  | `CreateWebhookBody` | `CreatedWebhookDto`    |
+| PATCH  | `/operator/webhooks/:id`                              | `UpdateWebhookBody` | `WebhookEndpointDto`   |
+| DELETE | `/operator/webhooks/:id`                              |                     | 204                    |
+| GET    | `/operator/webhooks/:id/secret`                       |                     | `WebhookSecretDto`     |
+| POST   | `/operator/webhooks/:id/test`                         |                     | `WebhookTestResultDto` |
+| GET    | `/operator/webhooks/:id/deliveries`                   |                     | `WebhookDeliveryDto[]` |
+| POST   | `/operator/webhooks/:id/deliveries/:deliveryId/retry` |                     | `WebhookDeliveryDto`   |
 
 ## Boarding scanner (roles `scanner`, `owner`, `staff`)
 
@@ -92,6 +110,7 @@ A `scanner` account sees nothing else: besides this route it can only call
 | GET    | `/public/tickets/:bookingId/pdf`                    | `?k&lang&download=1` | PDF ticket (409 if the ticket is not valid) |
 | GET    | `/public/tickets/:bookingId/calendar.ics`           | `?k&lang`            | iCalendar event (409 if not valid)          |
 | POST   | `/public/contact`                                   | `ContactRequestBody` | 204 (429 after 3 per hour per email)        |
+| GET    | `/public/calendar/:token.ics`                       | `?lang`              | Departures calendar feed (iCalendar)        |
 | POST   | `/public/dev-payments/:bookingId/succeed`           | `?k=<ticket key>`    | 204, only with `PAYMENTS_PROVIDER=fake`     |
 | POST   | `/webhooks/stripe`                                  | Stripe event         | 200                                         |
 

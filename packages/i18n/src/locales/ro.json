@@ -207,7 +207,10 @@
       "ticket": "biletul nu a fost găsit",
       "user": "utilizatorul nu a fost găsit",
       "scannerAccount": "contul de scanare nu a fost găsit",
-      "contactRequest": "mesajul nu a fost găsit"
+      "contactRequest": "mesajul nu a fost găsit",
+      "webhook": "adresa de webhook nu a fost găsită",
+      "webhookDelivery": "evenimentul de webhook nu a fost găsit",
+      "calendar": "calendarul nu a fost găsit"
     },
     "auth": {
       "signInAgain": "conectează-te din nou",
@@ -222,7 +225,10 @@
       "wrongCode": "cod greșit"
     },
     "webhooks": {
-      "invalidSignature": "semnătură Stripe invalidă"
+      "invalidSignature": "semnătură Stripe invalidă",
+      "tooMany": "poți adăuga cel mult {max} adrese de webhook",
+      "httpsRequired": "adresa trebuie să înceapă cu https://",
+      "privateUrl": "adresa trebuie să fie pe internetul public"
     },
     "booking": {
       "invalidPaymentLink": "link de plată invalid",
@@ -844,7 +850,8 @@
       "area": "Administrare",
       "sections": "Secțiuni",
       "menu": "Meniu",
-      "tenant": "Operator"
+      "tenant": "Operator",
+      "integrations": "Integrări"
     },
     "dashboard": {
       "title": "Panou",
@@ -1153,7 +1160,11 @@
       "reasonPlaceholder": "ex. Vreme rea, excursia nu mai pleacă",
       "keep": "Renunță",
       "cancelling": "Se anulează…",
-      "confirmCancel": "Anulează rezervarea"
+      "confirmCancel": "Anulează rezervarea",
+      "csvEmail": "Email",
+      "csvPhone": "Telefon",
+      "csvTax": "TVA inclus",
+      "csvPaidAt": "Plătit la"
     },
     "billing": {
       "title": "Abonament",
@@ -2209,6 +2220,96 @@
           "text": "Pentru datele rezervării, scrie operatorului folosind datele de pe bilet. Pentru orice ține de {app} sau de pagina de contact, folosește pagina noastră de contact."
         }
       }
+    }
+  },
+  "integrations": {
+    "title": "Integrări",
+    "description": "Conectează platforma la celelalte programe pe care le folosești: calendar, contabilitate, CRM, tabele.",
+    "events": {
+      "bookingConfirmed": "Rezervare confirmată",
+      "bookingPaid": "Rezervare plătită",
+      "bookingCancelled": "Rezervare anulată",
+      "ticketCheckedIn": "Pasager îmbarcat",
+      "test": "Test"
+    },
+    "exports": {
+      "title": "Tabele (CSV)",
+      "description": "Descarcă rezervările și comisioanele ca fișiere care se deschid în Excel și Google Sheets.",
+      "bookings": "Rezervări",
+      "commissions": "Comisioane și plăți"
+    },
+    "calendar": {
+      "title": "Calendarul plecărilor",
+      "description": "Toate plecările, cu locurile rezervate, în Google Calendar, Outlook sau calendarul telefonului. Se actualizează singur.",
+      "google": "Adaugă în Google Calendar",
+      "appleOutlook": "Adaugă în Apple Calendar sau Outlook",
+      "copy": "Copiază adresa",
+      "copied": "Adresă copiată",
+      "refreshNote": "Google Calendar reîncarcă de câteva ori pe zi calendarele la care ești abonat, deci o rezervare nouă poate apărea acolo după câteva ore. Apple Calendar și Outlook se actualizează mai des.",
+      "privateNote": "Adresa e privată: oricine o are vede plecările și numărul de locuri (fără numele clienților).",
+      "reset": "Schimbă adresa",
+      "resetTitle": "Schimbi adresa calendarului?",
+      "resetDescription": "Calendarele abonate la adresa actuală nu se mai actualizează. Adaugă calendarul din nou cu adresa nouă.",
+      "resetConfirm": "Schimbă adresa",
+      "resetDone": "Calendarul are o adresă nouă. Adaug-o din nou în aplicațiile de calendar."
+    },
+    "webhooks": {
+      "title": "Webhooks: trimite rezervările în alte programe",
+      "description": "Când o rezervare e confirmată, plătită, anulată sau pasagerul s-a îmbarcat, o trimitem imediat la o adresă aleasă de tine. Merge cu Zapier, Make, n8n sau sistemul tău, ca rezervările să ajungă în contabilitate, CRM sau un Google Sheet.",
+      "ownerOnly": "Doar proprietarul contului poate configura webhooks, pentru că trimit datele de contact ale clienților în alte programe.",
+      "zapierHelp": "Cu Zapier: creează un Zap care începe cu \"Webhooks by Zapier\" și \"Catch Hook\", lipește mai jos adresa primită de la Zapier, apoi apasă \"Trimite un test\".",
+      "createdNotice": "Adresă adăugată: {url}. Aceasta e cheia ei secretă:",
+      "none": "Nicio adresă încă.",
+      "secretHelp": "Sistemul tău o folosește ca să verifice că mesajele vin chiar de la noi. O poți vedea oricând cu \"Arată cheia secretă\".",
+      "copySecret": "Copiază cheia secretă",
+      "secretCopied": "Cheie secretă copiată",
+      "events": "Ce trimitem",
+      "addTitle": "Adaugă o adresă",
+      "addDescription": "Lipește adresa din Zapier, Make sau sistemul tău.",
+      "url": "Adresă (URL)",
+      "urlHint": "Trebuie să înceapă cu https://",
+      "name": "Nume",
+      "nameHint": "Ca să știi ce e, de exemplu \"Zapier - contabilitate\"",
+      "errUrl": "Scrie o adresă care începe cu https://",
+      "add": "Adaugă adresa",
+      "adding": "Se adaugă...",
+      "testOk": "Testul a ajuns (răspuns {status}).",
+      "testFailed": "Testul nu a ajuns: {error}",
+      "unnamed": "Webhook",
+      "active": "Pornit",
+      "off": "Oprit",
+      "sends": "Trimite:",
+      "allEvents": "toate evenimentele",
+      "change": "Schimbă",
+      "lastAttempt": "Ultima trimitere",
+      "lastOk": "a ajuns",
+      "lastFailed": "nu a ajuns",
+      "never": "Nimic trimis încă",
+      "queue": "În așteptare / eșuate",
+      "queueCounts": "{pending} în așteptare, {failed} eșuate",
+      "test": "Trimite un test",
+      "testing": "Se trimite...",
+      "history": "Istoric",
+      "hideHistory": "Ascunde istoricul",
+      "historyEmpty": "Nimic trimis în ultimele 30 de zile.",
+      "showSecret": "Arată cheia secretă",
+      "hideSecret": "Ascunde cheia secretă",
+      "turnOff": "Oprește",
+      "turnOn": "Pornește",
+      "delete": "Șterge",
+      "deleteTitle": "Ștergi această adresă?",
+      "deleteDescription": "Nu mai trimitem rezervări la {url}.",
+      "deleteConfirm": "Șterge adresa",
+      "statusPending": "În așteptare",
+      "statusSending": "Se trimite",
+      "statusDelivered": "A ajuns",
+      "statusFailed": "Eșuat",
+      "retry": "Trimite din nou"
+    },
+    "feed": {
+      "name": "Plecări",
+      "title": "{trip} · {booked}/{capacity}",
+      "description": "Rezervări: {bookings}\nLocuri ocupate: {booked} din {capacity}\nLocuri libere: {free}\n\n{url}"
     }
   }
 }

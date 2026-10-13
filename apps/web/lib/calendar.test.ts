@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { googleCalendarUrl } from './calendar';
+import { calendarFeedUrls, googleCalendarUrl } from './calendar';
 
 describe('googleCalendarUrl', () => {
   it('opens Google Calendar with the trip in UTC', () => {
@@ -30,5 +30,16 @@ describe('googleCalendarUrl', () => {
       }),
     );
     expect(url.searchParams.has('location')).toBe(false);
+  });
+});
+
+describe('calendarFeedUrls', () => {
+  it('gives the feed as https, webcal and a Google Calendar subscribe link', () => {
+    const urls = calendarFeedUrls('https://api.example.com', 'tok_en-1', 'ro');
+    expect(urls.https).toBe('https://api.example.com/public/calendar/tok_en-1.ics?lang=ro');
+    expect(urls.webcal).toBe('webcal://api.example.com/public/calendar/tok_en-1.ics?lang=ro');
+    const google = new URL(urls.google);
+    expect(google.origin + google.pathname).toBe('https://calendar.google.com/calendar/r');
+    expect(google.searchParams.get('cid')).toBe(urls.webcal);
   });
 });

@@ -205,7 +205,10 @@
       "ticket": "Ticket nicht gefunden",
       "user": "Benutzer nicht gefunden",
       "scannerAccount": "Scanner-Konto nicht gefunden",
-      "contactRequest": "Nachricht nicht gefunden"
+      "contactRequest": "Nachricht nicht gefunden",
+      "webhook": "Webhook-Adresse nicht gefunden",
+      "webhookDelivery": "Webhook-Ereignis nicht gefunden",
+      "calendar": "Kalender nicht gefunden"
     },
     "auth": {
       "signInAgain": "bitte erneut anmelden",
@@ -220,7 +223,10 @@
       "wrongCode": "falscher Code"
     },
     "webhooks": {
-      "invalidSignature": "ungültige Stripe-Signatur"
+      "invalidSignature": "ungültige Stripe-Signatur",
+      "tooMany": "Sie können höchstens {max} Webhook-Adressen hinzufügen",
+      "httpsRequired": "die Adresse muss mit https:// beginnen",
+      "privateUrl": "die Adresse muss im öffentlichen Internet erreichbar sein"
     },
     "booking": {
       "invalidPaymentLink": "ungültiger Zahlungslink",
@@ -830,7 +836,8 @@
       "area": "Verwaltung",
       "sections": "Bereiche",
       "menu": "Menü",
-      "tenant": "Anbieter"
+      "tenant": "Anbieter",
+      "integrations": "Integrationen"
     },
     "dashboard": {
       "title": "Übersicht",
@@ -1119,7 +1126,11 @@
       "reasonPlaceholder": "z. B. Schlechtes Wetter, die Tour findet nicht statt",
       "keep": "Buchung behalten",
       "cancelling": "Wird storniert…",
-      "confirmCancel": "Buchung stornieren"
+      "confirmCancel": "Buchung stornieren",
+      "csvEmail": "E-Mail",
+      "csvPhone": "Telefon",
+      "csvTax": "Enthaltene MwSt.",
+      "csvPaidAt": "Bezahlt am"
     },
     "billing": {
       "title": "Abonnement",
@@ -2127,6 +2138,96 @@
           "text": "Zu Ihren Buchungsdaten schreiben Sie über die Kontaktdaten auf Ihrem Ticket an den Anbieter. Für alles, was {app} selbst oder die Kontaktseite betrifft, nutzen Sie unsere Kontaktseite."
         }
       }
+    }
+  },
+  "integrations": {
+    "title": "Integrationen",
+    "description": "Verbinden Sie die Plattform mit Ihren anderen Programmen: Kalender, Buchhaltung, CRM, Tabellen.",
+    "events": {
+      "bookingConfirmed": "Buchung bestätigt",
+      "bookingPaid": "Buchung bezahlt",
+      "bookingCancelled": "Buchung storniert",
+      "ticketCheckedIn": "Gast an Bord",
+      "test": "Test"
+    },
+    "exports": {
+      "title": "Tabellen (CSV)",
+      "description": "Laden Sie Buchungen und Provisionen als Dateien herunter, die sich in Excel und Google Sheets öffnen.",
+      "bookings": "Buchungen",
+      "commissions": "Provisionen und Auszahlungen"
+    },
+    "calendar": {
+      "title": "Abfahrtskalender",
+      "description": "Alle Abfahrten mit den gebuchten Plätzen in Google Kalender, Outlook oder dem Kalender Ihres Handys. Er aktualisiert sich von selbst.",
+      "google": "Zu Google Kalender hinzufügen",
+      "appleOutlook": "Zu Apple Kalender oder Outlook hinzufügen",
+      "copy": "Adresse kopieren",
+      "copied": "Adresse kopiert",
+      "refreshNote": "Google Kalender lädt abonnierte Kalender einige Male am Tag neu, eine neue Buchung kann dort also erst nach einigen Stunden erscheinen. Apple Kalender und Outlook aktualisieren öfter.",
+      "privateNote": "Die Adresse ist privat: Wer sie hat, sieht Ihre Abfahrten und Platzzahlen (keine Kundennamen).",
+      "reset": "Adresse ändern",
+      "resetTitle": "Kalenderadresse ändern?",
+      "resetDescription": "Kalender, die die aktuelle Adresse abonniert haben, werden nicht mehr aktualisiert. Fügen Sie den Kalender mit der neuen Adresse erneut hinzu.",
+      "resetConfirm": "Adresse ändern",
+      "resetDone": "Der Kalender hat eine neue Adresse. Fügen Sie sie in Ihren Kalender-Apps erneut hinzu."
+    },
+    "webhooks": {
+      "title": "Webhooks: Buchungen an andere Programme senden",
+      "description": "Wenn eine Buchung bestätigt, bezahlt, storniert oder der Gast an Bord ist, senden wir sie sofort an eine Adresse Ihrer Wahl. Das funktioniert mit Zapier, Make, n8n oder Ihrem eigenen System, damit Buchungen in Ihre Buchhaltung, Ihr CRM oder ein Google Sheet gelangen.",
+      "ownerOnly": "Nur der Kontoinhaber kann Webhooks einrichten, da sie Kontaktdaten von Kunden an andere Programme senden.",
+      "zapierHelp": "Mit Zapier: Erstellen Sie einen Zap, der mit \"Webhooks by Zapier\" und \"Catch Hook\" beginnt, fügen Sie unten die Adresse von Zapier ein und tippen Sie auf \"Test senden\".",
+      "createdNotice": "Adresse hinzugefügt: {url}. Das ist ihr geheimer Schlüssel:",
+      "none": "Noch keine Adresse.",
+      "secretHelp": "Ihr System prüft damit, dass die Nachrichten wirklich von uns kommen. Sie können ihn jederzeit mit \"Geheimen Schlüssel anzeigen\" wieder sehen.",
+      "copySecret": "Geheimen Schlüssel kopieren",
+      "secretCopied": "Geheimer Schlüssel kopiert",
+      "events": "Was gesendet wird",
+      "addTitle": "Adresse hinzufügen",
+      "addDescription": "Fügen Sie die Adresse von Zapier, Make oder Ihrem eigenen System ein.",
+      "url": "Adresse (URL)",
+      "urlHint": "Sie muss mit https:// beginnen",
+      "name": "Name",
+      "nameHint": "Damit Sie wissen, was es ist, z. B. \"Zapier - Buchhaltung\"",
+      "errUrl": "Geben Sie eine Adresse ein, die mit https:// beginnt",
+      "add": "Adresse hinzufügen",
+      "adding": "Wird hinzugefügt...",
+      "testOk": "Der Test ist angekommen (Antwort {status}).",
+      "testFailed": "Der Test ist nicht angekommen: {error}",
+      "unnamed": "Webhook",
+      "active": "An",
+      "off": "Aus",
+      "sends": "Sendet:",
+      "allEvents": "alle Ereignisse",
+      "change": "Ändern",
+      "lastAttempt": "Letzter Versand",
+      "lastOk": "angekommen",
+      "lastFailed": "fehlgeschlagen",
+      "never": "Noch nichts gesendet",
+      "queue": "Wartend / fehlgeschlagen",
+      "queueCounts": "{pending} wartend, {failed} fehlgeschlagen",
+      "test": "Test senden",
+      "testing": "Wird gesendet...",
+      "history": "Verlauf",
+      "hideHistory": "Verlauf ausblenden",
+      "historyEmpty": "In den letzten 30 Tagen nichts gesendet.",
+      "showSecret": "Geheimen Schlüssel anzeigen",
+      "hideSecret": "Geheimen Schlüssel ausblenden",
+      "turnOff": "Ausschalten",
+      "turnOn": "Einschalten",
+      "delete": "Löschen",
+      "deleteTitle": "Diese Adresse löschen?",
+      "deleteDescription": "Wir senden keine Buchungen mehr an {url}.",
+      "deleteConfirm": "Adresse löschen",
+      "statusPending": "Wartend",
+      "statusSending": "Wird gesendet",
+      "statusDelivered": "Angekommen",
+      "statusFailed": "Fehlgeschlagen",
+      "retry": "Erneut senden"
+    },
+    "feed": {
+      "name": "Abfahrten",
+      "title": "{trip} · {booked}/{capacity}",
+      "description": "Buchungen: {bookings}\nBelegte Plätze: {booked} von {capacity}\nFreie Plätze: {free}\n\n{url}"
     }
   }
 }

@@ -9,3 +9,4 @@ export * from './notifications';
 export * from './billing';
 export * from './i18n';
 export * from './contact';
+export * from './integrations';

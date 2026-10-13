@@ -11,6 +11,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health.controller';
 import { I18nModule } from './i18n/i18n.module';
 import { IdentityModule } from './identity/identity.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 import { JobsModule } from './jobs/jobs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OutboxModule } from './outbox/outbox.module';
@@ -60,6 +61,7 @@ export class AppModule {
         AnalyticsModule,
         SettingsModule,
         PlatformModule,
+        IntegrationsModule,
         JobsModule,
       ],
       controllers: [HealthController],

@@ -207,7 +207,10 @@
       "ticket": "billet introuvable",
       "user": "utilisateur introuvable",
       "scannerAccount": "compte de scan introuvable",
-      "contactRequest": "message introuvable"
+      "contactRequest": "message introuvable",
+      "webhook": "adresse de webhook introuvable",
+      "webhookDelivery": "événement de webhook introuvable",
+      "calendar": "calendrier introuvable"
     },
     "auth": {
       "signInAgain": "reconnectez-vous",
@@ -222,7 +225,10 @@
       "wrongCode": "code incorrect"
     },
     "webhooks": {
-      "invalidSignature": "signature Stripe invalide"
+      "invalidSignature": "signature Stripe invalide",
+      "tooMany": "vous pouvez ajouter au plus {max} adresses de webhook",
+      "httpsRequired": "l'adresse doit commencer par https://",
+      "privateUrl": "l'adresse doit être sur l'internet public"
     },
     "booking": {
       "invalidPaymentLink": "lien de paiement invalide",
@@ -844,7 +850,8 @@
       "area": "Gestion",
       "sections": "Sections",
       "menu": "Menu",
-      "tenant": "Opérateur"
+      "tenant": "Opérateur",
+      "integrations": "Intégrations"
     },
     "dashboard": {
       "title": "Tableau de bord",
@@ -1153,7 +1160,11 @@
       "reasonPlaceholder": "par ex. Mauvais temps, la sortie n'a pas lieu",
       "keep": "Conserver la réservation",
       "cancelling": "Annulation…",
-      "confirmCancel": "Annuler la réservation"
+      "confirmCancel": "Annuler la réservation",
+      "csvEmail": "E-mail",
+      "csvPhone": "Téléphone",
+      "csvTax": "TVA incluse",
+      "csvPaidAt": "Payé le"
     },
     "billing": {
       "title": "Abonnement",
@@ -2209,6 +2220,96 @@
           "text": "Pour les données de votre réservation, écrivez à l'opérateur grâce aux coordonnées figurant sur votre billet. Pour toute question sur {app} lui-même ou la page de contact, utilisez notre page de contact."
         }
       }
+    }
+  },
+  "integrations": {
+    "title": "Intégrations",
+    "description": "Reliez la plateforme aux autres logiciels que vous utilisez : agenda, comptabilité, CRM, tableurs.",
+    "events": {
+      "bookingConfirmed": "Réservation confirmée",
+      "bookingPaid": "Réservation payée",
+      "bookingCancelled": "Réservation annulée",
+      "ticketCheckedIn": "Passager embarqué",
+      "test": "Test"
+    },
+    "exports": {
+      "title": "Tableurs (CSV)",
+      "description": "Téléchargez les réservations et les commissions dans des fichiers qui s'ouvrent dans Excel et Google Sheets.",
+      "bookings": "Réservations",
+      "commissions": "Commissions et paiements"
+    },
+    "calendar": {
+      "title": "Agenda des départs",
+      "description": "Tous les départs avec les places réservées, dans Google Agenda, Outlook ou l'agenda de votre téléphone. Il se met à jour tout seul.",
+      "google": "Ajouter à Google Agenda",
+      "appleOutlook": "Ajouter à Apple Calendrier ou Outlook",
+      "copy": "Copier l'adresse",
+      "copied": "Adresse copiée",
+      "refreshNote": "Google Agenda recharge les agendas abonnés quelques fois par jour : une nouvelle réservation peut donc y apparaître après quelques heures. Apple Calendrier et Outlook se mettent à jour plus souvent.",
+      "privateNote": "L'adresse est privée : toute personne qui l'a voit vos départs et le nombre de places (sans les noms des clients).",
+      "reset": "Changer l'adresse",
+      "resetTitle": "Changer l'adresse de l'agenda ?",
+      "resetDescription": "Les agendas abonnés à l'adresse actuelle ne seront plus mis à jour. Ajoutez de nouveau l'agenda avec la nouvelle adresse.",
+      "resetConfirm": "Changer l'adresse",
+      "resetDone": "L'agenda a une nouvelle adresse. Ajoutez-la de nouveau dans vos applications d'agenda."
+    },
+    "webhooks": {
+      "title": "Webhooks : envoyer les réservations vers d'autres logiciels",
+      "description": "Quand une réservation est confirmée, payée, annulée ou que le passager embarque, nous l'envoyons aussitôt à une adresse de votre choix. Cela fonctionne avec Zapier, Make, n8n ou votre propre système, pour que les réservations arrivent dans votre comptabilité, votre CRM ou une Google Sheet.",
+      "ownerOnly": "Seul le titulaire du compte peut configurer les webhooks, car ils envoient les coordonnées des clients vers d'autres logiciels.",
+      "zapierHelp": "Avec Zapier : créez un Zap qui commence par \"Webhooks by Zapier\" et \"Catch Hook\", collez ci-dessous l'adresse donnée par Zapier, puis appuyez sur \"Envoyer un test\".",
+      "createdNotice": "Adresse ajoutée : {url}. Voici sa clé secrète :",
+      "none": "Aucune adresse pour l'instant.",
+      "secretHelp": "Votre système s'en sert pour vérifier que les messages viennent bien de nous. Vous pouvez la revoir à tout moment avec \"Afficher la clé secrète\".",
+      "copySecret": "Copier la clé secrète",
+      "secretCopied": "Clé secrète copiée",
+      "events": "Ce qui est envoyé",
+      "addTitle": "Ajouter une adresse",
+      "addDescription": "Collez l'adresse de Zapier, Make ou de votre propre système.",
+      "url": "Adresse (URL)",
+      "urlHint": "Elle doit commencer par https://",
+      "name": "Nom",
+      "nameHint": "Pour savoir de quoi il s'agit, par exemple \"Zapier - comptabilité\"",
+      "errUrl": "Saisissez une adresse qui commence par https://",
+      "add": "Ajouter l'adresse",
+      "adding": "Ajout...",
+      "testOk": "Le test est arrivé (réponse {status}).",
+      "testFailed": "Le test n'est pas arrivé : {error}",
+      "unnamed": "Webhook",
+      "active": "Activé",
+      "off": "Désactivé",
+      "sends": "Envoie :",
+      "allEvents": "tous les événements",
+      "change": "Modifier",
+      "lastAttempt": "Dernier envoi",
+      "lastOk": "arrivé",
+      "lastFailed": "échec",
+      "never": "Rien d'envoyé pour l'instant",
+      "queue": "En attente / en échec",
+      "queueCounts": "{pending} en attente, {failed} en échec",
+      "test": "Envoyer un test",
+      "testing": "Envoi...",
+      "history": "Historique",
+      "hideHistory": "Masquer l'historique",
+      "historyEmpty": "Rien d'envoyé ces 30 derniers jours.",
+      "showSecret": "Afficher la clé secrète",
+      "hideSecret": "Masquer la clé secrète",
+      "turnOff": "Désactiver",
+      "turnOn": "Activer",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer cette adresse ?",
+      "deleteDescription": "Nous n'enverrons plus de réservations à {url}.",
+      "deleteConfirm": "Supprimer l'adresse",
+      "statusPending": "En attente",
+      "statusSending": "Envoi en cours",
+      "statusDelivered": "Arrivé",
+      "statusFailed": "Échec",
+      "retry": "Renvoyer"
+    },
+    "feed": {
+      "name": "Départs",
+      "title": "{trip} · {booked}/{capacity}",
+      "description": "Réservations : {bookings}\nPlaces occupées : {booked} sur {capacity}\nPlaces libres : {free}\n\n{url}"
     }
   }
 }

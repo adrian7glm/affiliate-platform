@@ -12,6 +12,7 @@ import {
   IconBanknote,
   IconBoat,
   IconGauge,
+  IconLink,
   IconList,
   IconLogout,
   IconMenu,
@@ -41,6 +42,7 @@ const NAV = [
   { href: '/o/products', label: 'operator.nav.products', icon: <IconBoat /> },
   { href: '/o/payouts', label: 'operator.nav.payouts', icon: <IconBanknote /> },
   { href: '/o/sources', label: 'operator.nav.sources', icon: <IconRefresh /> },
+  { href: '/o/integrations', label: 'operator.nav.integrations', icon: <IconLink /> },
   { href: '/o/settings', label: 'operator.nav.settings', icon: <IconSettings /> },
   { href: '/o/billing', label: 'operator.nav.billing', icon: <IconWallet /> },
 ] as const satisfies readonly {

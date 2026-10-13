@@ -44,6 +44,11 @@ export const tenants = pgTable('tenants', {
   /** How customers reach the operator (ticket page, legal pages). */
   contactEmail: text('contact_email'),
   contactPhone: text('contact_phone'),
+  /**
+   * Secret part of the operator's departures calendar URL (Google Calendar, Outlook, phones
+   * subscribe to it). Null until someone opens the calendar settings; replaced to revoke old links.
+   */
+  calendarFeedToken: text('calendar_feed_token').unique(),
   /** Suspended operators cannot sign in to their console and their booking pages are offline. */
   status: tenantStatusEnum('status').notNull().default('active'),
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
