@@ -67,6 +67,8 @@ export const bookings = pgTable(
     platformFeeMinor: integer('platform_fee_minor').notNull().default(0),
     paymentMode: paymentModeEnum('payment_mode').notNull().default('online'),
     externalRef: text('external_ref'),
+    /** When the customer accepted the booking terms and privacy policy (public checkout). */
+    termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
     paidAt: timestamp('paid_at', { withTimezone: true }),
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
     createdAt: createdAt(),

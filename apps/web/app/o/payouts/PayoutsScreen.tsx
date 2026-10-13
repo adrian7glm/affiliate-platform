@@ -22,7 +22,7 @@ import type { Translator } from '@/lib/i18n';
 import { payoutMethod, payoutStatus } from '@/lib/labels';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
-import { Rich, slots } from '../Rich';
+import { Rich, slots } from '@/components/Rich';
 
 export function PayoutsScreen() {
   const tr = useT();

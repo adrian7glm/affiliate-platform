@@ -1,5 +1,7 @@
 import { type Translator, intlLocale } from '@ap/i18n';
 import { DateTime } from 'luxon';
+import { googleCalendarUrl } from '../common/calendar';
+import { ticketCalendarEvent } from './ticket-calendar';
 
 /**
  * Message templates. Every template renders an email (subject, plain text and HTML) and an SMS, in
@@ -38,8 +40,25 @@ export interface TemplateParams {
     items?: { label: string; quantity: number }[];
     /** Operator brand colour for the PDF ticket. */
     brandColor?: string | null;
+    /** End of the trip, for the calendar event. Missing in older queued messages. */
+    endsAt?: string;
   };
-  booking_cancelled: TripParams & { refunded: boolean };
+  booking_cancelled: TripParams & {
+    refunded: boolean;
+    /** Why the operator cancelled: the customer is told, e.g. bad weather. */
+    reason?: 'weather' | 'other' | null;
+    /** The operator's own words for the customer. */
+    message?: string | null;
+  };
+  contact_request: {
+    topic: 'demo' | 'question';
+    name: string;
+    email: string;
+    phone: string | null;
+    company: string | null;
+    message: string;
+    url: string;
+  };
 }
 
 export type TemplateName = keyof TemplateParams;
@@ -53,6 +72,7 @@ export const TEMPLATE_NAMES = [
   'payment_link',
   'ticket',
   'booking_cancelled',
+  'contact_request',
 ] as const satisfies readonly TemplateName[];
 
 export interface RenderedMessage {
@@ -81,6 +101,7 @@ export function render<T extends TemplateName>(
     text: [
       ...(parts.greeting ? [parts.greeting, ''] : []),
       ...parts.lines,
+      ...(parts.links?.length ? ['', ...parts.links.map((l) => `${l.label}: ${l.url}`)] : []),
       ...(parts.details?.length ? ['', ...parts.details.map(([k, v]) => `${k}: ${v}`)] : []),
       '',
       footer,
@@ -101,6 +122,8 @@ interface Parts {
    * left out, since the button replaces it. */
   lines: string[];
   action?: { label: string; url: string };
+  /** Secondary links under the button, e.g. "Add to Google Calendar". */
+  links?: { label: string; url: string }[];
   details?: [string, string][];
   qr?: string | null;
   sms: string;
@@ -208,6 +231,8 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
     ];
     if (p.meetingPoint) details.push([t('email.details.meetingPoint'), p.meetingPoint]);
     if (due) details.push([t('email.details.dueOnSite'), due]);
+    const calendar =
+      p.endsAt && p.qrToken ? ticketCalendarEvent({ ...p, endsAt: p.endsAt }, tr) : null;
     const sms = {
       tenant: p.tenantName,
       reference: p.reference,
@@ -224,8 +249,12 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
         t('email.ticket.confirmed', { tenant: p.tenantName }),
         t('email.ticket.showQr'),
         t('email.ticket.link', { url: p.url }),
+        ...(calendar ? [t('email.ticket.calendarAttached')] : []),
       ],
       action: { label: t('email.ticket.action'), url: p.url },
+      links: calendar
+        ? [{ label: t('email.ticket.addToGoogle'), url: googleCalendarUrl(calendar) }]
+        : undefined,
       details,
       qr: p.qrToken,
       sms: due ? t('email.ticket.smsDue', { ...sms, due }) : t('email.ticket.sms', sms),
@@ -248,12 +277,43 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
           ...vars,
           when: formatWhen(p.startsAt, p.timezone, tr),
         }),
+        ...(p.reason === 'weather' ? [t('email.bookingCancelled.weather')] : []),
+        ...(p.message ? [t('email.bookingCancelled.message', { message: p.message })] : []),
         ...(p.refunded ? [t('email.bookingCancelled.refunded')] : []),
+        ...(p.reason ? [t('email.bookingCancelled.sorry')] : []),
       ],
-      sms: t(p.refunded ? 'email.bookingCancelled.smsRefunded' : 'email.bookingCancelled.sms', {
-        ...vars,
-        when: formatShort(p.startsAt, p.timezone, tr),
-      }),
+      sms: t(
+        p.reason === 'weather'
+          ? p.refunded
+            ? 'email.bookingCancelled.smsWeatherRefunded'
+            : 'email.bookingCancelled.smsWeather'
+          : p.refunded
+            ? 'email.bookingCancelled.smsRefunded'
+            : 'email.bookingCancelled.sms',
+        { ...vars, when: formatShort(p.startsAt, p.timezone, tr) },
+      ),
+    };
+  },
+
+  contact_request: (p, { t }) => {
+    const topic = t(
+      p.topic === 'demo' ? 'email.contactRequest.demo' : 'email.contactRequest.question',
+    );
+    const details: [string, string][] = [
+      [t('email.contactRequest.name'), p.name],
+      [t('email.contactRequest.email'), p.email],
+    ];
+    if (p.phone) details.push([t('email.contactRequest.phone'), p.phone]);
+    if (p.company) details.push([t('email.contactRequest.company'), p.company]);
+    return {
+      subject: t('email.contactRequest.subject', { topic, name: p.name }),
+      lines: [
+        t('email.contactRequest.intro', { topic, name: p.name }),
+        ...(p.message ? ['', p.message] : []),
+      ],
+      action: { label: t('email.contactRequest.action'), url: p.url },
+      details,
+      sms: t('email.contactRequest.sms', { topic, name: p.name, contact: p.phone ?? p.email }),
     };
   },
 };
@@ -357,11 +417,19 @@ function layout(t: Translator, parts: Parts, footer: string): string {
         )
         .join('')}</table>`
     : '';
+  const links = parts.links?.length
+    ? `<p style="margin:-8px 0 16px;font-size:14px">${parts.links
+        .map(
+          (l) =>
+            `<a href="${escapeHtml(l.url)}" style="color:#0e7490;font-weight:600">${escapeHtml(l.label)}</a>`,
+        )
+        .join(' · ')}</p>`
+    : '';
   const action = parts.action
     ? `<div style="margin:20px 0"><a href="${escapeHtml(parts.action.url)}" style="display:inline-block;background:#0e7490;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 20px;border-radius:8px">${escapeHtml(parts.action.label)}</a></div>`
     : '';
   const brand = parts.brand
     ? `<p style="margin:0 0 12px;font-size:18px;font-weight:700;color:#0e7490;text-align:center">${escapeHtml(parts.brand)}</p>`
     : '';
-  return `<!doctype html><html lang="${escapeHtml(t.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(parts.subject)}</title></head><body style="margin:0;padding:0;background:#f1f5f9"><div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#0f172a">${brand}<div style="background:#ffffff;border-radius:12px;padding:24px">${paragraphs}${qr}${details}${action}</div><p style="margin:16px 0 0;font-size:12px;color:#64748b;text-align:center">${escapeHtml(footer)}</p></div></body></html>`;
+  return `<!doctype html><html lang="${escapeHtml(t.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(parts.subject)}</title></head><body style="margin:0;padding:0;background:#f1f5f9"><div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#0f172a">${brand}<div style="background:#ffffff;border-radius:12px;padding:24px">${paragraphs}${qr}${details}${action}${links}</div><p style="margin:16px 0 0;font-size:12px;color:#64748b;text-align:center">${escapeHtml(footer)}</p></div></body></html>`;
 }

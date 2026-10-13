@@ -14,6 +14,8 @@ import { useT } from '@/components/I18nProvider';
 import { MoneyText } from '@/components/MoneyText';
 import { SlotPicker } from '@/components/booking/SlotPicker';
 import { TicketQuantities } from '@/components/booking/TicketQuantities';
+import { CancellationPolicy } from '@/components/public/CancellationPolicy';
+import { Rich, slots as richSlots } from '@/components/Rich';
 import { LoadingBlock } from '@/components/Spinner';
 import { StickyActions } from '@/components/StickyActions';
 import { isApiError } from '@/lib/api';
@@ -49,6 +51,7 @@ interface DetailErrors {
   contact?: string;
   email?: string;
   phone?: string;
+  terms?: string;
 }
 
 /** Attribution read from the cookies set by `/r/[code]`. */
@@ -85,10 +88,14 @@ function nextLocation(paymentUrl: string | null, ticketUrl: string, lang: Lang):
 
 export function PublicBookingForm({
   tenantSlug,
+  tenantName,
+  cancellationPolicy,
   product,
   timezone,
 }: {
   tenantSlug: string;
+  tenantName: string;
+  cancellationPolicy: string | null;
   product: ProductDto;
   timezone: string;
 }) {
@@ -113,6 +120,7 @@ export function PublicBookingForm({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [accepted, setAccepted] = useState(false);
 
   const [slotError, setSlotError] = useState<string | null>(null);
   const [ticketError, setTicketError] = useState<string | null>(null);
@@ -163,6 +171,7 @@ export function PublicBookingForm({
     if (cleanEmail && !isValidEmail(cleanEmail)) nextErrors.email = t.t('public.errorEmail');
     if (cleanPhone && !isValidPhone(cleanPhone)) nextErrors.phone = t.t('public.errorPhone');
     if (!cleanEmail && !cleanPhone) nextErrors.contact = t.t('public.errorContact');
+    if (!accepted) nextErrors.terms = t.t('public.errorTerms');
 
     const missingSlot = !slot ? t.t('public.chooseTimeFirst') : null;
     const ticketProblem = !slot
@@ -194,6 +203,7 @@ export function PublicBookingForm({
           // Emails and texts go out in this language; one the API does not know gets English.
           locale: localeSchema.catch('en').parse(lang),
         },
+        acceptTerms: true,
         ...attribution(),
       });
       window.location.assign(nextLocation(result.paymentUrl, result.ticketUrl, lang));
@@ -324,6 +334,61 @@ export function PublicBookingForm({
           onChange={(e) => setPhone(e.target.value)}
           error={errors.phone}
         />
+      </section>
+
+      <section
+        aria-label={t.t('public.policy.title')}
+        className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-4"
+      >
+        <CancellationPolicy tenantName={tenantName} policy={cancellationPolicy} titleAs="h3" />
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name="acceptTerms"
+              className="mt-0.5 size-6 shrink-0"
+              checked={accepted}
+              onChange={(e) => {
+                setAccepted(e.target.checked);
+                if (e.target.checked) setErrors((prev) => ({ ...prev, terms: undefined }));
+              }}
+              aria-invalid={errors.terms ? true : undefined}
+              aria-describedby={errors.terms ? 'terms-error' : undefined}
+            />
+            <span>
+              <Rich
+                text={t.t('public.acceptTerms', richSlots('terms', 'privacy'))}
+                parts={{
+                  terms: (
+                    <a
+                      href={`/legal/terms?lang=${lang}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="font-semibold text-brand-strong underline"
+                    >
+                      {t.t('public.termsLink')}
+                    </a>
+                  ),
+                  privacy: (
+                    <a
+                      href={`/legal/privacy?lang=${lang}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="font-semibold text-brand-strong underline"
+                    >
+                      {t.t('public.privacyLink')}
+                    </a>
+                  ),
+                }}
+              />
+            </span>
+          </label>
+          {errors.terms ? (
+            <p id="terms-error" role="alert" className="text-sm font-medium text-danger-fg">
+              {errors.terms}
+            </p>
+          ) : null}
+        </div>
       </section>
 
       {submitError ? <Alert tone="error">{submitError}</Alert> : null}

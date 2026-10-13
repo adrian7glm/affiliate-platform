@@ -4,6 +4,8 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { BillingGateway, ManualBilling, StripeBilling } from './billing.gateway';
 import { BillingWebhookController } from './billing-webhook.controller';
+import { AdminContactController, PublicContactController } from './contact.controller';
+import { ContactService } from './contact.service';
 import { OnboardingService } from './onboarding.service';
 import { OperatorPlatformController, SignupController } from './onboarding.controller';
 import { PlatformAdminGuard } from './platform-admin.guard';
@@ -11,7 +13,8 @@ import { SubscriptionsService } from './subscriptions.service';
 
 /**
  * The platform owner's business: plans and fees sold to operators, operator onboarding and
- * billing, and the super-admin area. Reads other modules' tables only for reporting.
+ * billing, the contact page inbox, and the super-admin area. Reads other modules' tables only
+ * for reporting.
  */
 @Module({
   providers: [
@@ -24,6 +27,7 @@ import { SubscriptionsService } from './subscriptions.service';
     SubscriptionsService,
     OnboardingService,
     AdminService,
+    ContactService,
     PlatformAdminGuard,
   ],
   controllers: [
@@ -31,6 +35,8 @@ import { SubscriptionsService } from './subscriptions.service';
     SignupController,
     OperatorPlatformController,
     BillingWebhookController,
+    PublicContactController,
+    AdminContactController,
   ],
   exports: [SubscriptionsService],
 })

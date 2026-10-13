@@ -4,6 +4,8 @@ import type {
   AssistedBookingBody,
   BookingChannel,
   BookingDto,
+  CancelDeparturesBody,
+  CancelDeparturesResultDto,
   CheckoutResultDto,
   PublicCheckoutBody,
 } from '@ap/contracts';
@@ -16,11 +18,12 @@ import {
   holds,
   payments,
   products,
+  slots,
 } from '@ap/db';
 import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { AvailabilityService } from '../catalog/availability.service';
-import { CatalogService } from '../catalog/catalog.service';
+import { CatalogService, toOperatorSlotDto } from '../catalog/catalog.service';
 import { Clock } from '../common/clock';
 import { randomCode, ticketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
@@ -32,7 +35,7 @@ import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from '../payments/gateway';
 import { SourcesService } from '../sources/sources.service';
 import { type Attribution, LinksService } from '../tracking/links.service';
-import { TicketsService } from './tickets.service';
+import { type CancellationNotice, TicketsService } from './tickets.service';
 
 export type Booking = typeof bookings.$inferSelect;
 
@@ -45,6 +48,7 @@ interface CreateInput {
   attribution: Attribution | null;
   createdByUserId: string | null;
   paymentMode: 'online' | 'on_site';
+  termsAcceptedAt?: Date | null;
 }
 
 /** VAT included in a gross amount. */
@@ -87,6 +91,7 @@ export class BookingService {
       attribution,
       createdByUserId: null,
       paymentMode: 'online',
+      termsAcceptedAt: this.clock.now(),
     });
   }
 
@@ -207,6 +212,7 @@ export class BookingService {
           taxMinor,
           platformFeeMinor: applyRate(totalMinor, tenant.platformFeeBps),
           paymentMode: input.paymentMode,
+          termsAcceptedAt: input.termsAcceptedAt ?? null,
           createdAt: now,
         });
         await tx.insert(bookingItems).values(
@@ -303,14 +309,14 @@ export class BookingService {
   /** Called when the payment provider confirms the money arrived. Idempotent. */
   async confirmPayment(bookingId: string, paymentIntentId: string | null): Promise<void> {
     const now = this.clock.now();
-    await this.db.transaction(async (tx) => {
+    const late = await this.db.transaction(async (tx) => {
       const [booking] = await tx
         .select()
         .from(bookings)
         .where(eq(bookings.id, bookingId))
         .for('update');
       if (!booking) throw new NotFound('booking');
-      if (booking.status === 'confirmed') return;
+      if (booking.status === 'confirmed') return null;
 
       await tx
         .update(payments)
@@ -319,7 +325,7 @@ export class BookingService {
 
       if (booking.status === 'cancelled' || booking.status === 'refunded') {
         await this.audit(tx, booking, 'payment_after_cancellation', { paymentIntentId });
-        return;
+        return booking;
       }
       const confirmed = booking.holdId
         ? await this.availability.confirmHold(tx, booking.holdId, now)
@@ -353,6 +359,33 @@ export class BookingService {
         tenantId: booking.tenantId,
         bookingId: booking.id,
       });
+      return null;
+    });
+    if (late) await this.refundLatePayment(late);
+  }
+
+  /**
+   * The customer paid for a booking that was already cancelled (the trip was called off while
+   * they were on the payment page): the money goes straight back.
+   */
+  private async refundLatePayment(booking: Booking): Promise<void> {
+    const [payment] = await this.db
+      .select()
+      .from(payments)
+      .where(and(eq(payments.bookingId, booking.id), eq(payments.status, 'succeeded')));
+    if (!payment || payment.amountMinor <= payment.refundedMinor) return;
+    const tenant = await this.tenants.get(booking.tenantId);
+    await this.gateway.refund(
+      payment.paymentIntentId,
+      payment.amountMinor - payment.refundedMinor,
+      Boolean(tenant.stripeAccountId),
+    );
+    await this.db
+      .update(payments)
+      .set({ status: 'refunded', refundedMinor: payment.amountMinor, updatedAt: this.clock.now() })
+      .where(eq(payments.id, payment.id));
+    await this.audit(this.db, booking, 'late_payment_refunded', {
+      amountMinor: payment.amountMinor - payment.refundedMinor,
     });
   }
 
@@ -391,6 +424,7 @@ export class BookingService {
     bookingId: string,
     reason: string,
     actorUserId: string | null,
+    notice: CancellationNotice | null = null,
   ): Promise<BookingDto> {
     const now = this.clock.now();
     const tenant = await this.tenants.get(tenantId);
@@ -441,7 +475,7 @@ export class BookingService {
           .where(eq(payments.id, payment.id));
       }
       await this.tickets.void(tx, bookingId);
-      if (wasConfirmed) await this.tickets.notifyCancelled(tx, tenant, booking, refunded);
+      if (wasConfirmed) await this.tickets.notifyCancelled(tx, tenant, booking, refunded, notice);
       await this.audit(tx, booking, 'booking_cancelled', { reason, actorUserId, refunded });
       // Confirmed in the operator's system after we read the booking above: cancel it there too.
       const lateRef =
@@ -473,6 +507,67 @@ export class BookingService {
         );
     }
     return this.dto(bookingId);
+  }
+
+  /**
+   * Calls off departures (bad weather...): closes them to new sales, then cancels every booking
+   * on them one by one, so a refund that fails leaves the others cancelled and can be retried.
+   */
+  async cancelDepartures(
+    tenantId: string,
+    productId: string,
+    body: CancelDeparturesBody,
+    actorUserId: string,
+  ): Promise<CancelDeparturesResultDto> {
+    // A trip under way or over has passengers who already boarded: nothing to call off.
+    const [started] = await this.db
+      .select({ id: slots.id })
+      .from(slots)
+      .where(
+        and(
+          eq(slots.tenantId, tenantId),
+          inArray(slots.id, body.slotIds),
+          lte(slots.startsAt, this.clock.now()),
+        ),
+      )
+      .limit(1);
+    if (started) throw new DomainError('errors.departures.alreadyStarted', HttpStatus.CONFLICT);
+    // Also checks the departures belong to this trip of the operator's own calendar.
+    await this.catalog.updateSlots(tenantId, productId, { slotIds: body.slotIds, closed: true });
+    const affected = await this.db
+      .select({ id: bookings.id })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.tenantId, tenantId),
+          eq(bookings.productId, productId),
+          inArray(bookings.slotId, body.slotIds),
+          inArray(bookings.status, ['pending_payment', 'confirmed']),
+        ),
+      )
+      .orderBy(bookings.startsAt);
+    const notice: CancellationNotice = { reason: body.reason, message: body.message || null };
+    const reason =
+      body.reason === 'weather' ? 'departure_cancelled_weather' : 'departure_cancelled';
+    let cancelled = 0;
+    let refunded = 0;
+    let failed = 0;
+    for (const { id } of affected) {
+      try {
+        const result = await this.cancel(tenantId, id, reason, actorUserId, notice);
+        cancelled += 1;
+        if (result.status === 'refunded') refunded += 1;
+      } catch (error) {
+        failed += 1;
+        this.logger.error(`could not cancel booking ${id}: ${(error as Error).message}`);
+      }
+    }
+    const rows = await this.db
+      .select()
+      .from(slots)
+      .where(and(eq(slots.tenantId, tenantId), inArray(slots.id, body.slotIds)))
+      .orderBy(slots.startsAt);
+    return { slots: rows.map(toOperatorSlotDto), cancelled, refunded, failed };
   }
 
   async listForAffiliate(affiliateId: string, limit = 50): Promise<BookingDto[]> {

@@ -67,6 +67,7 @@ describe.skipIf(!databaseUrl)(
       return h.http.post('/public/tenants/delta-boats/checkout').send({
         slotId: slot.id,
         items: [{ priceId: adult().id, quantity: adults }],
+        acceptTerms: true,
         customer: { name: 'Tourist', email: 'tourist@example.com', locale: 'en' },
       });
     }

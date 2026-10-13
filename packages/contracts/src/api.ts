@@ -439,6 +439,8 @@ export const publicCheckoutBody = z.object({
   /** Whether the customer arrived by scanning the QR code (`/r/CODE?s=qr`) or opening the link. */
   refSource: z.enum(['qr', 'link']).optional(),
   visitorId: z.string().max(64).optional(),
+  /** The customer ticked "I agree to the booking terms and the privacy policy". */
+  acceptTerms: z.literal(true),
 });
 export type PublicCheckoutBody = z.infer<typeof publicCheckoutBody>;
 
@@ -503,6 +505,12 @@ export interface TicketDto {
   /** The operator's timezone: departure times are shown in it. */
   timezone: string;
   branding: BrandingDto;
+  /** When the trip ends, for the customer's calendar. */
+  endsAt: string;
+  /** The operator's cancellation policy; null when they kept the platform's default text. */
+  cancellationPolicy: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
 }
 
 export const checkInBody = z.object({ token: z.string().min(16).max(2000) });
@@ -555,6 +563,28 @@ export interface ScannerContextDto {
 
 export const cancelBookingBody = z.object({ reason: z.string().trim().min(1).max(400) });
 export type CancelBookingBody = z.infer<typeof cancelBookingBody>;
+
+/**
+ * Cancels departures (one, or a whole day when the weather turns): they close to new sales, and
+ * every booking on them is cancelled, refunded and its customer told why.
+ */
+export const cancelDeparturesBody = z.object({
+  slotIds: z.array(z.string().uuid()).min(1).max(500),
+  reason: z.enum(['weather', 'other']),
+  /** Optional words for the customers, e.g. "We can move you to tomorrow, just reply." */
+  message: z.string().trim().max(300).optional(),
+});
+export type CancelDeparturesBody = z.infer<typeof cancelDeparturesBody>;
+
+export interface CancelDeparturesResultDto {
+  slots: OperatorSlotDto[];
+  /** Bookings cancelled now. */
+  cancelled: number;
+  /** Of those, the ones paid online whose money was sent back. */
+  refunded: number;
+  /** Bookings that could not be cancelled (payment provider or operator system not answering). */
+  failed: number;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Affiliate home and earnings
@@ -781,6 +811,10 @@ export const updateSettingsBody = z.object({
   allowPayOnSite: z.boolean().optional(),
   /** How long after a click a booking still counts for the affiliate. */
   attributionWindowDays: z.number().int().min(1).max(365).optional(),
+  /** Null goes back to the platform's default text. */
+  cancellationPolicy: z.string().trim().min(1).max(2000).nullable().optional(),
+  contactEmail: email.nullable().optional(),
+  contactPhone: phone.nullable().optional(),
 });
 export type UpdateSettingsBody = z.infer<typeof updateSettingsBody>;
 
@@ -792,6 +826,9 @@ export interface OperatorSettingsDto {
   branding: BrandingDto;
   allowPayOnSite: boolean;
   attributionWindowDays: number;
+  cancellationPolicy: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
   /** Only owners change settings; staff see them read-only. */
   canEdit: boolean;
 }
@@ -807,4 +844,43 @@ export interface PublicTenantDto {
   timezone: string;
   branding: BrandingDto;
   products: ProductDto[];
+  cancellationPolicy: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Contact page (operators asking the platform owner for a demo or with a question)
+// ---------------------------------------------------------------------------------------------
+
+export const contactTopicSchema = z.enum(['demo', 'question']);
+export type ContactTopic = z.infer<typeof contactTopicSchema>;
+
+export const contactRequestBody = z.object({
+  topic: contactTopicSchema,
+  name: z.string().trim().min(1).max(120),
+  email,
+  phone: phone.optional(),
+  company: z.string().trim().max(120).optional(),
+  message: z.string().trim().max(2000).default(''),
+  locale: z.string().max(20).optional(),
+  /** Hidden field people never fill in; bots do. */
+  website: z.string().max(200).optional(),
+});
+export type ContactRequestBody = z.infer<typeof contactRequestBody>;
+
+export interface ContactRequestDto {
+  id: string;
+  topic: ContactTopic;
+  name: string;
+  email: string;
+  phone: string | null;
+  company: string | null;
+  message: string;
+  locale: string;
+  handledAt: string | null;
+  createdAt: string;
+}
+
+export const setContactHandledBody = z.object({ handled: z.boolean() });
+export type SetContactHandledBody = z.infer<typeof setContactHandledBody>;

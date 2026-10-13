@@ -14,6 +14,7 @@ import {
   IconGlobe,
   IconLink,
   IconLogout,
+  IconMail,
   IconMenu,
   IconPercent,
 } from '@/components/icons';
@@ -29,6 +30,7 @@ const NAV: { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }
   { href: '/admin', label: 'admin.nav.operators', icon: <IconGauge />, exact: true },
   { href: '/admin/plans', label: 'admin.nav.plans', icon: <IconPercent /> },
   { href: '/admin/invites', label: 'admin.nav.invites', icon: <IconLink /> },
+  { href: '/admin/contact', label: 'admin.nav.contact', icon: <IconMail /> },
   { href: '/admin/translations', label: 'admin.nav.translations', icon: <IconGlobe /> },
 ];
 

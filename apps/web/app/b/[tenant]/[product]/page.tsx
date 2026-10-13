@@ -103,6 +103,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
 
         <PublicBookingForm
           tenantSlug={tenant.data.slug}
+          tenantName={tenant.data.name}
+          cancellationPolicy={tenant.data.cancellationPolicy}
           product={trip}
           timezone={tenant.data.timezone}
         />

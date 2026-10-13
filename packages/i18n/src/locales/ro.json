@@ -206,7 +206,8 @@
       "product": "excursia nu a fost găsită",
       "ticket": "biletul nu a fost găsit",
       "user": "utilizatorul nu a fost găsit",
-      "scannerAccount": "contul de scanare nu a fost găsit"
+      "scannerAccount": "contul de scanare nu a fost găsit",
+      "contactRequest": "mesajul nu a fost găsit"
     },
     "auth": {
       "signInAgain": "conectează-te din nou",
@@ -236,7 +237,8 @@
       "closed": "pentru această plecare nu se mai pot face rezervări",
       "seatsLeft_one": "a mai rămas doar {count} loc la această plecare",
       "seatsLeft_few": "au mai rămas doar {count} locuri la această plecare",
-      "seatsLeft_other": "au mai rămas doar {count} de locuri la această plecare"
+      "seatsLeft_other": "au mai rămas doar {count} de locuri la această plecare",
+      "alreadyStarted": "plecarea a avut deja loc, deci nu mai poate fi anulată"
     },
     "catalog": {
       "duplicatePriceCode": "fiecare preț trebuie să aibă alt cod",
@@ -310,10 +312,14 @@
       "otherOperator": "Acest cod QR nu este un bilet al acestui operator."
     },
     "ticket": {
-      "noPdf": "acest bilet nu este valabil, deci nu are PDF"
+      "noPdf": "acest bilet nu este valabil, deci nu are PDF",
+      "noCalendar": "biletul nu este valabil, deci nu poate fi adăugat în calendar"
     },
     "scanners": {
       "exists": "această persoană are deja un cont de scanare"
+    },
+    "contact": {
+      "tooMany": "Ne-ai trimis deja mai multe mesaje. Îți răspundem în curând."
     }
   },
   "auth": {
@@ -484,7 +490,47 @@
         "recommend": "Ei recomandă cu codul QR sau rezervă pentru turist.",
         "pay": "Turistul plătește online; comisionul se calculează singur."
       },
-      "copyright": "© {year} {name}"
+      "copyright": "© {year} {name}",
+      "requestDemo": "Cere un demo"
+    },
+    "policy": {
+      "title": "Politica de anulare",
+      "default": "Dacă {tenant} anulează excursia (de exemplu din cauza vremii), primești automat toți banii înapoi. Ca să anulezi sau să schimbi tu rezervarea, contactează {tenant}."
+    },
+    "contactOperator": "Întrebări? Contactează {tenant}",
+    "acceptTerms": "Sunt de acord cu {terms} și cu {privacy}.",
+    "termsLink": "condițiile de rezervare",
+    "privacyLink": "politica de confidențialitate",
+    "errorTerms": "Bifează acordul cu condițiile de rezervare înainte de plată.",
+    "site": {
+      "contact": "Contact",
+      "terms": "Condiții de rezervare",
+      "privacy": "Confidențialitate",
+      "footerNav": "Informații"
+    },
+    "contact": {
+      "title": "Vorbește cu noi",
+      "intro": "Ai plimbări cu barca, excursii sau experiențe? Spune-ne câteva cuvinte despre afacerea ta și îți arătăm cum funcționează propria ta rețea de vânzători.",
+      "topic": "Ce dorești?",
+      "topicDemo": "Un demo",
+      "topicDemoHint": "Îți arătăm platforma cu excursiile tale.",
+      "topicQuestion": "O întrebare",
+      "topicQuestionHint": "Despre prețuri, configurare sau orice altceva.",
+      "name": "Numele tău",
+      "company": "Numele afacerii",
+      "phoneHint": "Dacă preferi să te sunăm.",
+      "message": "Mesaj",
+      "messageDemoHint": "De exemplu: câte bărci sau excursii ai și câte hoteluri vând pentru tine.",
+      "errName": "Scrie-ți numele.",
+      "errEmail": "Scrie o adresă de email la care să-ți răspundem, de forma nume@exemplu.ro.",
+      "errMessage": "Scrie întrebarea.",
+      "tooMany": "Ne-ai trimis deja mai multe mesaje. Îți răspundem în curând.",
+      "sending": "Se trimite…",
+      "sendDemo": "Cere demo-ul",
+      "send": "Trimite",
+      "privacyNote": "Folosim datele tale doar ca să-ți răspundem. Vezi {privacy}.",
+      "sentTitle": "Mulțumim, am primit mesajul",
+      "sentText": "Îți răspundem la {email}."
     }
   },
   "ticket": {
@@ -518,7 +564,11 @@
     "referenceLabel": "Cod rezervare:",
     "qrLabel": "Codul QR al biletului {reference}",
     "tickets": "Bilete",
-    "items": "{quantity} × {label}"
+    "items": "{quantity} × {label}",
+    "addToCalendar": "Adaugă în calendar",
+    "googleCalendar": "Google Calendar",
+    "otherCalendar": "Apple, Outlook, altele",
+    "calendarDetails": "Rezervarea {reference}. Biletul tău: {url}"
   },
   "affiliate": {
     "meta": {
@@ -1150,7 +1200,8 @@
       "operators": "Operatori",
       "plans": "Planuri și tarife",
       "invites": "Invitații",
-      "translations": "Traduceri"
+      "translations": "Traduceri",
+      "contact": "Mesaje"
     },
     "shell": {
       "loadError": "Nu am putut încărca contul",
@@ -1402,6 +1453,17 @@
         "reasonError": "Scrie motivul (cel puțin 3 caractere).",
         "submit": "Suspendă"
       }
+    },
+    "contact": {
+      "title": "Mesaje de pe pagina de contact",
+      "description": "Cereri de demo și întrebări de la operatori. Le primești și pe email.",
+      "openTitle": "De răspuns ({count})",
+      "noneOpen": "Nimic de răspuns. Mesajele noi apar aici.",
+      "doneTitle": "Rezolvate",
+      "demo": "Demo",
+      "question": "Întrebare",
+      "markHandled": "Marchează rezolvat",
+      "reopen": "Mută înapoi la răspuns"
     }
   },
   "signup": {
@@ -1606,14 +1668,21 @@
       "action": "Deschide biletul",
       "qrFileName": "bilet-qr",
       "sms": "{tenant}: biletul tău {reference} pentru {product}, {when}, {seats}. Arată codul QR la îmbarcare: {url}",
-      "smsDue": "{tenant}: biletul tău {reference} pentru {product}, {when}, {seats}, de plată la îmbarcare {due}. Arată codul QR la îmbarcare: {url}"
+      "smsDue": "{tenant}: biletul tău {reference} pentru {product}, {when}, {seats}, de plată la îmbarcare {due}. Arată codul QR la îmbarcare: {url}",
+      "calendarAttached": "Excursia e atașată și ca eveniment de calendar: deschide-l ca să o adaugi în calendar.",
+      "addToGoogle": "Adaugă în Google Calendar"
     },
     "bookingCancelled": {
       "subject": "Rezervarea {reference} a fost anulată",
       "cancelled": "Rezervarea ta {reference} la {product} ({when}) a fost anulată de {tenant}. Biletul nu mai este valabil.",
       "refunded": "Banii îți sunt returnați pe card. Pot apărea în cont în 5-10 zile lucrătoare.",
       "sms": "{tenant}: rezervarea {reference} ({product}, {when}) a fost anulată.",
-      "smsRefunded": "{tenant}: rezervarea {reference} ({product}, {when}) a fost anulată. Banii îți sunt returnați pe card în 5-10 zile lucrătoare."
+      "smsRefunded": "{tenant}: rezervarea {reference} ({product}, {when}) a fost anulată. Banii îți sunt returnați pe card în 5-10 zile lucrătoare.",
+      "weather": "Excursia nu poate avea loc din cauza vremii. Siguranța ta e pe primul loc.",
+      "message": "Mesaj de la operator: {message}",
+      "sorry": "Ne pare rău pentru schimbarea de planuri și sperăm să te vedem la bord altă dată.",
+      "smsWeather": "{tenant}: din cauza vremii, rezervarea {reference} ({product}, {when}) este anulată. Ne pare rău!",
+      "smsWeatherRefunded": "{tenant}: din cauza vremii, rezervarea {reference} ({product}, {when}) este anulată. Banii îți sunt returnați pe card în 5-10 zile lucrătoare. Ne pare rău!"
     },
     "scannerInvite": {
       "subject": "{tenant}: cont pentru scanarea biletelor",
@@ -1635,6 +1704,21 @@
       "onlineTicket": "Biletul online",
       "keepOnPhone": "Nu trebuie printat: păstrează-l pe telefon.",
       "fileName": "bilet-{reference}.pdf"
+    },
+    "calendar": {
+      "description": "Rezervarea {reference}. Biletul tău: {url}"
+    },
+    "contactRequest": {
+      "demo": "Cerere de demo",
+      "question": "Întrebare",
+      "subject": "{topic} de la {name}",
+      "intro": "{name} a scris de pe pagina de contact ({topic}).",
+      "name": "Nume",
+      "email": "Email",
+      "phone": "Telefon",
+      "company": "Firmă",
+      "action": "Vezi toate cererile",
+      "sms": "{topic} de la {name}: {contact}"
     }
   },
   "catalog": {
@@ -1770,9 +1854,9 @@
       "slotAriaOpen_other": "{time}, {available} din {count} de locuri libere. Modifică plecarea",
       "editTitle": "Plecarea de {day}, {time}",
       "closeDayTitle": "Închizi ziua?",
-      "closeDayDescription_one": "Este {count} loc rezervat în {day}. Biletele rămân valabile; anunță clienții dacă excursia nu mai are loc.",
-      "closeDayDescription_few": "Sunt {count} locuri rezervate în {day}. Biletele rămân valabile; anunță clienții dacă excursia nu mai are loc.",
-      "closeDayDescription_other": "Sunt {count} de locuri rezervate în {day}. Biletele rămân valabile; anunță clienții dacă excursia nu mai are loc.",
+      "closeDayDescription_one": "Este {count} loc rezervat în {day}. Poți anula excursiile (clienții primesc banii înapoi și un mesaj) sau doar opri vânzările noi (biletele rămân valabile).",
+      "closeDayDescription_few": "Sunt {count} locuri rezervate în {day}. Poți anula excursiile (clienții primesc banii înapoi și un mesaj) sau doar opri vânzările noi (biletele rămân valabile).",
+      "closeDayDescription_other": "Sunt {count} de locuri rezervate în {day}. Poți anula excursiile (clienții primesc banii înapoi și un mesaj) sau doar opri vânzările noi (biletele rămân valabile).",
       "cancel": "Renunță",
       "closing": "Se închide…",
       "closeSales": "Închide vânzările",
@@ -1797,7 +1881,32 @@
       "deleting": "Se șterge…",
       "deleted": "Plecarea a fost ștearsă.",
       "closedInstead": "Plecarea are rezervări, așa că a fost închisă în loc să fie ștearsă.",
-      "deleteSlot": "Șterge plecarea"
+      "deleteSlot": "Șterge plecarea",
+      "cancelDay": "Anulează",
+      "cancelDayTitle": "Anulezi excursiile din {day}?",
+      "cancelSlotTitle": "Anulezi excursia din {day}, {time}?",
+      "cancelAndRefund": "Anulează excursiile și returnează banii",
+      "cancelSlot": "Anulează și returnează banii",
+      "cancelExplain_one": "Este {count} loc rezervat. Rezervarea se anulează, banii plătiți online se întorc pe card, iar clientul primește un email sau SMS cu motivul.",
+      "cancelExplain_other": "Sunt {count} de locuri rezervate. Toate rezervările se anulează, banii plătiți online se întorc pe carduri, iar fiecare client primește un email sau SMS cu motivul.",
+      "cancelReason": "Motivul, spus clienților",
+      "reasonWeather": "Vreme rea",
+      "reasonOther": "Alt motiv",
+      "cancelMessage": "Mesaj pentru clienți",
+      "cancelMessageHint": "De exemplu: „Răspunde la acest email și te mutăm în altă zi.”",
+      "keepDepartures": "Nu anula",
+      "cancellingDepartures": "Se anulează și se returnează banii…",
+      "confirmCancel": "Anulează și returnează banii",
+      "cancelledBookings_one": "{count} rezervare anulată.",
+      "cancelledBookings_other": "{count} de rezervări anulate.",
+      "cancelledRefunded_one": "{count} client primește banii înapoi.",
+      "cancelledRefunded_other": "{count} de clienți primesc banii înapoi.",
+      "cancelledFailed_one": "{count} rezervare nu a putut fi anulată: încearcă din nou.",
+      "cancelledFailed_other": "{count} de rezervări nu au putut fi anulate: încearcă din nou.",
+      "cancelExplain_few": "Sunt {count} locuri rezervate. Toate rezervările se anulează, banii plătiți online se întorc pe carduri, iar fiecare client primește un email sau SMS cu motivul.",
+      "cancelledBookings_few": "{count} rezervări anulate.",
+      "cancelledRefunded_few": "{count} clienți primesc banii înapoi.",
+      "cancelledFailed_few": "{count} rezervări nu au putut fi anulate: încearcă din nou."
     },
     "settings": {
       "title": "Setări și aspect",
@@ -1862,7 +1971,16 @@
       "sampleTicket": "Bilet · {name}",
       "sampleSlot": "Sâmbătă, 18:00 · 2 adulți",
       "sampleValid": "Valabil",
-      "previewSr": "Previzualizare: pagina de rezervări și biletul, cu numele, logoul și culoarea alese."
+      "previewSr": "Previzualizare: pagina de rezervări și biletul, cu numele, logoul și culoarea alese.",
+      "customersTitle": "Pentru clienții tăi",
+      "customersDescription": "Apar pe pagina de rezervare înainte de plată și pe fiecare bilet.",
+      "contactPhone": "Telefon pentru clienți",
+      "contactPhoneHint": "Clienții te pot suna din bilet. Lasă gol ca să nu apară.",
+      "contactEmail": "Email pentru clienți",
+      "cancellationPolicy": "Politica de anulare",
+      "cancellationPolicyHint": "Când pot anula clienții și ce bani primesc înapoi. Lasă gol ca să folosești textul din casetă.",
+      "errContactEmail": "Verifică adresa de email, de forma nume@exemplu.ro.",
+      "errContactPhone": "Scrie numărul cu prefixul țării, de forma +40 722 123 456."
     },
     "sources": {
       "title": "Sistemul tău de rezervări",
@@ -2010,5 +2128,84 @@
       "howTo": "Persoana deschide linkul primit, intră cu codul din SMS sau email și ajunge direct la scaner."
     },
     "noName": "Fără nume"
+  },
+  "legal": {
+    "updated": "Ultima actualizare: {date}",
+    "terms": {
+      "title": "Condiții de rezervare",
+      "intro": "Aceste condiții se aplică atunci când rezervi o excursie sau o experiență prin {app}. Te rugăm să le citești înainte de plată.",
+      "sections": {
+        "who": {
+          "title": "Cu cine faci rezervarea",
+          "text": "Excursia este oferită și organizată de operatorul al cărui nume apare pe pagina de rezervare și pe bilet. Contractul pentru excursie îl încheii cu acel operator.\n\n{app} pune la dispoziție, în numele operatorului, tehnologia de rezervare, plată și emitere a biletelor. Dacă cineva (de exemplu recepția hotelului) ți-a recomandat excursia sau a rezervat-o pentru tine, a făcut-o ca partener al operatorului."
+        },
+        "booking": {
+          "title": "Rezervarea și plata",
+          "text": "Prețurile sunt afișate în moneda operatorului și includ TVA. Locurile îți sunt rezervate câteva minute cât timp plătești; rezervarea este confirmată când plata reușește, iar atunci primești biletul pe email sau SMS.\n\nPlățile cu cardul sunt procesate de Stripe. Nici operatorul, nici {app} nu văd și nu păstrează datele cardului tău. Dacă operatorul permite, un partener poate face rezervarea cu plata la îmbarcare; în acest caz plătești operatorului când urci la bord."
+        },
+        "ticket": {
+          "title": "Biletul tău",
+          "text": "Biletul este valabil pentru data, ora și numărul de persoane trecute pe el. Codul QR se scanează la îmbarcare și poate fi folosit o singură dată. Păstrează-l pe telefon sau salvează PDF-ul; nu trebuie să-l printezi."
+        },
+        "yourCancel": {
+          "title": "Dacă vrei să anulezi sau să schimbi rezervarea",
+          "text": "Se aplică politica de anulare a operatorului. O vezi pe pagina de rezervare înainte de plată și pe bilet. Ca să anulezi sau să schimbi rezervarea, contactează operatorul folosind datele de pe bilet."
+        },
+        "operatorCancel": {
+          "title": "Dacă operatorul anulează",
+          "text": "Excursiile pe apă și în aer liber depind de vreme și de siguranță. Dacă operatorul anulează excursia, ești anunțat pe email sau SMS, iar toată suma plătită online se întoarce pe cardul folosit, de obicei în 5-10 zile lucrătoare. Operatorul îți poate oferi și o altă dată."
+        },
+        "onTheDay": {
+          "title": "În ziua excursiei",
+          "text": "Ajunge la punctul de întâlnire de pe bilet puțin înainte de ora plecării. Respectă instrucțiunile de siguranță ale echipajului. Operatorul poate refuza îmbarcarea pentru siguranța pasagerilor."
+        },
+        "liability": {
+          "title": "Răspundere și reclamații",
+          "text": "Operatorul răspunde de desfășurarea excursiei. Trimite orice reclamație despre excursie mai întâi operatorului. Aceste condiții nu îți limitează drepturile pe care le ai ca consumator conform legii."
+        },
+        "contact": {
+          "title": "Contact",
+          "text": "Pentru rezervare, contactează operatorul folosind datele de pe bilet. Pentru o întrebare despre {app}, folosește pagina noastră de contact."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Politica de confidențialitate",
+      "intro": "Cum sunt folosite datele tale personale atunci când rezervi prin {app} sau ne scrii.",
+      "sections": {
+        "controller": {
+          "title": "Cine răspunde de date",
+          "text": "Pentru o rezervare, operatorul la care rezervi răspunde de datele tale (este operatorul de date). {app} prelucrează datele în numele operatorului, doar pentru serviciul de rezervare, plată și bilete.\n\nPentru mesajele trimise de pe pagina noastră de contact, {app} este operatorul de date."
+        },
+        "data": {
+          "title": "Ce date",
+          "text": "Numele, adresa de email sau numărul de telefon, limba aleasă, excursia, data și biletele rezervate, starea plății și, dacă altcineva a rezervat pentru tine, numărul camerei de hotel, când este dat. Datele cardului sunt colectate de Stripe și nu ajung niciodată la operator sau la {app}.\n\nDacă ai ajuns printr-un link sau cod QR al unui partener, păstrăm un cod care identifică acel partener, ca să i se poată calcula comisionul."
+        },
+        "purposes": {
+          "title": "De ce sunt folosite",
+          "text": "Pentru a face și gestiona rezervarea (contractul pe care îl ceri): trimiterea biletului, verificarea lui la îmbarcare, anunțarea schimbărilor sau anulărilor și returnarea banilor. Pentru plata comisionului către partenerul care a recomandat excursia și pentru evidența contabilă cerută de lege.\n\nNu folosim datele tale pentru reclame și nu le vindem."
+        },
+        "recipients": {
+          "title": "Cine le primește",
+          "text": "Operatorul și angajații lui. Partenerul care a recomandat excursia sau a rezervat-o pentru tine vede rezervarea și numele tău. Furnizori care lucrează pentru noi pe bază de contract: Stripe pentru plăți, furnizorii de email și SMS care îți trimit biletul și furnizorul de găzduire care stochează datele."
+        },
+        "retention": {
+          "title": "Cât timp sunt păstrate",
+          "text": "Atât cât este nevoie pentru excursie și pentru eventualele întrebări despre ea, iar apoi atât cât cer legile contabile și fiscale pentru evidența plăților."
+        },
+        "rights": {
+          "title": "Drepturile tale",
+          "text": "Poți cere o copie a datelor tale, corectarea sau ștergerea lor, restricționarea folosirii, te poți opune folosirii lor și le poți primi într-un format portabil. Scrie operatorului folosind datele de pe bilet. Poți face și o plângere la autoritatea de protecție a datelor (în România: ANSPDCP, dataprotection.ro)."
+        },
+        "cookies": {
+          "title": "Cookie-uri",
+          "text": "Folosim doar cookie-urile necesare serviciului: unul ține minte limba aleasă, iar dacă ai venit printr-un link sau cod QR al unui partener, câteva țin minte partenerul care a recomandat excursia (cu un cod aleator de vizită, ca mai multe clicuri să conteze o dată), ca rezervarea să fie a lui. Nu folosim cookie-uri de reclamă și nu te urmărim pe alte site-uri."
+        },
+        "contact": {
+          "title": "Contact",
+          "text": "Pentru datele rezervării, scrie operatorului folosind datele de pe bilet. Pentru orice ține de {app} sau de pagina de contact, folosește pagina noastră de contact."
+        }
+      }
+    }
   }
 }

@@ -245,6 +245,7 @@ describe.skipIf(!databaseUrl)('platform admin and onboarding (needs TEST_DATABAS
         .send({
           slotId: slots[0]!.id,
           items: [{ priceId: product.prices[0]!.id, quantity: 2 }],
+          acceptTerms: true,
           customer: { name: 'Turist', email: 'turist@example.com', locale: 'ro' },
         })
         .expect(201)

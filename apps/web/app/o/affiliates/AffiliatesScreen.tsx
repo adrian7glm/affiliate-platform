@@ -24,7 +24,7 @@ import { affiliateStatus } from '@/lib/labels';
 import { whatsappUrl } from '@/lib/share';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
-import { Rich, slots } from '../Rich';
+import { Rich, slots } from '@/components/Rich';
 
 function planSummary(plan: CommissionPlanDto | undefined, tr: Translator): string {
   if (!plan) return tr.t('operator.affiliates.defaultPlan');

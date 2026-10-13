@@ -12,7 +12,10 @@ import { type Tenant, TenantsService } from '../common/tenants';
 import { ZodBody } from '../common/validation';
 import { DB } from '../database/database.module';
 
-/** The operator's own settings: name, logo and color on customer pages, booking options. */
+/**
+ * The operator's own settings: name, logo and color on customer pages, booking options, the
+ * cancellation policy and contact details customers see before paying and on their ticket.
+ */
 @Controller('operator/settings')
 @UseGuards(AuthGuard, TenantGuard)
 @Roles('owner', 'staff')
@@ -52,6 +55,11 @@ export class SettingsController {
         ...(body.attributionWindowDays !== undefined
           ? { attributionWindowDays: body.attributionWindowDays }
           : {}),
+        ...(body.cancellationPolicy !== undefined
+          ? { cancellationPolicy: body.cancellationPolicy }
+          : {}),
+        ...(body.contactEmail !== undefined ? { contactEmail: body.contactEmail } : {}),
+        ...(body.contactPhone !== undefined ? { contactPhone: body.contactPhone } : {}),
       })
       .where(eq(tenants.id, tenant.id))
       .returning();
@@ -68,6 +76,9 @@ function toSettingsDto(tenant: Tenant, context: TenantContext): OperatorSettings
     branding: tenant.branding,
     allowPayOnSite: tenant.allowPayOnSite,
     attributionWindowDays: tenant.attributionWindowDays,
+    cancellationPolicy: tenant.cancellationPolicy,
+    contactEmail: tenant.contactEmail,
+    contactPhone: tenant.contactPhone,
     canEdit: context.roles.includes('owner'),
   };
 }
