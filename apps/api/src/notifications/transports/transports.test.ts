@@ -101,7 +101,7 @@ describe('SMTP errors', () => {
 describe('notification settings', () => {
   const base = {
     DATABASE_URL: 'postgres://localhost/x',
-    APP_SECRET: 'a-secret-that-is-long-enough',
+    APP_SECRET: 'a-secret-that-is-long-enough-for-production',
   };
 
   it('works locally with no accounts, also with the empty values of .env.example', () => {

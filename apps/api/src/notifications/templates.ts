@@ -52,6 +52,13 @@ export interface TemplateParams {
     /** The operator's own words for the customer. */
     message?: string | null;
   };
+  /** Sent to the account's existing phone and email when its sign-in security changes. */
+  security_alert: {
+    event: 'contact_added' | 'two_factor_on' | 'two_factor_off' | 'two_factor_reset';
+    /** The new phone number or email, masked (contact_added). */
+    contact?: string;
+    url: string;
+  };
   contact_request: {
     topic: 'demo' | 'question';
     name: string;
@@ -76,6 +83,7 @@ export const TEMPLATE_NAMES = [
   'ticket',
   'booking_cancelled',
   'contact_request',
+  'security_alert',
 ] as const satisfies readonly TemplateName[];
 
 export interface RenderedMessage {
@@ -189,6 +197,26 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
     action: { label: t('email.systemAlert.action'), url },
     sms: t('email.systemAlert.sms', { type: eventType, url }),
   }),
+
+  security_alert: ({ event, contact = '', url }, { t, tk }) => {
+    const key = {
+      contact_added: 'contactAdded',
+      two_factor_on: 'twoFactorOn',
+      two_factor_off: 'twoFactorOff',
+      two_factor_reset: 'twoFactorReset',
+    }[event];
+    return {
+      subject: tk(`email.securityAlert.${key}Subject`),
+      greeting: t('email.greeting'),
+      lines: [
+        tk(`email.securityAlert.${key}`, { contact }),
+        '',
+        t('email.securityAlert.notYou', { url }),
+      ],
+      action: { label: t('email.securityAlert.action'), url },
+      sms: `${tk(`email.securityAlert.${key}`, { contact })} ${t('email.securityAlert.notYou', { url })}`,
+    };
+  },
 
   scanner_invite: ({ tenantName, name, url }, { t }) => ({
     subject: t('email.scannerInvite.subject', { tenant: tenantName }),

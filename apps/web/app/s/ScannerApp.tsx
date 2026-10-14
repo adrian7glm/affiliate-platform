@@ -3,7 +3,8 @@
 import { useCallback } from 'react';
 import { AuthGate, useSession } from '@/components/AuthGate';
 import { useT } from '@/components/I18nProvider';
-import { IconLogout } from '@/components/icons';
+import Link from 'next/link';
+import { IconLogout, IconShield } from '@/components/icons';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ScanScreen } from '@/components/scanner/ScanScreen';
 import { DEFAULT_TIMEZONE } from '@/lib/dates';
@@ -73,6 +74,14 @@ function ScannerFrame() {
           </div>
           <div className="flex shrink-0 items-center">
             <LanguageSwitcher compact />
+            <Link
+              href="/account"
+              aria-label={t('account.link')}
+              title={t('account.link')}
+              className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl text-muted hover:bg-surface-2"
+            >
+              <IconShield />
+            </Link>
             <button
               type="button"
               onClick={() => void logout()}

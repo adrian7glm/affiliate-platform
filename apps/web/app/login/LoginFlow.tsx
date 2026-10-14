@@ -1,6 +1,6 @@
 'use client';
 
-import type { MeDto, MembershipDto } from '@ap/contracts';
+import type { MeDto, MembershipDto, SessionDto } from '@ap/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -38,7 +38,7 @@ import { readString, writeString } from '@/lib/storage';
 import { errorMessage } from '@/lib/useApi';
 
 type Method = 'phone' | 'email';
-type Step = 'destination' | 'code' | 'tenant';
+type Step = 'destination' | 'code' | 'mfa' | 'tenant';
 
 const METHOD_KEY = 'ap.loginMethod';
 const RESEND_SECONDS = 30;
@@ -67,6 +67,10 @@ export function LoginFlow({
   const [busy, setBusy] = useState(false);
   const [resendIn, setResendIn] = useState(0);
   const [me, setMe] = useState<MeDto | null>(null);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [useRecovery, setUseRecovery] = useState(false);
+  const mfaFormRef = useRef<HTMLFormElement>(null);
   const codeFormRef = useRef<HTMLFormElement>(null);
   const otpAbortRef = useRef<AbortController | null>(null);
 
@@ -206,10 +210,17 @@ export function LoginFlow({
     setError(null);
     setBusy(true);
     try {
-      const session = await authApi.verifyOtp({ destination, code: clean });
-      const profile: MeDto = { user: session.user, memberships: session.memberships };
-      saveSession(session.token, profile);
-      routeAfterLogin(profile);
+      const result = await authApi.verifyOtp({ destination, code: clean });
+      if (result.mfaRequired) {
+        // Two-step login is on: the code from the authenticator app comes next.
+        setMfaToken(result.mfaToken);
+        setMfaCode('');
+        setUseRecovery(false);
+        setStep('mfa');
+        setBusy(false);
+        return;
+      }
+      finishLogin(result);
     } catch (err) {
       // The API answers 401 for a wrong or expired code, 400 for a malformed one.
       const message =
@@ -217,6 +228,31 @@ export function LoginFlow({
           ? t('auth.login.codeWrong')
           : errorMessage(err, i18n);
       setError(message);
+      setBusy(false);
+    }
+  }
+
+  function finishLogin(session: SessionDto) {
+    const profile: MeDto = { user: session.user, memberships: session.memberships };
+    saveSession(session.token, profile);
+    routeAfterLogin(profile);
+  }
+
+  async function onSubmitMfa(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const clean = useRecovery ? mfaCode.trim() : mfaCode.replace(/\D/g, '');
+    if (useRecovery ? clean.length < 10 : clean.length !== 6) {
+      setFieldError(useRecovery ? t('auth.mfa.recoveryInvalid') : t('auth.login.codeLength'));
+      return;
+    }
+    setFieldError(null);
+    setError(null);
+    setBusy(true);
+    try {
+      finishLogin(await authApi.verifyMfa({ mfaToken, code: clean }));
+    } catch (err) {
+      // Wrong code, too many tries, or the first step expired (the message says which).
+      setError(errorMessage(err, i18n));
       setBusy(false);
     }
   }
@@ -407,6 +443,109 @@ export function LoginFlow({
               {resendIn > 0
                 ? t('auth.login.resendIn', { seconds: resendIn })
                 : t('auth.login.resend')}
+            </Button>
+          </div>
+        </form>
+      ) : null}
+
+      {step === 'mfa' ? (
+        <form
+          ref={mfaFormRef}
+          onSubmit={onSubmitMfa}
+          method="post"
+          noValidate
+          className="flex flex-col gap-5"
+        >
+          <div>
+            <h1 className="text-3xl font-bold">{t('auth.mfa.title')}</h1>
+            <p className="mt-2 text-muted">
+              {useRecovery ? t('auth.mfa.recoveryIntro') : t('auth.mfa.intro')}
+            </p>
+          </div>
+
+          {useRecovery ? (
+            <Field
+              key="recovery"
+              label={t('auth.mfa.recoveryLabel')}
+              hint={t('auth.mfa.recoveryHint')}
+              name="recovery"
+              type="text"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              enterKeyHint="go"
+              required
+              autoFocus
+              value={mfaCode}
+              onChange={(e) => {
+                setMfaCode(e.target.value.toUpperCase().slice(0, 20));
+                setFieldError(null);
+              }}
+              error={fieldError}
+              className="[&_input]:text-center [&_input]:font-mono [&_input]:text-xl [&_input]:tracking-widest"
+            />
+          ) : (
+            <Field
+              key="totp"
+              label={t('auth.mfa.codeLabel')}
+              hint={t('auth.mfa.codeHint')}
+              name="totp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="\d{6}"
+              maxLength={6}
+              enterKeyHint="go"
+              required
+              autoFocus
+              value={mfaCode}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setMfaCode(digits);
+                setFieldError(null);
+                if (digits.length === 6 && !busy) {
+                  setTimeout(() => mfaFormRef.current?.requestSubmit(), 0);
+                }
+              }}
+              error={fieldError}
+              className="[&_input]:text-center [&_input]:font-mono [&_input]:text-2xl [&_input]:tracking-[0.4em]"
+            />
+          )}
+
+          {error ? <Alert tone="error">{error}</Alert> : null}
+
+          <Button
+            type="submit"
+            size="lg"
+            block
+            loading={busy}
+            loadingText={t('auth.login.verifying')}
+          >
+            {t('auth.login.submit')}
+          </Button>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              icon={<IconChevronLeft />}
+              onClick={() => {
+                setStep('destination');
+                setError(null);
+                setFieldError(null);
+              }}
+            >
+              {t('auth.mfa.startOver')}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setUseRecovery((r) => !r);
+                setMfaCode('');
+                setError(null);
+                setFieldError(null);
+              }}
+            >
+              {useRecovery ? t('auth.mfa.useApp') : t('auth.mfa.useRecovery')}
             </Button>
           </div>
         </form>

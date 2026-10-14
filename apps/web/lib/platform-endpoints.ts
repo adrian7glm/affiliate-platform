@@ -1,4 +1,6 @@
 import type {
+  AdminAccountDto,
+  AdminAccountLookupDto,
   AdminOverviewDto,
   AdminSystemDto,
   AdminTenantDetailDto,
@@ -63,6 +65,20 @@ export const adminApi = {
   system: (o?: Opts) => apiFetch<AdminSystemDto>('/admin/system', { ...o, tenant: false }),
   retryEvent: (id: number, o?: Opts) =>
     apiFetch<AdminSystemDto>(`/admin/system/events/${id}/retry`, {
+      ...o,
+      method: 'POST',
+      tenant: false,
+    }),
+  findAccount: (contact: string, o?: Opts) =>
+    apiFetch<AdminAccountLookupDto>('/admin/accounts', { ...o, query: { contact }, tenant: false }),
+  resetAccountTwoFactor: (id: string, o?: Opts) =>
+    apiFetch<AdminAccountDto>(`/admin/accounts/${enc(id)}/2fa/reset`, {
+      ...o,
+      method: 'POST',
+      tenant: false,
+    }),
+  signOutAccount: (id: string, o?: Opts) =>
+    apiFetch<AdminAccountDto>(`/admin/accounts/${enc(id)}/sign-out`, {
       ...o,
       method: 'POST',
       tenant: false,

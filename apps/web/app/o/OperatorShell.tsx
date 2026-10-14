@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 import { AuthGate, useSession } from '@/components/AuthGate';
 import { isActivePath } from '@/components/BottomNav';
-import { Button } from '@/components/Button';
+import { Button, ButtonLink } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { useT } from '@/components/I18nProvider';
 import {
@@ -18,6 +18,7 @@ import {
   IconPercent,
   IconRefresh,
   IconScan,
+  IconShield,
   IconSettings,
   IconTicket,
   IconUsers,
@@ -154,6 +155,9 @@ function OperatorFrame({ children }: { children: ReactNode }) {
               <p className="truncate text-sm font-semibold">{who}</p>
               <p className="text-sm text-muted">{role}</p>
               <div className="-ml-3 mt-2 flex flex-wrap items-center gap-1">
+                <ButtonLink href="/account" variant="ghost" icon={<IconShield />}>
+                  {t('account.link')}
+                </ButtonLink>
                 <Button variant="ghost" icon={<IconLogout />} onClick={() => void logout()}>
                   {t('common.signOut')}
                 </Button>
@@ -210,6 +214,9 @@ function OperatorFrame({ children }: { children: ReactNode }) {
               {who} · {role}
             </p>
             <div className="-ml-3 flex flex-wrap items-center gap-1">
+              <ButtonLink href="/account" variant="ghost" icon={<IconShield />}>
+                {t('account.link')}
+              </ButtonLink>
               <Button variant="ghost" icon={<IconLogout />} onClick={() => void logout()}>
                 {t('common.signOut')}
               </Button>
