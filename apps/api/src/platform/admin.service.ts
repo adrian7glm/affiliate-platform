@@ -20,7 +20,7 @@ import {
 import { and, asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { NotFound } from '../common/errors';
-import { col } from '../common/sql';
+import { col, sumMinor } from '../common/sql';
 import { DB } from '../database/database.module';
 import { OnboardingService } from './onboarding.service';
 import { SubscriptionsService } from './subscriptions.service';
@@ -77,8 +77,8 @@ export class AdminService {
       .select({
         tenantId: bookings.tenantId,
         bookings: sql<number>`count(*)::int`,
-        grossMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
-        feesMinor: sql<number>`coalesce(sum(${bookings.platformFeeMinor}), 0)::int`,
+        grossMinor: sumMinor(bookings.totalMinor),
+        feesMinor: sumMinor(bookings.platformFeeMinor),
       })
       .from(bookings)
       .where(tenantId ? and(inPeriod, eq(bookings.tenantId, tenantId)) : inPeriod)
@@ -194,8 +194,8 @@ export class AdminService {
       .select({
         period: month,
         bookings: sql<number>`count(*)::int`,
-        grossMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
-        platformFeesMinor: sql<number>`coalesce(sum(${bookings.platformFeeMinor}), 0)::int`,
+        grossMinor: sumMinor(bookings.totalMinor),
+        platformFeesMinor: sumMinor(bookings.platformFeeMinor),
       })
       .from(bookings)
       .where(and(eq(bookings.tenantId, tenantId), counted, gte(countedAt, from), lt(countedAt, to)))

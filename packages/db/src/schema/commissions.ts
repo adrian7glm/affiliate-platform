@@ -109,6 +109,16 @@ export const commissionEntries = pgTable(
   (t) => [
     index('commission_entries_affiliate_period').on(t.affiliateId, t.periodKey),
     index('commission_entries_booking').on(t.bookingId),
+    // Monthly report and dashboard: one operator's entries for one month.
+    index('commission_entries_tenant_period').on(t.tenantId, t.periodKey),
+    // The approval job reads only pending entries.
+    index('commission_entries_pending')
+      .on(t.bookingId)
+      .where(sql`status = 'pending'`),
+    // Payable balances and payouts: approved entries not yet in a payout.
+    index('commission_entries_payable')
+      .on(t.tenantId, t.affiliateId)
+      .where(sql`status = 'approved' and payout_id is null`),
     // At most one `sale` entry per booking, even if a webhook is delivered twice.
     uniqueIndex('commission_entries_one_sale_per_booking')
       .on(t.bookingId)

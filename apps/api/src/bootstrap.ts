@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ApiErrorFilter } from './common/errors';
 import type { AppConfig } from './config';
 import { I18nService } from './i18n/i18n.service';
+import { appLogger } from './logging';
 
 export function configureApp(app: INestApplication, config: AppConfig): INestApplication {
   app.useGlobalFilters(new ApiErrorFilter(app.get(I18nService)));
@@ -21,6 +22,9 @@ export function configureApp(app: INestApplication, config: AppConfig): INestApp
 }
 
 export async function createApp(config: AppConfig): Promise<INestApplication> {
-  const app = await NestFactory.create(AppModule.with(config), { rawBody: true });
+  const app = await NestFactory.create(AppModule.with(config), {
+    rawBody: true,
+    logger: appLogger(config),
+  });
   return configureApp(app, config);
 }

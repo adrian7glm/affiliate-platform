@@ -14,6 +14,7 @@ export function SiteHeader() {
       style={{ paddingTop: 'max(1rem, var(--safe-top))' }}
     >
       <Link href={`/?lang=${lang}`} className="flex min-h-12 items-center gap-2 text-lg font-bold">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
         {t('common.appName')}
       </Link>

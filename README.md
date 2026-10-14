@@ -102,6 +102,12 @@ primesc o perioadă de probă pe planul implicit și un ghid de pornire în 5 pa
 facturează manual (`BILLING_PROVIDER=manual`); cu `BILLING_PROVIDER=stripe` operatorii plătesc cu
 cardul prin Stripe Billing.
 
+## Lansare în producție
+
+Imagini Docker pentru API, worker și aplicația web, migrări automate, monitorizare și backup:
+[`docs/deploy.md`](docs/deploy.md). Structura modulelor și cine scrie în ce tabele:
+[`docs/architecture.md`](docs/architecture.md).
+
 ## Teste
 
 ```bash

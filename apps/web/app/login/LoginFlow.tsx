@@ -226,7 +226,7 @@ export function LoginFlow({
     router.replace(homePathForRole(membership.role));
   }
 
-  async function useAnotherAccount() {
+  async function switchAccount() {
     await clearSession();
     setMe(null);
     setStep('destination');
@@ -239,6 +239,7 @@ export function LoginFlow({
     >
       <div className="mb-8 flex items-center justify-between gap-3">
         <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
           {t('common.appName')}
         </Link>
@@ -457,7 +458,7 @@ export function LoginFlow({
           {me.memberships.length === 0 ? (
             <ButtonLink href="/start">{t('auth.login.openOperator')}</ButtonLink>
           ) : null}
-          <Button variant="secondary" onClick={() => void useAnotherAccount()}>
+          <Button variant="secondary" onClick={() => void switchAccount()}>
             {t('auth.useAnotherAccount')}
           </Button>
         </div>

@@ -38,6 +38,27 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run format:check
+      - run: pnpm run lint
       - run: pnpm run build
       - run: pnpm run typecheck
       - run: pnpm run test
+
+  docker:
+    # The production images (see docs/deploy.md) must keep building.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        target: [api, worker, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          push: false
+          # Only the web image reads it; a placeholder is enough to prove the build works.
+          build-args: NEXT_PUBLIC_API_URL=https://api.example.com
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}

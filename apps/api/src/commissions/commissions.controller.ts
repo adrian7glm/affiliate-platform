@@ -3,7 +3,6 @@ import {
   Delete,
   Get,
   HttpCode,
-  Inject,
   Param,
   ParseUUIDPipe,
   Post,
@@ -11,7 +10,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { periodKeyFor, periodRange } from '@ap/commission';
 import {
   type AffiliateHomeDto,
   type ArchivePlanResultDto,
@@ -21,15 +19,12 @@ import {
   type CommissionReportDto,
   type CreatePlanBody,
   type EarningsDto,
-  type OperatorDashboardDto,
   type PayoutDto,
   type UpdatePlanBody,
   closePeriodBody,
   createPlanBody,
   updatePlanBody,
 } from '@ap/contracts';
-import { type Database, affiliates, bookings, commissionEntries } from '@ap/db';
-import { and, desc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import {
   AuthGuard,
   CurrentAffiliate,
@@ -42,15 +37,16 @@ import { Clock } from '../common/clock';
 import { periodOrCurrent } from '../common/period';
 import { TenantsService } from '../common/tenants';
 import { ZodBody } from '../common/validation';
-import { DB } from '../database/database.module';
-import { CommissionsService } from './commissions.service';
+import { AffiliateEarningsService } from './affiliate-earnings.service';
+import { CommissionPlansService } from './commission-plans.service';
+import { CommissionPayoutsService } from './payouts.service';
 
 @Controller('affiliate')
 @UseGuards(AuthGuard, TenantGuard)
 @Roles('affiliate')
 export class AffiliateCommissionsController {
   constructor(
-    private readonly commissions: CommissionsService,
+    private readonly earningsService: AffiliateEarningsService,
     private readonly tenants: TenantsService,
     private readonly clock: Clock,
   ) {}
@@ -60,7 +56,7 @@ export class AffiliateCommissionsController {
     @CurrentTenant() tenant: TenantContext,
     @CurrentAffiliate() affiliateId: string,
   ): Promise<AffiliateHomeDto> {
-    return this.commissions.home(tenant.tenantId, affiliateId);
+    return this.earningsService.home(tenant.tenantId, affiliateId);
   }
 
   @Get('earnings')
@@ -70,7 +66,7 @@ export class AffiliateCommissionsController {
     @Query('period') period: unknown,
   ): Promise<EarningsDto> {
     const { timezone } = await this.tenants.get(tenant.tenantId);
-    return this.commissions.earnings(
+    return this.earningsService.earnings(
       tenant.tenantId,
       affiliateId,
       periodOrCurrent(period, this.clock.now(), timezone),
@@ -83,15 +79,15 @@ export class AffiliateCommissionsController {
 @Roles('owner', 'staff')
 export class OperatorCommissionsController {
   constructor(
-    private readonly commissions: CommissionsService,
+    private readonly plansService: CommissionPlansService,
+    private readonly payoutsService: CommissionPayoutsService,
     private readonly tenants: TenantsService,
     private readonly clock: Clock,
-    @Inject(DB) private readonly db: Database,
   ) {}
 
   @Get('commission-plans')
   plans(@CurrentTenant() tenant: TenantContext): Promise<CommissionPlanDto[]> {
-    return this.commissions.listPlans(tenant.tenantId);
+    return this.plansService.listPlans(tenant.tenantId);
   }
 
   @Post('commission-plans')
@@ -99,7 +95,7 @@ export class OperatorCommissionsController {
     @CurrentTenant() tenant: TenantContext,
     @ZodBody(createPlanBody) body: CreatePlanBody,
   ): Promise<CommissionPlanDto> {
-    return this.commissions.createPlan(tenant.tenantId, body);
+    return this.plansService.createPlan(tenant.tenantId, body);
   }
 
   @Put('commission-plans/:id')
@@ -108,7 +104,7 @@ export class OperatorCommissionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @ZodBody(updatePlanBody) body: UpdatePlanBody,
   ): Promise<CommissionPlanDto> {
-    return this.commissions.updatePlan(tenant.tenantId, id, body);
+    return this.plansService.updatePlan(tenant.tenantId, id, body);
   }
 
   @Post('commission-plans/:id/make-default')
@@ -117,7 +113,7 @@ export class OperatorCommissionsController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<CommissionPlanDto> {
-    return this.commissions.makeDefaultPlan(tenant.tenantId, id);
+    return this.plansService.makeDefaultPlan(tenant.tenantId, id);
   }
 
   @Delete('commission-plans/:id')
@@ -125,7 +121,7 @@ export class OperatorCommissionsController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ArchivePlanResultDto> {
-    return this.commissions.archivePlan(tenant.tenantId, id);
+    return this.plansService.archivePlan(tenant.tenantId, id);
   }
 
   @Get('commissions/report')
@@ -134,7 +130,7 @@ export class OperatorCommissionsController {
     @Query('period') period: unknown,
   ): Promise<CommissionReportDto> {
     const { timezone } = await this.tenants.get(tenant.tenantId);
-    return this.commissions.report(
+    return this.payoutsService.report(
       tenant.tenantId,
       periodOrCurrent(period, this.clock.now(), timezone),
     );
@@ -146,7 +142,7 @@ export class OperatorCommissionsController {
     @CurrentTenant() tenant: TenantContext,
     @ZodBody(closePeriodBody) body: ClosePeriodBody,
   ): Promise<ClosePeriodResultDto> {
-    return this.commissions.closePeriod(tenant.tenantId, body.periodKey);
+    return this.payoutsService.closePeriod(tenant.tenantId, body.periodKey);
   }
 
   @Get('payouts')
@@ -155,7 +151,7 @@ export class OperatorCommissionsController {
     @Query('period') period: unknown,
   ): Promise<PayoutDto[]> {
     const { timezone } = await this.tenants.get(tenant.tenantId);
-    return this.commissions.listPayouts(
+    return this.payoutsService.listPayouts(
       tenant.tenantId,
       periodOrCurrent(period, this.clock.now(), timezone),
     );
@@ -167,67 +163,6 @@ export class OperatorCommissionsController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<PayoutDto> {
-    return this.commissions.markPaid(tenant.tenantId, id);
-  }
-
-  @Get('dashboard')
-  async dashboard(@CurrentTenant() context: TenantContext): Promise<OperatorDashboardDto> {
-    const tenant = await this.tenants.get(context.tenantId);
-    const periodKey = periodKeyFor(this.clock.now(), tenant.timezone);
-    const { start, end } = periodRange(periodKey, tenant.timezone);
-    const paidInMonth = and(
-      eq(bookings.tenantId, tenant.id),
-      eq(bookings.status, 'confirmed'),
-      gte(bookings.paidAt, start),
-      lt(bookings.paidAt, end),
-    );
-    const [sales] = await this.db
-      .select({
-        count: sql<number>`count(*)::int`,
-        revenue: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
-      })
-      .from(bookings)
-      .where(paidInMonth);
-    const [commission] = await this.db
-      .select({ total: sql<number>`coalesce(sum(${commissionEntries.amountMinor}), 0)::int` })
-      .from(commissionEntries)
-      .where(
-        and(eq(commissionEntries.tenantId, tenant.id), eq(commissionEntries.periodKey, periodKey)),
-      );
-    const statuses = await this.db
-      .select({ status: affiliates.status, count: sql<number>`count(*)::int` })
-      .from(affiliates)
-      .where(eq(affiliates.tenantId, tenant.id))
-      .groupBy(affiliates.status);
-    const top = await this.db
-      .select({
-        affiliateId: affiliates.id,
-        name: affiliates.displayName,
-        paidSales: sql<number>`count(*)::int`,
-        salesMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
-      })
-      .from(bookings)
-      .innerJoin(affiliates, eq(affiliates.id, bookings.affiliateId))
-      .where(and(paidInMonth, isNotNull(bookings.affiliateId)))
-      .groupBy(affiliates.id, affiliates.displayName)
-      .orderBy(desc(sql`count(*)`))
-      .limit(5);
-    return {
-      tenant: {
-        id: tenant.id,
-        slug: tenant.slug,
-        name: tenant.name,
-        currency: tenant.currency,
-        timezone: tenant.timezone,
-      },
-      periodKey,
-      bookings: { count: sales?.count ?? 0, revenueMinor: sales?.revenue ?? 0 },
-      commissions: { totalMinor: commission?.total ?? 0 },
-      affiliates: {
-        active: statuses.find((s) => s.status === 'active')?.count ?? 0,
-        invited: statuses.find((s) => s.status === 'invited')?.count ?? 0,
-      },
-      topAffiliates: top,
-    };
+    return this.payoutsService.markPaid(tenant.tenantId, id);
   }
 }

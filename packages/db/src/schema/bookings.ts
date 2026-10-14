@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -77,6 +78,12 @@ export const bookings = pgTable(
     uniqueIndex('bookings_tenant_reference').on(t.tenantId, t.reference),
     index('bookings_affiliate_paid').on(t.affiliateId, t.paidAt),
     index('bookings_tenant_starts').on(t.tenantId, t.startsAt),
+    // Sales are counted by payment date (dashboards, reports, commission levels).
+    index('bookings_tenant_paid').on(t.tenantId, t.paidAt),
+    // Expiring unpaid bookings.
+    index('bookings_awaiting_payment')
+      .on(t.holdId)
+      .where(sql`status = 'pending_payment'`),
   ],
 );
 

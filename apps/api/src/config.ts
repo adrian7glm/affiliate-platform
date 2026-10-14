@@ -46,6 +46,15 @@ const schema = z.object({
   /** manual: subscriptions are invoiced by hand. stripe: Stripe Billing charges operators' cards. */
   BILLING_PROVIDER: z.enum(['manual', 'stripe']).default('manual'),
   STRIPE_BILLING_WEBHOOK_SECRET: z.string().optional(),
+  /** text: readable lines (development). json: one JSON object per line, for log collectors. */
+  LOG_FORMAT: z.enum(['text', 'json']).optional(),
+  /** Sentry project DSN: unexpected errors are reported there. Empty: only logged. */
+  SENTRY_DSN: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
+  /** true: apply pending database migrations when the process starts (Docker images do). */
+  MIGRATE_ON_START: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type AppConfig = z.infer<typeof schema>;

@@ -25,6 +25,8 @@ export interface TemplateParams {
   affiliate_invite: { tenantName: string; url: string };
   operator_invite: { businessName: string; url: string };
   new_operator: { name: string; contact: string; url: string };
+  /** For the platform admins: an internal event stopped being retried. */
+  system_alert: { eventId: number; eventType: string; error: string; url: string };
   scanner_invite: { tenantName: string; name: string; url: string };
   payment_link: TripParams & { url: string; totalMinor: number; currency: string };
   ticket: TripParams & {
@@ -68,6 +70,7 @@ export const TEMPLATE_NAMES = [
   'affiliate_invite',
   'operator_invite',
   'new_operator',
+  'system_alert',
   'scanner_invite',
   'payment_link',
   'ticket',
@@ -174,6 +177,17 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
     lines: [t('email.newOperator.intro', { name, contact }), t('email.newOperator.see', { url })],
     action: { label: t('email.newOperator.action'), url },
     sms: t('email.newOperator.sms', { name, contact, url }),
+  }),
+
+  system_alert: ({ eventId, eventType, error, url }, { t }) => ({
+    subject: t('email.systemAlert.subject', { type: eventType }),
+    lines: [
+      t('email.systemAlert.intro', { type: eventType, id: eventId }),
+      t('email.systemAlert.error', { error }),
+      t('email.systemAlert.next'),
+    ],
+    action: { label: t('email.systemAlert.action'), url },
+    sms: t('email.systemAlert.sms', { type: eventType, url }),
   }),
 
   scanner_invite: ({ tenantName, name, url }, { t }) => ({
@@ -363,14 +377,14 @@ const GSM_REPLACEMENTS: Record<string, string> = {
   '–': '-',
   '—': '-',
   '…': '...',
-  ' ': ' ',
-  ' ': ' ',
+  '\u00a0': ' ',
+  '\u202f': ' ',
 };
 
 /** Replaces Romanian diacritics and typographic punctuation with their GSM-7 equivalents. */
 export function toGsm(text: string): string {
   return text
-    .replace(/[ăâîșşțţĂÂÎȘŞȚŢ„”“’‘–—…  ]/g, (c) => GSM_REPLACEMENTS[c] ?? c)
+    .replace(/[ăâîșşțţĂÂÎȘŞȚŢ„”“’‘–—…\u00a0\u202f]/g, (c) => GSM_REPLACEMENTS[c] ?? c)
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '');
 }
