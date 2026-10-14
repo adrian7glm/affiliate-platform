@@ -15,6 +15,7 @@ import { DB } from '../database/database.module';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../integrations/webhooks.service';
 import { Outbox } from '../outbox/outbox';
+import { RetentionService } from '../retention/retention.service';
 import { SourcesService } from '../sources/sources.service';
 import { CleanupService } from './cleanup.service';
 import { JOBS, type JobName, recordHeartbeat } from './jobs';
@@ -44,6 +45,7 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     private readonly notifications: NotificationsService,
     private readonly cleanup: CleanupService,
     private readonly webhooks: WebhooksService,
+    private readonly retention: RetentionService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -56,6 +58,8 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     this.every('approve-commissions', () => this.commissions.approveDue());
     this.every('sync-availability-sources', () => this.sources.syncAll());
     this.every('clean-up-old-rows', () => this.cleanup.run());
+    // Reminders, review requests, monthly reports, billing warnings: each is sent once.
+    this.every('retention-messages', () => this.retention.runDue());
     this.logger.log('background jobs started');
   }
 

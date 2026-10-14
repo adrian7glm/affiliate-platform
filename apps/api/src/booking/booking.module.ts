@@ -3,6 +3,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { DiscountsModule } from '../discounts/discounts.module';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsModule } from '../payments/payments.module';
+import { PlatformModule } from '../platform/platform.module';
 import { SourcesModule } from '../sources/sources.module';
 import { StripeWebhookController } from '../payments/stripe-webhook.controller';
 import { TrackingModule } from '../tracking/tracking.module';
@@ -17,7 +18,14 @@ import { DeparturesService } from './departures.service';
 import { TicketsService } from './tickets.service';
 
 @Module({
-  imports: [CatalogModule, DiscountsModule, TrackingModule, PaymentsModule, SourcesModule],
+  imports: [
+    CatalogModule,
+    DiscountsModule,
+    TrackingModule,
+    PaymentsModule,
+    SourcesModule,
+    PlatformModule,
+  ],
   providers: [BookingService, TicketsService, DeparturesService],
   controllers: [
     PublicBookingController,

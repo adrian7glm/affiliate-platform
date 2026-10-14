@@ -998,7 +998,8 @@ export interface TierProgressDto {
 }
 
 export interface AffiliateHomeDto {
-  affiliate: { id: string; displayName: string; status: string };
+  /** notifySales: the affiliate gets an SMS or email for each sale and each payout. */
+  affiliate: { id: string; displayName: string; status: string; notifySales: boolean };
   tenant: {
     id: string;
     slug: string;
@@ -1200,6 +1201,12 @@ export const logoUrlSchema = z
     'use an https address or a png, jpeg or webp image',
   );
 
+export const reviewUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .regex(/^https:\/\/[^\s"'<>]+\.[^\s"'<>]+$/, 'a full link that starts with https://');
+
 export const hexColorSchema = z
   .string()
   .trim()
@@ -1220,6 +1227,14 @@ export const updateSettingsBody = z.object({
   cancellationPolicy: z.string().trim().min(1).max(2000).nullable().optional(),
   contactEmail: email.nullable().optional(),
   contactPhone: phone.nullable().optional(),
+  /** The page where customers leave a review (Google, TripAdvisor). Null removes it. */
+  reviewUrl: reviewUrlSchema.nullable().optional(),
+  /** Automatic messages: departure reminder, review request, sale messages to affiliates and
+   *  the monthly report. */
+  remindCustomers: z.boolean().optional(),
+  askForReviews: z.boolean().optional(),
+  notifyAffiliates: z.boolean().optional(),
+  monthlyReport: z.boolean().optional(),
 });
 export type UpdateSettingsBody = z.infer<typeof updateSettingsBody>;
 
@@ -1234,8 +1249,23 @@ export interface OperatorSettingsDto {
   cancellationPolicy: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  reviewUrl: string | null;
+  remindCustomers: boolean;
+  askForReviews: boolean;
+  notifyAffiliates: boolean;
+  monthlyReport: boolean;
   /** Only owners change settings; staff see them read-only. */
   canEdit: boolean;
+}
+
+export const affiliateNotificationsBody = z.object({
+  /** An SMS or email for each sale and each payout. */
+  sales: z.boolean(),
+});
+export type AffiliateNotificationsBody = z.infer<typeof affiliateNotificationsBody>;
+
+export interface AffiliateNotificationsDto {
+  sales: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1252,6 +1282,8 @@ export interface PublicTenantDto {
   cancellationPolicy: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  /** Online booking is paused (the operator's subscription is unpaid): show contacts instead. */
+  bookingPaused: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------

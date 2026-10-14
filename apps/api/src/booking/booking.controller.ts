@@ -58,6 +58,7 @@ import { ZodBody } from '../common/validation';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { I18nService } from '../i18n/i18n.service';
 import { Outbox } from '../outbox/outbox';
+import { SubscriptionsService } from '../platform/subscriptions.service';
 import { BookingService } from './booking.service';
 import { DeparturesService } from './departures.service';
 import { TicketsService } from './tickets.service';
@@ -73,6 +74,7 @@ export class PublicBookingController {
     private readonly outbox: Outbox,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly i18n: I18nService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   /** Trips are in the request's language (Accept-Language) where the operator translated them. */
@@ -89,6 +91,7 @@ export class PublicBookingController {
       cancellationPolicy: tenant.cancellationPolicy,
       contactEmail: tenant.contactEmail,
       contactPhone: tenant.contactPhone,
+      bookingPaused: await this.subscriptions.salesPaused(tenant.id),
     };
   }
 

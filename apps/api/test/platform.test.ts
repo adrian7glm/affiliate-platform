@@ -292,12 +292,13 @@ describe.skipIf(!databaseUrl)('platform admin and onboarding (needs TEST_DATABAS
 
   it('records manual payments, plan changes and lapsed trials', async () => {
     const paid = await as(admin, 'patch', `/admin/tenants/${selfServe.tenantId}/billing`)
-      .send({ paidUntil: '2026-11-05T00:00:00.000Z', priceMinorOverride: 1500 })
+      .send({ paidUntil: '2026-12-05T00:00:00.000Z', priceMinorOverride: 1500 })
       .expect(200);
     expect(paid.body as SubscriptionDto).toMatchObject({
       status: 'active',
       monthlyPriceMinor: 1500,
-      currentPeriodEnd: '2026-11-05T00:00:00.000Z',
+      currentPeriodEnd: '2026-12-05T00:00:00.000Z',
+      salesPauseAt: null,
     });
     await as(admin, 'patch', `/admin/tenants/${selfServe.tenantId}/billing`)
       .send({ trialEndsAt: '2026-12-01T00:00:00.000Z' })
@@ -316,6 +317,17 @@ describe.skipIf(!databaseUrl)('platform admin and onboarding (needs TEST_DATABAS
     expect(overview.mrr).toEqual([{ currency: 'EUR', amountMinor: 1500 }]);
     // Both other trials have ended (19 October and 4 November) without a payment.
     expect(overview.operators).toMatchObject({ active: 1, trialing: 0, pastDue: 2 });
+
+    // Not paid again by hand when the paid period ends: past due, with the usual grace days.
+    h.clock.set('2026-12-06T08:00:00Z');
+    const lapsed = (await as(admin, 'get', '/admin/overview').expect(200)).body as AdminOverviewDto;
+    expect(lapsed.mrr).toEqual([]);
+    expect(lapsed.operators).toMatchObject({ active: 0, pastDue: 3 });
+    const billing = await as(founder, 'get', '/operator/billing', selfServe.tenantId).expect(200);
+    expect(billing.body.subscription).toMatchObject({
+      status: 'past_due',
+      salesPauseAt: '2026-12-12T00:00:00.000Z',
+    });
     h.clock.set('2026-10-05T08:00:00Z');
   });
 

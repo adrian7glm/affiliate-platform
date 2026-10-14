@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { Alert } from '@/components/Alert';
 import { buttonClasses } from '@/components/Button';
+import { OperatorContact } from '@/components/public/CancellationPolicy';
 import { PublicMessage, PublicShell } from '@/components/public/PublicShell';
 import { formatMoney } from '@/lib/format';
 import { formatDuration } from '@/lib/i18n';
@@ -114,13 +116,26 @@ export default async function ProductPage({ params, searchParams }: Props) {
           </dl>
         </header>
 
-        <PublicBookingForm
-          tenantSlug={tenant.data.slug}
-          tenantName={tenant.data.name}
-          cancellationPolicy={tenant.data.cancellationPolicy}
-          product={trip}
-          timezone={tenant.data.timezone}
-        />
+        {tenant.data.bookingPaused ? (
+          <div className="flex flex-col gap-4">
+            <Alert tone="info" title={t('public.bookingPausedTitle')}>
+              {t('public.bookingPausedText', { tenant: tenant.data.name })}
+            </Alert>
+            <OperatorContact
+              tenantName={tenant.data.name}
+              email={tenant.data.contactEmail}
+              phone={tenant.data.contactPhone}
+            />
+          </div>
+        ) : (
+          <PublicBookingForm
+            tenantSlug={tenant.data.slug}
+            tenantName={tenant.data.name}
+            cancellationPolicy={tenant.data.cancellationPolicy}
+            product={trip}
+            timezone={tenant.data.timezone}
+          />
+        )}
       </article>
     </PublicShell>
   );

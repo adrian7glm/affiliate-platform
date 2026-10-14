@@ -11,6 +11,7 @@ export const JOBS = {
   'expire-unpaid-bookings': 60_000,
   'approve-commissions': 10 * 60_000,
   'sync-availability-sources': 10 * 60_000,
+  'retention-messages': 5 * 60_000,
   'clean-up-old-rows': 6 * 60 * 60_000,
 } as const satisfies Record<string, number>;
 

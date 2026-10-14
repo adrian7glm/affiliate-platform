@@ -36,6 +36,7 @@ import { DiscountsService } from '../discounts/discounts.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from '../payments/gateway';
+import { SubscriptionsService } from '../platform/subscriptions.service';
 import { SourcesService } from '../sources/sources.service';
 import { type Attribution, LinksService } from '../tracking/links.service';
 import { priceBooking } from './pricing';
@@ -113,6 +114,7 @@ export class BookingService {
     private readonly notifications: NotificationsService,
     private readonly sources: SourcesService,
     private readonly discounts: DiscountsService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   ticketUrl(bookingId: string): string {
@@ -196,6 +198,8 @@ export class BookingService {
   private async create(input: CreateInput): Promise<CheckoutResultDto> {
     const { tenant } = input;
     const now = this.clock.now();
+    // An operator who has not paid the subscription past the grace period sells nothing new.
+    await this.subscriptions.assertCanSell(tenant.id);
     const slot = await this.availability.slot(this.db, tenant.id, input.slotId);
     const product = await this.catalog.product(tenant.id, slot.productId);
     if (!product.active)

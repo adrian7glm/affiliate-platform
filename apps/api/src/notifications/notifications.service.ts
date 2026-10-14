@@ -59,10 +59,11 @@ export class NotificationsService {
 
   /**
    * Queues a message in the caller's transaction: it is sent only if the transaction commits,
-   * by the worker, with retries.
+   * by the worker, with retries. Returns false when a message with the same dedupe key was
+   * already queued.
    */
-  async enqueue<T extends TemplateName>(tx: DbOrTx, message: Message<T>): Promise<void> {
-    await tx
+  async enqueue<T extends TemplateName>(tx: DbOrTx, message: Message<T>): Promise<boolean> {
+    const inserted = await tx
       .insert(notifications)
       .values({
         tenantId: message.tenantId ?? null,
@@ -74,7 +75,9 @@ export class NotificationsService {
         dedupeKey: message.dedupeKey ?? null,
         nextAttemptAt: this.clock.now(),
       })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: notifications.id });
+    return inserted.length > 0;
   }
 
   /**

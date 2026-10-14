@@ -41,6 +41,8 @@ export const affiliates = pgTable(
     inviteToken: text('invite_token').unique(),
     inviteExpiresAt: timestamp('invite_expires_at', { withTimezone: true }),
     stripeAccountId: text('stripe_account_id'),
+    /** The affiliate's own choice: an SMS or email for each sale and each payout. */
+    notifySales: boolean('notify_sales').notNull().default(true),
     createdAt: createdAt(),
   },
   (t) => [

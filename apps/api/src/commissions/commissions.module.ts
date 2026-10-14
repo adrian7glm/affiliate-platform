@@ -20,6 +20,6 @@ import { CommissionPayoutsService } from './payouts.service';
     CommissionPayoutsService,
   ],
   controllers: [AffiliateCommissionsController, OperatorCommissionsController],
-  exports: [CommissionPlansService, CommissionLedgerService],
+  exports: [CommissionPlansService, CommissionLedgerService, AffiliateEarningsService],
 })
 export class CommissionsModule {}

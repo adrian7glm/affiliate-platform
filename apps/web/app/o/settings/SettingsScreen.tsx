@@ -44,7 +44,23 @@ interface Draft {
   cancellationPolicy: string;
   contactEmail: string;
   contactPhone: string;
+  reviewUrl: string;
+  remindCustomers: boolean;
+  askForReviews: boolean;
+  notifyAffiliates: boolean;
+  monthlyReport: boolean;
 }
+
+/** The automatic messages an operator can switch off, in the order they are shown. */
+const MESSAGE_TOGGLES = [
+  'remindCustomers',
+  'askForReviews',
+  'notifyAffiliates',
+  'monthlyReport',
+] as const;
+
+/** Same rule as the API: a full https link to a review page. */
+const REVIEW_URL = /^https:\/\/[^\s"'<>]+\.[^\s"'<>]+$/;
 
 function draftOf(settings: OperatorSettingsDto): Draft {
   return {
@@ -56,6 +72,11 @@ function draftOf(settings: OperatorSettingsDto): Draft {
     cancellationPolicy: settings.cancellationPolicy ?? '',
     contactEmail: settings.contactEmail ?? '',
     contactPhone: settings.contactPhone ?? '',
+    reviewUrl: settings.reviewUrl ?? '',
+    remindCustomers: settings.remindCustomers,
+    askForReviews: settings.askForReviews,
+    notifyAffiliates: settings.notifyAffiliates,
+    monthlyReport: settings.monthlyReport,
   };
 }
 
@@ -76,6 +97,11 @@ function changes(saved: Draft, draft: Draft): UpdateSettingsBody {
   if (email !== saved.contactEmail) body.contactEmail = email || null;
   const phone = draft.contactPhone.trim() ? normalizePhone(draft.contactPhone) : '';
   if (phone !== saved.contactPhone) body.contactPhone = phone || null;
+  const reviewUrl = draft.reviewUrl.trim();
+  if (reviewUrl !== saved.reviewUrl) body.reviewUrl = reviewUrl || null;
+  for (const key of MESSAGE_TOGGLES) {
+    if (draft[key] !== saved[key]) body[key] = draft[key];
+  }
   return body;
 }
 
@@ -123,7 +149,7 @@ function SettingsForm({
 }) {
   const { dashboard } = useOperator();
   const i18n = useT();
-  const { t } = i18n;
+  const { t, tk } = i18n;
   const [saved, setSaved] = useState(() => draftOf(settings));
   const [draft, setDraft] = useState(saved);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -161,6 +187,10 @@ function SettingsForm({
     const phone = draft.contactPhone.trim();
     if (phone && !isValidPhone(normalizePhone(phone))) {
       next.contactPhone = t('catalog.settings.errContactPhone');
+    }
+    const reviewUrl = draft.reviewUrl.trim();
+    if (reviewUrl && !REVIEW_URL.test(reviewUrl)) {
+      next.reviewUrl = t('catalog.settings.errReviewUrl');
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -318,6 +348,50 @@ function SettingsForm({
                 value={draft.cancellationPolicy}
                 onChange={(e) => update({ cancellationPolicy: e.target.value })}
               />
+            </div>
+          </Card>
+
+          <Card
+            title={t('catalog.settings.messagesTitle')}
+            description={t('catalog.settings.messagesDescription')}
+          >
+            <div className="flex flex-col gap-3">
+              {MESSAGE_TOGGLES.map((key) => (
+                <label
+                  key={key}
+                  className="flex items-start gap-3 rounded-2xl border border-line p-3"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 size-6 shrink-0"
+                    checked={draft[key]}
+                    onChange={(e) => update({ [key]: e.target.checked })}
+                  />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{tk(`catalog.settings.messages.${key}`)}</span>
+                    <span className="text-sm text-muted">
+                      {tk(`catalog.settings.messages.${key}Help`)}
+                    </span>
+                  </span>
+                </label>
+              ))}
+              <Field
+                label={t('catalog.settings.reviewUrl')}
+                hint={t('catalog.settings.reviewUrlHint')}
+                name="reviewUrl"
+                type="url"
+                inputMode="url"
+                autoComplete="url"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="https://g.page/r/..."
+                value={draft.reviewUrl}
+                onChange={(e) => update({ reviewUrl: e.target.value })}
+                error={errors.reviewUrl}
+              />
+              {draft.askForReviews && !draft.reviewUrl.trim() ? (
+                <p className="text-sm text-muted">{t('catalog.settings.reviewUrlMissing')}</p>
+              ) : null}
             </div>
           </Card>
         </div>

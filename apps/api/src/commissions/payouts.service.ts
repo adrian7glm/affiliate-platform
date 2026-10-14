@@ -15,6 +15,7 @@ import { DomainError, NotFound } from '../common/errors';
 import { type Tenant, TenantsService } from '../common/tenants';
 import { paidBetween } from '../common/sales';
 import { DB } from '../database/database.module';
+import { Outbox } from '../outbox/outbox';
 import { CommissionLedgerService } from './ledger.service';
 import { toLedgerEntry } from './ledger-rows';
 import { sumMinor } from '../common/sql';
@@ -27,6 +28,7 @@ export class CommissionPayoutsService {
     private readonly clock: Clock,
     private readonly tenants: TenantsService,
     private readonly ledger: CommissionLedgerService,
+    private readonly outbox: Outbox,
   ) {}
 
   async report(tenantId: string, periodKey: string): Promise<CommissionReportDto> {
@@ -279,6 +281,15 @@ export class CommissionPayoutsService {
           .where(
             and(eq(commissionEntries.payoutId, payoutId), eq(commissionEntries.status, 'approved')),
           );
+        await this.outbox.publish(tx, {
+          type: 'payout.paid',
+          tenantId,
+          payoutId,
+          affiliateId: payout.affiliateId,
+          periodKey: payout.periodKey,
+          amountMinor: payout.amountMinor,
+          currency: payout.currency,
+        });
       }
       return payout.periodKey;
     });

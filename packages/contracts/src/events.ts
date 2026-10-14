@@ -52,12 +52,24 @@ export const ticketIssuedEvent = z.object({
   bookingId: z.string().uuid(),
 });
 
+/** The operator paid an affiliate's monthly commission (bank transfer, cash). */
+export const payoutPaidEvent = z.object({
+  type: z.literal('payout.paid'),
+  tenantId: z.string().uuid(),
+  payoutId: z.string().uuid(),
+  affiliateId: z.string().uuid(),
+  periodKey: z.string(),
+  amountMinor: z.number().int(),
+  currency: z.string().length(3),
+});
+
 export const domainEvent = z.discriminatedUnion('type', [
   bookingConfirmedEvent,
   bookingSeatsConfirmedEvent,
   bookingCancelledEvent,
   ticketCheckedInEvent,
   ticketIssuedEvent,
+  payoutPaidEvent,
 ]);
 
 export type DomainEvent = z.infer<typeof domainEvent>;
