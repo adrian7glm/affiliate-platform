@@ -52,6 +52,13 @@
       "breakpoints": true
     },
     {
+      "idx": 8,
+      "version": "7",
+      "when": 1791855526212,
+      "tag": "0008_security_2fa",
+      "breakpoints": true
+    },
+    {
       "idx": 10,
       "version": "7",
       "when": 1791855525212,

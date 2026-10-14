@@ -11,11 +11,12 @@ import {
   users,
 } from '@ap/db';
 import { and, eq } from 'drizzle-orm';
+import { DateTime } from 'luxon';
 import { icsFile } from '../common/calendar';
 import { Clock } from '../common/clock';
 import { TicketSigner, checkTicketLinkKey, ticketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
-import type { Tenant } from '../common/tenants';
+import { type Tenant, TenantsService } from '../common/tenants';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
 import { I18nService } from '../i18n/i18n.service';
@@ -23,6 +24,17 @@ import { NotificationsService, mask } from '../notifications/notifications.servi
 import { ticketCalendarEvent, ticketCalendarFilename } from '../notifications/ticket-calendar';
 import { renderTicketPdf, ticketPdfFilename } from '../notifications/ticket-pdf';
 import { Outbox } from '../outbox/outbox';
+
+/** Hours around the departure in which a ticket boards even when the date differs (night trips). */
+const BOARDING_MARGIN_HOURS = 3;
+
+/** Whether a departure can board now: the same day where the operator is, or within a few hours. */
+export function boardsAround(startsAt: Date, now: Date, timezone: string): boolean {
+  if (Math.abs(startsAt.getTime() - now.getTime()) <= BOARDING_MARGIN_HOURS * 3_600_000)
+    return true;
+  const day = (d: Date) => DateTime.fromJSDate(d).setZone(timezone).toISODate();
+  return day(startsAt) === day(now);
+}
 
 /** What the customer is told when the operator cancels their trip (bad weather...). */
 export interface CancellationNotice {
@@ -41,6 +53,7 @@ export class TicketsService {
     private readonly outbox: Outbox,
     private readonly notifications: NotificationsService,
     private readonly i18n: I18nService,
+    private readonly tenants: TenantsService,
   ) {
     this.signer = new TicketSigner(config.APP_SECRET);
   }
@@ -310,6 +323,7 @@ export class TicketsService {
     token: string,
     userId: string,
     lang = 'en',
+    allowOtherDay = false,
   ): Promise<CheckInResultDto> {
     const payload = this.signer.verify(token);
     if (!payload || payload.ten !== tenantId) {
@@ -323,6 +337,7 @@ export class TicketsService {
       };
     }
     const now = this.clock.now();
+    const { timezone } = await this.tenants.get(tenantId);
     const outcome = await this.db.transaction(async (tx) => {
       const [ticket] = await tx
         .select()
@@ -349,6 +364,10 @@ export class TicketsService {
           collectMinor: 0,
           ...firstScan,
         };
+      }
+      // Tomorrow's ticket shown today would otherwise be used up a day early.
+      if (!allowOtherDay && !boardsAround(booking.startsAt, now, timezone)) {
+        return { result: 'wrong_day' as const, bookingId: booking.id, collectMinor: 0 };
       }
 
       await tx
@@ -392,6 +411,7 @@ export class TicketsService {
       checked_in: 'errors.checkIn.checkedIn',
       already_checked_in: 'errors.checkIn.alreadyCheckedIn',
       not_valid: 'errors.checkIn.notValid',
+      wrong_day: 'errors.checkIn.wrongDay',
     };
     return {
       result: outcome.result,

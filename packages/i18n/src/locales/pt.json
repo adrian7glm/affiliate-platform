@@ -220,7 +220,8 @@
       "notAffiliate": "não é afiliado deste operador",
       "tooManyCodes": "foram pedidos demasiados códigos, tente mais tarde",
       "codeExpired": "o código expirou, peça um novo",
-      "wrongCode": "código errado"
+      "wrongCode": "código errado",
+      "ownerOnly": "só o administrador do operador pode alterar as comissões e os pagamentos"
     },
     "webhooks": {
       "invalidSignature": "assinatura Stripe inválida"
@@ -310,7 +311,8 @@
       "checkedIn": "Bem-vindo a bordo.",
       "alreadyCheckedIn": "Este bilhete já foi lido.",
       "notValid": "Este bilhete não é válido (cancelado, reembolsado ou não pago).",
-      "otherOperator": "Este código QR não é um bilhete deste operador."
+      "otherOperator": "Este código QR não é um bilhete deste operador.",
+      "wrongDay": "Este bilhete é para outro dia."
     },
     "ticket": {
       "noPdf": "este bilhete não é válido, por isso não tem PDF",
@@ -321,6 +323,18 @@
     },
     "contact": {
       "tooMany": "Já nos enviou várias mensagens. Responderemos em breve."
+    },
+    "limits": {
+      "tooManyRequests": "demasiadas tentativas a partir desta ligação; aguarda alguns minutos e tenta novamente"
+    },
+    "account": {
+      "challengeExpired": "o início de sessão demorou demasiado; comece de novo",
+      "twoFactorNotOn": "a verificação em dois passos não está ativada nesta conta",
+      "twoFactorLocked": "demasiados códigos errados; aguarde 15 minutos e tente novamente",
+      "twoFactorWrongCode": "o código está errado; introduza os 6 dígitos que a app de autenticação mostra agora",
+      "twoFactorAlreadyOn": "a verificação em dois passos já está ativada",
+      "twoFactorNoSetup": "comece a configuração de novo",
+      "contactTaken": "este número de telefone ou email já pertence a outra conta"
     }
   },
   "auth": {
@@ -393,6 +407,19 @@
       "forBefore": "Este convite é para ",
       "forAfter": ". Inicie sessão com o seu número de telefone ou email para o aceitar.",
       "continue": "Continuar"
+    },
+    "mfa": {
+      "title": "Verificação em dois passos",
+      "intro": "Abra a sua app de autenticação e introduza o código de 6 dígitos apresentado para esta conta.",
+      "recoveryIntro": "Introduza um dos códigos de recuperação que guardou quando ativou a verificação em dois passos. Cada código funciona uma única vez.",
+      "codeLabel": "Código da app de autenticação",
+      "codeHint": "O código muda a cada 30 segundos.",
+      "recoveryLabel": "Código de recuperação",
+      "recoveryHint": "Por exemplo K7PQ2-XM9TA",
+      "recoveryInvalid": "Um código de recuperação tem 10 letras e dígitos.",
+      "useRecovery": "Não tenho o telefone comigo",
+      "useApp": "Usar a app de autenticação",
+      "startOver": "Começar de novo"
     }
   },
   "public": {
@@ -1203,7 +1230,8 @@
       "invites": "Convites",
       "translations": "Traduções",
       "contact": "Mensagens",
-      "system": "Sistema"
+      "system": "Sistema",
+      "accounts": "Contas"
     },
     "shell": {
       "loadError": "Não foi possível carregar a sua conta",
@@ -1485,6 +1513,35 @@
       "noOperator": "Plataforma",
       "attempts": "Tentativas: {count}",
       "retry": "Tentar de novo"
+    },
+    "accounts": {
+      "title": "Apoio às contas",
+      "description": "Encontre a conta de uma pessoa pelo número de telefone ou email com que inicia sessão. Reponha a verificação em dois passos de quem perdeu o telefone e também os códigos de recuperação, ou termine a sessão dessa pessoa em todos os dispositivos.",
+      "contactLabel": "Número de telefone ou email",
+      "contactHint": "Aquele com que a pessoa inicia sessão, por exemplo 0722 123 456 ou nome@exemplo.com.",
+      "contactInvalid": "Introduza um número de telefone ou um endereço de email.",
+      "search": "Encontrar a conta",
+      "notFound": "Nenhuma conta inicia sessão com este número de telefone ou email.",
+      "phone": "Telefone",
+      "email": "Email",
+      "since": "Conta criada",
+      "twoFactor": "Verificação em dois passos",
+      "twoFactorOnSince": "Ativada desde {date}",
+      "twoFactorOff": "Desativada",
+      "memberships": "Acesso",
+      "platformAdmin": "Administrador da plataforma",
+      "noMemberships": "Ainda não faz parte de nenhum operador.",
+      "reset": "Repor a verificação em dois passos",
+      "resetTitle": "Repor a verificação em dois passos",
+      "resetBody": "A verificação em dois passos é desativada e a sessão da pessoa é terminada em todos os dispositivos. Passa a iniciar sessão só com o código por SMS ou email e pode voltar a ativá-la na página A minha conta. Recebe uma mensagem sobre isso.",
+      "checkIdentity": "Faça isto só depois de confirmar que é mesmo essa pessoa, por exemplo ligando para o número da conta ou perguntando ao operador dela. Fingir que se perdeu o telefone é a forma habitual de roubar contas.",
+      "resetConfirm": "Repor",
+      "resetDone": "A verificação em dois passos está desativada nesta conta e a sessão foi terminada em todos os dispositivos.",
+      "signOut": "Terminar sessão em todo o lado",
+      "signOutTitle": "Terminar sessão em todos os dispositivos",
+      "signOutBody": "Todos os telefones e computadores com sessão iniciada nesta conta terão de iniciar sessão novamente com um código.",
+      "signOutConfirm": "Terminar sessão em todo o lado",
+      "signOutDone": "A sessão desta conta foi terminada em todos os dispositivos."
     }
   },
   "signup": {
@@ -1748,6 +1805,18 @@
       "next": "Corrige a causa e volta a tentar o evento na área de administração.",
       "action": "Abrir o estado do sistema",
       "sms": "Atencao: o evento {type} parou. Ver {url}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "Foi adicionada uma nova forma de iniciar sessão à sua conta",
+      "contactAdded": "{contact} pode agora ser usado para iniciar sessão na sua conta.",
+      "twoFactorOnSubject": "A verificação em dois passos está ativada",
+      "twoFactorOn": "A verificação em dois passos com app de autenticação foi ativada na sua conta.",
+      "twoFactorOffSubject": "A verificação em dois passos foi desativada",
+      "twoFactorOff": "A verificação em dois passos foi desativada na sua conta.",
+      "notYou": "Se não reconhece esta ação, abra a sua conta e termine a sessão nos outros dispositivos: {url}",
+      "action": "Abrir a minha conta",
+      "twoFactorResetSubject": "A verificação em dois passos foi reposta",
+      "twoFactorReset": "A equipa de apoio da plataforma desativou a verificação em dois passos na sua conta e terminou a sua sessão em todos os dispositivos. Se não pediu isto, contacte-nos imediatamente."
     }
   },
   "catalog": {
@@ -2104,7 +2173,8 @@
         "checkedIn": "Embarque confirmado",
         "alreadyCheckedIn": "Bilhete já usado",
         "notValid": "Bilhete inválido",
-        "error": "Não foi possível verificar o bilhete"
+        "error": "Não foi possível verificar o bilhete",
+        "wrongDay": "Bilhete para outro dia"
       },
       "reasonUnknown": "Este código não é um dos seus bilhetes, ou está danificado.",
       "reasonUnpaid": "A reserva não foi paga.",
@@ -2123,7 +2193,9 @@
       "usedAt": "Lido {when}",
       "usedAtBy": "Lido {when} por {who}",
       "usedToday": "hoje às {time}",
-      "usedOnDay": "{day} às {time}"
+      "usedOnDay": "{day} às {time}",
+      "wrongDay": "Este bilhete é para {day} às {time}. Não foi usado.",
+      "boardAnyway": "Embarcar mesmo assim"
     },
     "app": {
       "title": "Leitor de bilhetes",
@@ -2235,6 +2307,67 @@
           "text": "Para os dados da sua reserva, escreva ao operador através dos dados indicados no bilhete. Para qualquer assunto sobre {app} em si ou sobre a página de contacto, use a nossa página de contacto."
         }
       }
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "A minha conta"
+    },
+    "link": "A minha conta",
+    "back": "Voltar",
+    "title": "A minha conta",
+    "contact": {
+      "title": "Como inicia sessão",
+      "intro": "Recebe o código de acesso por SMS ou email. Adicione os dois, para poder iniciar sessão mesmo que um deles deixe de funcionar.",
+      "phone": "Número de telefone",
+      "email": "Email",
+      "none": "Não adicionado",
+      "change": "Alterar",
+      "add": "Adicionar",
+      "phoneTitle": "Número de telefone para iniciar sessão",
+      "emailTitle": "Email para iniciar sessão",
+      "dialogIntro": "Enviamos um código para o novo contacto, para confirmar que é seu.",
+      "save": "Confirmar",
+      "phoneSaved": "O seu número de telefone foi guardado. A partir de agora pode iniciar sessão com ele.",
+      "emailSaved": "O seu email foi guardado. A partir de agora pode iniciar sessão com ele."
+    },
+    "twoFactor": {
+      "title": "Verificação em dois passos",
+      "intro": "Opcional, para mais segurança: depois do código por SMS ou email, introduz também um código de uma app de autenticação no seu telefone (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "A verificação em dois passos está ativada",
+      "onSince": "Desde {date}.",
+      "codesLeft": "Códigos de recuperação restantes: {count}.",
+      "codesLow": "Restam-lhe poucos códigos de recuperação. Gere novos e guarde-os num local seguro.",
+      "newCodes": "Novos códigos de recuperação",
+      "turnOff": "Desativar",
+      "offBody": "A verificação em dois passos está desativada. Qualquer pessoa que receba o seu código por SMS ou email pode iniciar sessão.",
+      "turnOn": "Ativar a verificação em dois passos",
+      "turnOffTitle": "Desativar a verificação em dois passos",
+      "newCodesTitle": "Novos códigos de recuperação",
+      "turnOffIntro": "Introduza o código da sua app de autenticação (ou um código de recuperação) para confirmar.",
+      "newCodesIntro": "Introduza o código da sua app de autenticação. Os seus códigos de recuperação antigos deixam de funcionar.",
+      "turnedOff": "A verificação em dois passos está desativada.",
+      "codesTitle": "Guarde os seus códigos de recuperação",
+      "setupTitle": "Ativar a verificação em dois passos",
+      "step1": "Instale uma app de autenticação no seu telefone, se ainda não tiver uma.",
+      "step2": "Na app, adicione uma conta e leia este código QR.",
+      "step3": "Introduza o código de 6 dígitos que a app mostra.",
+      "qrLabel": "Código QR para a app de autenticação",
+      "cantScan": "Não consigo ler o código",
+      "typeKey": "Na app, escolha introduzir uma chave e escreva esta:",
+      "codesIntro": "Se perder o telefone, estes códigos permitem-lhe iniciar sessão. Cada um funciona uma única vez. Guarde-os num local seguro; não os voltaremos a mostrar. A sessão foi terminada nos seus outros dispositivos.",
+      "copy": "Copiar os códigos",
+      "copied": "Copiados",
+      "saved": "Já guardei os códigos",
+      "codeOrRecovery": "Código da app ou código de recuperação"
+    },
+    "devices": {
+      "title": "Dispositivos",
+      "intro": "Perdeu um telefone ou iniciou sessão num computador partilhado na receção? Termine a sessão em todo o lado, exceto aqui.",
+      "signOutOthers": "Terminar sessão nos outros dispositivos",
+      "done": "A sessão foi terminada em todos os outros dispositivos.",
+      "confirmTitle": "Terminar sessão nos outros dispositivos?",
+      "confirmBody": "Todos os outros telefones e computadores com sessão iniciada na sua conta terão de iniciar sessão novamente. Aqui continua com a sessão iniciada."
     }
   }
 }

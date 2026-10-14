@@ -16,6 +16,7 @@ import {
   IconLogout,
   IconMail,
   IconMenu,
+  IconShield,
   IconPercent,
   IconSettings,
 } from '@/components/icons';
@@ -32,6 +33,7 @@ const NAV: { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }
   { href: '/admin/plans', label: 'admin.nav.plans', icon: <IconPercent /> },
   { href: '/admin/invites', label: 'admin.nav.invites', icon: <IconLink /> },
   { href: '/admin/contact', label: 'admin.nav.contact', icon: <IconMail /> },
+  { href: '/admin/accounts', label: 'admin.nav.accounts', icon: <IconShield /> },
   { href: '/admin/translations', label: 'admin.nav.translations', icon: <IconGlobe /> },
   { href: '/admin/system', label: 'admin.nav.system', icon: <IconSettings /> },
 ];
@@ -222,6 +224,9 @@ function AdminFrame({
               <p className="truncate text-sm font-semibold">{who}</p>
               <p className="text-sm text-muted">{t('admin.shell.role')}</p>
               <LanguageSwitcher className="-ml-2 mt-2" />
+              <ButtonLink href="/account" variant="ghost" icon={<IconShield />} className="-ml-3">
+                {t('account.link')}
+              </ButtonLink>
               <Button variant="ghost" icon={<IconLogout />} onClick={onLogout} className="-ml-3">
                 {t('admin.shell.logout')}
               </Button>
@@ -268,6 +273,9 @@ function AdminFrame({
               {t('admin.shell.whoWithRole', { name: who })}
             </p>
             <LanguageSwitcher className="-ml-2" />
+            <ButtonLink href="/account" variant="ghost" icon={<IconShield />} className="-ml-3">
+              {t('account.link')}
+            </ButtonLink>
             <Button variant="ghost" icon={<IconLogout />} onClick={onLogout} className="-ml-3">
               {t('admin.shell.logout')}
             </Button>

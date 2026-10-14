@@ -13,6 +13,18 @@ export function configureApp(app: INestApplication, config: AppConfig): INestApp
     allowedHeaders: ['authorization', 'content-type', 'x-tenant-id'],
   });
   app.enableShutdownHooks();
+  // The API only serves JSON, PDFs and calendar files: none of it may be framed or sniffed.
+  app.use(
+    (_req: unknown, res: { setHeader(name: string, value: string): void }, next: () => void) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Referrer-Policy', 'no-referrer');
+      if (config.NODE_ENV === 'production') {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      }
+      next();
+    },
+  );
   // Behind a proxy (Railway, Render, Fly) the client IP comes from X-Forwarded-For.
   (app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set(
     'trust proxy',

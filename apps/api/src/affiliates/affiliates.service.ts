@@ -84,7 +84,11 @@ export class AffiliatesService {
     }));
   }
 
-  async invite(tenantId: string, body: InviteAffiliateBody): Promise<AffiliateDto> {
+  /** Staff can invite and manage affiliates; only the owner sets what they earn. */
+  async invite(tenantId: string, body: InviteAffiliateBody, isOwner = true): Promise<AffiliateDto> {
+    if (!isOwner && (body.commissionPlanId != null || body.commissionRateBpsOverride != null)) {
+      throw new DomainError('errors.auth.ownerOnly', HttpStatus.FORBIDDEN);
+    }
     const tenant = await this.tenants.get(tenantId);
     await this.subscriptions.assertCanAddAffiliate(tenantId);
     await this.commissionPlans.assertPlanBelongs(tenantId, body.commissionPlanId);
@@ -133,8 +137,16 @@ export class AffiliatesService {
     tenantId: string,
     affiliateId: string,
     body: UpdateAffiliateBody,
+    isOwner = true,
   ): Promise<AffiliateDto> {
     const current = await this.get(tenantId, affiliateId);
+    const changesCommission =
+      (body.commissionPlanId !== undefined && body.commissionPlanId !== current.commissionPlanId) ||
+      (body.commissionRateBpsOverride !== undefined &&
+        body.commissionRateBpsOverride !== current.commissionRateBpsOverride);
+    if (!isOwner && changesCommission) {
+      throw new DomainError('errors.auth.ownerOnly', HttpStatus.FORBIDDEN);
+    }
     await this.commissionPlans.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.status === 'active' && current.status === 'invited') {
       throw new DomainError('errors.affiliates.notAccepted', HttpStatus.CONFLICT);

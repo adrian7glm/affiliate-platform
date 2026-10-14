@@ -11,13 +11,32 @@ Errors: `{ statusCode, error, message, details? }`.
 
 ## Auth
 
-| Method | Path                | Body               | Response                                  |
-| ------ | ------------------- | ------------------ | ----------------------------------------- |
-| POST   | `/auth/otp/request` | `RequestOtpBody`   | 204 (always, to avoid revealing accounts) |
-| POST   | `/auth/otp/verify`  | `VerifyOtpBody`    | `SessionDto`                              |
-| GET    | `/me`               |                    | `MeDto`                                   |
-| GET    | `/invites/:token`   |                    | `InvitePreviewDto` (public)               |
-| POST   | `/invites/accept`   | `AcceptInviteBody` | `MeDto`                                   |
+| Method | Path                | Body               | Response                                                          |
+| ------ | ------------------- | ------------------ | ----------------------------------------------------------------- |
+| POST   | `/auth/otp/request` | `RequestOtpBody`   | 204 (always, to avoid revealing accounts)                         |
+| POST   | `/auth/otp/verify`  | `VerifyOtpBody`    | `SessionDto`, or `MfaChallengeDto` when two-step login is on      |
+| POST   | `/auth/mfa/verify`  | `VerifyMfaBody`    | `SessionDto` (code from the authenticator app or a recovery code) |
+| GET    | `/me`               |                    | `MeDto`                                                           |
+| GET    | `/invites/:token`   |                    | `InvitePreviewDto` (public)                                       |
+| POST   | `/invites/accept`   | `AcceptInviteBody` | `MeDto`                                                           |
+
+Login codes, checkouts, the contact form and second-step codes are rate limited per client IP
+(429 with `Retry-After`). Wrong second-step codes lock the second step for 15 minutes after 5 in
+a row. Session tokens carry the user's session version: signing out other devices or turning on
+two-step login invalidates every older token.
+
+## Own account (any signed-in user, no `X-Tenant-Id`)
+
+| Method | Path                                | Body                       | Response                           |
+| ------ | ----------------------------------- | -------------------------- | ---------------------------------- |
+| GET    | `/account/security`                 |                            | `AccountSecurityDto`               |
+| POST   | `/account/2fa/setup`                |                            | `TwoFactorSetupDto` (secret + QR)  |
+| POST   | `/account/2fa/enable`               | `TwoFactorCodeBody`        | `TwoFactorEnabledDto` (new token)  |
+| POST   | `/account/2fa/disable`              | `TwoFactorCodeBody`        | `MeDto`                            |
+| POST   | `/account/2fa/recovery-codes`       | `TwoFactorCodeBody`        | `RecoveryCodesDto`                 |
+| POST   | `/account/sessions/sign-out-others` |                            | `NewSessionTokenDto`               |
+| POST   | `/account/contact/request`          | `ContactChangeRequestBody` | 204 (code sent to the new contact) |
+| POST   | `/account/contact/verify`           | `ContactChangeVerifyBody`  | `MeDto`                            |
 
 ## Affiliate (role `affiliate`)
 
@@ -33,6 +52,9 @@ Errors: `{ statusCode, error, message, details? }`.
 | GET    | `/affiliate/bookings`           |                                  | `BookingDto[]`      |
 
 ## Operator (roles `owner`, `staff`)
+
+Commission plan changes, closing a payout period and marking payouts paid are `owner` only;
+staff can invite and edit affiliates but not set their commission.
 
 | Method | Path                                          | Body / query           | Response                            |
 | ------ | --------------------------------------------- | ---------------------- | ----------------------------------- |
@@ -130,20 +152,26 @@ Operator (roles `owner`, `staff`; changing the plan is `owner` only):
 
 Platform admin (users with `isPlatformAdmin`, set at sign-in for `PLATFORM_ADMIN_EMAILS`):
 
-| Method | Path                                  | Body                       | Response               |
-| ------ | ------------------------------------- | -------------------------- | ---------------------- |
-| GET    | `/admin/overview`                     | `?period=YYYY-MM`          | `AdminOverviewDto`     |
-| GET    | `/admin/tenants/:id`                  |                            | `AdminTenantDetailDto` |
-| PATCH  | `/admin/tenants/:id/status`           | `UpdateTenantStatusBody`   | `AdminTenantDetailDto` |
-| PATCH  | `/admin/tenants/:id/billing`          | `UpdateTenantBillingBody`  | `SubscriptionDto`      |
-| GET    | `/admin/plans`                        |                            | `PlatformPlanDto[]`    |
-| POST   | `/admin/plans`                        | `CreatePlatformPlanBody`   | `PlatformPlanDto`      |
-| PATCH  | `/admin/plans/:id`                    | `UpdatePlatformPlanBody`   | `PlatformPlanDto`      |
-| GET    | `/admin/invites`                      |                            | `OperatorInviteDto[]`  |
-| POST   | `/admin/invites`                      | `CreateOperatorInviteBody` | `OperatorInviteDto`    |
-| POST   | `/admin/invites/:id/revoke`           |                            | `OperatorInviteDto`    |
-| GET    | `/admin/contact-requests`             |                            | `ContactRequestDto[]`  |
-| POST   | `/admin/contact-requests/:id/handled` | `SetContactHandledBody`    | `ContactRequestDto`    |
+| Method | Path                                  | Body                       | Response                |
+| ------ | ------------------------------------- | -------------------------- | ----------------------- |
+| GET    | `/admin/overview`                     | `?period=YYYY-MM`          | `AdminOverviewDto`      |
+| GET    | `/admin/tenants/:id`                  |                            | `AdminTenantDetailDto`  |
+| PATCH  | `/admin/tenants/:id/status`           | `UpdateTenantStatusBody`   | `AdminTenantDetailDto`  |
+| PATCH  | `/admin/tenants/:id/billing`          | `UpdateTenantBillingBody`  | `SubscriptionDto`       |
+| GET    | `/admin/plans`                        |                            | `PlatformPlanDto[]`     |
+| POST   | `/admin/plans`                        | `CreatePlatformPlanBody`   | `PlatformPlanDto`       |
+| PATCH  | `/admin/plans/:id`                    | `UpdatePlatformPlanBody`   | `PlatformPlanDto`       |
+| GET    | `/admin/invites`                      |                            | `OperatorInviteDto[]`   |
+| POST   | `/admin/invites`                      | `CreateOperatorInviteBody` | `OperatorInviteDto`     |
+| POST   | `/admin/invites/:id/revoke`           |                            | `OperatorInviteDto`     |
+| GET    | `/admin/contact-requests`             |                            | `ContactRequestDto[]`   |
+| POST   | `/admin/contact-requests/:id/handled` | `SetContactHandledBody`    | `ContactRequestDto`     |
+| GET    | `/admin/accounts`                     | `?contact=` phone or email | `AdminAccountLookupDto` |
+| POST   | `/admin/accounts/:id/2fa/reset`       |                            | `AdminAccountDto`       |
+| POST   | `/admin/accounts/:id/sign-out`        |                            | `AdminAccountDto`       |
+
+Resetting two-step login (for someone who lost the phone and the recovery codes) also signs the
+account out everywhere; both actions go to the audit log and the reset sends a `security_alert`.
 
 A suspended operator gets 403 on every operator and affiliate route, and 404 on its public pages.
 Stripe Billing (`BILLING_PROVIDER=stripe`) posts subscription events to

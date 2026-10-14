@@ -60,6 +60,20 @@ export const users = pgTable(
     phone: text('phone').unique(),
     name: text('name'),
     isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
+    /** Signed into every session token; raising it signs the person out on every device. */
+    sessionVersion: integer('session_version').notNull().default(0),
+    /** Two-step login with an authenticator app (TOTP). Secrets are sealed with APP_SECRET. */
+    totpSecret: text('totp_secret'),
+    totpEnabledAt: timestamp('totp_enabled_at', { withTimezone: true }),
+    /** A secret being set up: shown as a QR code until the first code from the app confirms it. */
+    totpPendingSecret: text('totp_pending_secret'),
+    /** The last 30-second step a code was accepted for, so a code cannot be used twice. */
+    totpLastStep: integer('totp_last_step'),
+    /** Hashes of the unused one-time recovery codes. */
+    totpRecoveryHashes: jsonb('totp_recovery_hashes').$type<string[]>().notNull().default([]),
+    /** Wrong second-step codes in a row, and until when the second step is locked after too many. */
+    totpFailedAttempts: integer('totp_failed_attempts').notNull().default(0),
+    totpLockedUntil: timestamp('totp_locked_until', { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [check('users_contact_present', sql`${t.email} is not null or ${t.phone} is not null`)],

@@ -31,6 +31,34 @@ function safeEqual(a: string, b: string): boolean {
 export interface SessionClaims {
   sub: string;
   exp: number;
+  /** The user's session version when the token was issued (tokens from before it existed: 0). */
+  sv: number;
+}
+
+function signClaims(secret: string, purpose: string, claims: object): string {
+  const payload = b64(JSON.stringify(claims));
+  return `v1.${payload}.${b64(hmac(secret, purpose, payload))}`;
+}
+
+function verifyClaims(
+  secret: string,
+  purpose: string,
+  token: string,
+  now: number,
+): SessionClaims | null {
+  const [version, payload, signature] = token.split('.');
+  if (version !== 'v1' || !payload || !signature) return null;
+  if (!safeEqual(signature, b64(hmac(secret, purpose, payload)))) return null;
+  try {
+    const claims = JSON.parse(
+      Buffer.from(payload, 'base64url').toString(),
+    ) as Partial<SessionClaims>;
+    if (typeof claims.sub !== 'string' || typeof claims.exp !== 'number') return null;
+    if (claims.exp * 1000 <= now) return null;
+    return { sub: claims.sub, exp: claims.exp, sv: typeof claims.sv === 'number' ? claims.sv : 0 };
+  } catch {
+    return null;
+  }
 }
 
 export function signSession(
@@ -38,9 +66,10 @@ export function signSession(
   userId: string,
   ttlSeconds: number,
   now = Date.now(),
+  sessionVersion = 0,
 ): string {
-  const payload = b64(JSON.stringify({ sub: userId, exp: Math.floor(now / 1000) + ttlSeconds }));
-  return `v1.${payload}.${b64(hmac(secret, 'session', payload))}`;
+  const exp = Math.floor(now / 1000) + ttlSeconds;
+  return signClaims(secret, 'session', { sub: userId, exp, sv: sessionVersion });
 }
 
 export function verifySession(
@@ -48,16 +77,133 @@ export function verifySession(
   token: string,
   now = Date.now(),
 ): SessionClaims | null {
-  const [version, payload, signature] = token.split('.');
-  if (version !== 'v1' || !payload || !signature) return null;
-  if (!safeEqual(signature, b64(hmac(secret, 'session', payload)))) return null;
-  try {
-    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString()) as SessionClaims;
-    if (typeof claims.sub !== 'string' || typeof claims.exp !== 'number') return null;
-    return claims.exp * 1000 > now ? claims : null;
-  } catch {
-    return null;
+  return verifyClaims(secret, 'session', token, now);
+}
+
+/**
+ * Proof that the first login step (the SMS/email code) passed, for a person with two-step login
+ * on. It is only accepted by the second step, never as a session.
+ */
+export function signMfaChallenge(
+  secret: string,
+  userId: string,
+  ttlSeconds: number,
+  now = Date.now(),
+  sessionVersion = 0,
+): string {
+  const exp = Math.floor(now / 1000) + ttlSeconds;
+  return signClaims(secret, 'mfa-challenge', { sub: userId, exp, sv: sessionVersion });
+}
+
+export function verifyMfaChallenge(
+  secret: string,
+  token: string,
+  now = Date.now(),
+): SessionClaims | null {
+  return verifyClaims(secret, 'mfa-challenge', token, now);
+}
+
+// ------------------------------------------------------------------------------------------------
+// Authenticator apps (TOTP, RFC 6238): 6 digits, 30-second steps, SHA-1, base32 secrets.
+// ------------------------------------------------------------------------------------------------
+
+const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+export const TOTP_STEP_SECONDS = 30;
+
+export function base32Encode(bytes: Buffer): string {
+  let bits = 0;
+  let value = 0;
+  let out = '';
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      out += BASE32[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
   }
+  if (bits > 0) out += BASE32[(value << (5 - bits)) & 31];
+  return out;
+}
+
+export function base32Decode(text: string): Buffer {
+  const clean = text.toUpperCase().replace(/[\s=-]/g, '');
+  let bits = 0;
+  let value = 0;
+  const out: number[] = [];
+  for (const char of clean) {
+    const index = BASE32.indexOf(char);
+    if (index < 0) throw new Error('invalid base32');
+    value = (value << 5) | index;
+    bits += 5;
+    if (bits >= 8) {
+      out.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+}
+
+/** A new authenticator secret: 160 random bits, base32 as the apps expect. */
+export function generateTotpSecret(): string {
+  return base32Encode(randomBytes(20));
+}
+
+export function totpStep(now: number): number {
+  return Math.floor(now / 1000 / TOTP_STEP_SECONDS);
+}
+
+export function totpCode(secret: string, step: number): string {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(step));
+  const digest = createHmac('sha1', base32Decode(secret)).update(counter).digest();
+  const offset = digest[digest.length - 1]! & 0x0f;
+  const binary = digest.readUInt32BE(offset) & 0x7fffffff;
+  return (binary % 1_000_000).toString().padStart(6, '0');
+}
+
+/**
+ * The step a code is valid for: the current one or one step either side (phone clocks drift),
+ * and only after `lastStep`, so a code that was already used is refused.
+ */
+export function matchTotp(
+  secret: string,
+  code: string,
+  now: number,
+  lastStep: number | null,
+): number | null {
+  const current = totpStep(now);
+  for (const step of [current, current - 1, current + 1]) {
+    if (lastStep !== null && step <= lastStep) continue;
+    if (safeEqual(totpCode(secret, step), code)) return step;
+  }
+  return null;
+}
+
+/** The link authenticator apps read from the QR code. */
+export function totpUri(secret: string, issuer: string, account: string): string {
+  const label = encodeURIComponent(`${issuer}:${account}`);
+  const params = new URLSearchParams({
+    secret,
+    issuer,
+    algorithm: 'SHA1',
+    digits: '6',
+    period: String(TOTP_STEP_SECONDS),
+  });
+  return `otpauth://totp/${label}?${params.toString()}`;
+}
+
+/** One-time recovery codes for a lost phone, e.g. `K7PQ2-XM9TA`. */
+export function generateRecoveryCode(): string {
+  return `${randomCode(5)}-${randomCode(5)}`;
+}
+
+export function normalizeRecoveryCode(code: string): string {
+  return code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+export function hashRecoveryCode(secret: string, userId: string, code: string): string {
+  return b64(hmac(secret, 'recovery-code', `${userId}:${normalizeRecoveryCode(code)}`));
 }
 
 // ------------------------------------------------------------------------------------------------

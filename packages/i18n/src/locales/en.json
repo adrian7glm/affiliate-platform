@@ -218,7 +218,8 @@
       "notAffiliate": "you are not an affiliate of this operator",
       "tooManyCodes": "too many codes requested, try again later",
       "codeExpired": "the code has expired, ask for a new one",
-      "wrongCode": "wrong code"
+      "wrongCode": "wrong code",
+      "ownerOnly": "only the operator's administrator can change commissions and payouts"
     },
     "webhooks": {
       "invalidSignature": "invalid Stripe signature"
@@ -306,7 +307,8 @@
       "checkedIn": "Welcome aboard.",
       "alreadyCheckedIn": "This ticket was already scanned.",
       "notValid": "This ticket is not valid (cancelled, refunded or unpaid).",
-      "otherOperator": "This QR code is not a ticket of this operator."
+      "otherOperator": "This QR code is not a ticket of this operator.",
+      "wrongDay": "This ticket is for another day."
     },
     "ticket": {
       "noPdf": "this ticket is not valid, so it has no PDF",
@@ -317,6 +319,18 @@
     },
     "contact": {
       "tooMany": "You have already sent us several messages. We will answer soon."
+    },
+    "limits": {
+      "tooManyRequests": "too many attempts from this connection; wait a few minutes and try again"
+    },
+    "account": {
+      "challengeExpired": "signing in took too long; start again",
+      "twoFactorNotOn": "two-step login is not on for this account",
+      "twoFactorLocked": "too many wrong codes; wait 15 minutes and try again",
+      "twoFactorWrongCode": "the code is wrong; type the 6 digits the authenticator app shows now",
+      "twoFactorAlreadyOn": "two-step login is already on",
+      "twoFactorNoSetup": "start the setup again",
+      "contactTaken": "this phone number or email already belongs to another account"
     }
   },
   "auth": {
@@ -389,6 +403,19 @@
       "forBefore": "This invitation is for ",
       "forAfter": ". Sign in with your phone number or email to accept it.",
       "continue": "Continue"
+    },
+    "mfa": {
+      "title": "Two-step login",
+      "intro": "Open your authenticator app and type the 6-digit code it shows for this account.",
+      "recoveryIntro": "Type one of the recovery codes you saved when you turned on two-step login. Each code works once.",
+      "codeLabel": "Code from the authenticator app",
+      "codeHint": "The code changes every 30 seconds.",
+      "recoveryLabel": "Recovery code",
+      "recoveryHint": "For example K7PQ2-XM9TA",
+      "recoveryInvalid": "A recovery code has 10 letters and digits.",
+      "useRecovery": "I don't have my phone",
+      "useApp": "Use the authenticator app",
+      "startOver": "Start again"
     }
   },
   "public": {
@@ -1165,7 +1192,8 @@
       "invites": "Invitations",
       "translations": "Translations",
       "contact": "Messages",
-      "system": "System"
+      "system": "System",
+      "accounts": "Accounts"
     },
     "shell": {
       "loadError": "We could not load your account",
@@ -1434,6 +1462,35 @@
       "noOperator": "Platform",
       "attempts": "Attempts: {count}",
       "retry": "Retry"
+    },
+    "accounts": {
+      "title": "Account support",
+      "description": "Find a person's account by the phone number or email they sign in with. Reset two-step login for someone who lost both their phone and their recovery codes, or sign them out on every device.",
+      "contactLabel": "Phone number or email",
+      "contactHint": "The one the person signs in with, for example 0722 123 456 or name@example.com.",
+      "contactInvalid": "Type a phone number or an email address.",
+      "search": "Find account",
+      "notFound": "No account signs in with this phone number or email.",
+      "phone": "Phone",
+      "email": "Email",
+      "since": "Account created",
+      "twoFactor": "Two-step login",
+      "twoFactorOnSince": "On since {date}",
+      "twoFactorOff": "Off",
+      "memberships": "Access",
+      "platformAdmin": "Platform admin",
+      "noMemberships": "Not part of any operator yet.",
+      "reset": "Reset two-step login",
+      "resetTitle": "Reset two-step login",
+      "resetBody": "Two-step login is turned off and the person is signed out on every device. They sign in with the SMS or email code only, and can turn it on again from My account. They get a message about it.",
+      "checkIdentity": "Do this only after checking it is really them, for example by calling the number on the account or asking their operator. Pretending to have lost a phone is the usual way accounts get stolen.",
+      "resetConfirm": "Reset",
+      "resetDone": "Two-step login is off for this account, and it was signed out on every device.",
+      "signOut": "Sign out everywhere",
+      "signOutTitle": "Sign out on every device",
+      "signOutBody": "Every phone and computer signed in to this account has to sign in again with a code.",
+      "signOutConfirm": "Sign out everywhere",
+      "signOutDone": "This account was signed out on every device."
     }
   },
   "signup": {
@@ -1687,6 +1744,18 @@
       "next": "Fix the cause, then retry the event from the admin area.",
       "action": "Open system health",
       "sms": "Attention: event {type} stopped. See {url}"
+    },
+    "securityAlert": {
+      "contactAddedSubject": "A new way to sign in was added to your account",
+      "contactAdded": "{contact} can now be used to sign in to your account.",
+      "twoFactorOnSubject": "Two-step login is on",
+      "twoFactorOn": "Two-step login with an authenticator app was turned on for your account.",
+      "twoFactorOffSubject": "Two-step login was turned off",
+      "twoFactorOff": "Two-step login was turned off for your account.",
+      "notYou": "If this was not you, open your account and sign out the other devices: {url}",
+      "action": "Open my account",
+      "twoFactorResetSubject": "Two-step login was reset",
+      "twoFactorReset": "Platform support turned off two-step login for your account and signed you out on every device. If you did not ask for this, contact us right away."
     }
   },
   "catalog": {
@@ -2023,7 +2092,8 @@
         "checkedIn": "Boarding confirmed",
         "alreadyCheckedIn": "Ticket already used",
         "notValid": "Ticket not valid",
-        "error": "We could not check the ticket"
+        "error": "We could not check the ticket",
+        "wrongDay": "Ticket for another day"
       },
       "reasonUnknown": "This code is not one of your tickets, or it is damaged.",
       "reasonUnpaid": "The booking has not been paid.",
@@ -2042,7 +2112,9 @@
       "usedAt": "Scanned {when}",
       "usedAtBy": "Scanned {when} by {who}",
       "usedToday": "today at {time}",
-      "usedOnDay": "{day} at {time}"
+      "usedOnDay": "{day} at {time}",
+      "wrongDay": "This ticket is for {day} at {time}. It was not used.",
+      "boardAnyway": "Board anyway"
     },
     "app": {
       "title": "Ticket scanner",
@@ -2153,6 +2225,67 @@
           "text": "For your booking data, write to the operator using the details on your ticket. For anything about {app} itself or the contact page, use our contact page."
         }
       }
+    }
+  },
+  "account": {
+    "meta": {
+      "title": "My account"
+    },
+    "link": "My account",
+    "back": "Back",
+    "title": "My account",
+    "contact": {
+      "title": "How you sign in",
+      "intro": "You get the sign-in code by SMS or email. Add both, so you can still sign in if one of them stops working.",
+      "phone": "Phone number",
+      "email": "Email",
+      "none": "Not added",
+      "change": "Change",
+      "add": "Add",
+      "phoneTitle": "Phone number for signing in",
+      "emailTitle": "Email for signing in",
+      "dialogIntro": "We send a code to the new one, to check that it is yours.",
+      "save": "Confirm",
+      "phoneSaved": "Your phone number is saved. You can sign in with it from now on.",
+      "emailSaved": "Your email is saved. You can sign in with it from now on."
+    },
+    "twoFactor": {
+      "title": "Two-step login",
+      "intro": "Optional, for extra security: after the SMS or email code, you also type a code from an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, 1Password...).",
+      "on": "Two-step login is on",
+      "onSince": "Since {date}.",
+      "codesLeft": "Recovery codes left: {count}.",
+      "codesLow": "You have few recovery codes left. Make new ones and keep them somewhere safe.",
+      "newCodes": "New recovery codes",
+      "turnOff": "Turn off",
+      "offBody": "Two-step login is off. Anyone who gets your SMS or email code can sign in.",
+      "turnOn": "Turn on two-step login",
+      "turnOffTitle": "Turn off two-step login",
+      "newCodesTitle": "New recovery codes",
+      "turnOffIntro": "Type the code from your authenticator app (or a recovery code) to confirm.",
+      "newCodesIntro": "Type the code from your authenticator app. Your old recovery codes stop working.",
+      "turnedOff": "Two-step login is off.",
+      "codesTitle": "Save your recovery codes",
+      "setupTitle": "Turn on two-step login",
+      "step1": "Install an authenticator app on your phone, if you don't have one.",
+      "step2": "In the app, add an account and scan this QR code.",
+      "step3": "Type the 6-digit code the app shows.",
+      "qrLabel": "QR code for the authenticator app",
+      "cantScan": "I can't scan the code",
+      "typeKey": "In the app, choose to enter a key and type this one:",
+      "codesIntro": "If you lose your phone, these codes let you sign in. Each one works once. Keep them somewhere safe; we will not show them again. Your other devices were signed out.",
+      "copy": "Copy the codes",
+      "copied": "Copied",
+      "saved": "I saved the codes",
+      "codeOrRecovery": "Code from the app or recovery code"
+    },
+    "devices": {
+      "title": "Devices",
+      "intro": "Lost a phone, or signed in on a shared computer at the reception? Sign out everywhere except here.",
+      "signOutOthers": "Sign out other devices",
+      "done": "All other devices were signed out.",
+      "confirmTitle": "Sign out other devices?",
+      "confirmBody": "Every other phone and computer signed in to your account will have to sign in again. You stay signed in here."
     }
   }
 }

@@ -72,6 +72,7 @@ export async function startHarness(
     PAYMENTS_PROVIDER: 'fake',
     WORKER_ENABLED: 'false',
     HOLD_MINUTES: '30',
+    RATE_LIMITS: 'off',
     ...env,
   });
   const clock = new TestClock(new Date(now));
