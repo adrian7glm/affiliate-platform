@@ -21,6 +21,12 @@ import { Outbox } from '../outbox/outbox';
 import { PaymentsGateway } from './gateway';
 import { StripeGateway } from './stripe.gateway';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function intentId(intent: string | { id: string } | null): string | null {
+  return typeof intent === 'string' ? intent : (intent?.id ?? null);
+}
+
 @Controller('webhooks/stripe')
 export class StripeWebhookController {
   private readonly logger = new Logger('StripeWebhook');
@@ -62,12 +68,24 @@ export class StripeWebhookController {
       case 'checkout.session.async_payment_succeeded': {
         const session = event.data.object;
         const bookingId = session.client_reference_id ?? session.metadata?.bookingId;
-        if (session.payment_status === 'paid' && bookingId) {
-          const intent =
-            typeof session.payment_intent === 'string'
-              ? session.payment_intent
-              : (session.payment_intent?.id ?? null);
-          await this.bookingService.confirmPayment(bookingId, intent);
+        if (session.payment_status !== 'paid' || !bookingId) break;
+        // Another product sold through the same Stripe account (a payment link, an invoice...):
+        // not ours. Answering an error would make Stripe retry it for days.
+        if (!UUID.test(bookingId) || !(await this.bookingService.exists(bookingId))) {
+          this.logger.warn(`${event.type} ${event.id} is not for a booking of this platform`);
+          break;
+        }
+        await this.bookingService.confirmPayment(bookingId, intentId(session.payment_intent));
+        if (this.config.WORKER_ENABLED) void this.outbox.drain();
+        break;
+      }
+      case 'charge.refunded': {
+        // A refund made in the Stripe dashboard: the ticket stops being valid and the commission
+        // is reversed, as if the operator had cancelled the booking here.
+        const charge = event.data.object;
+        const intent = intentId(charge.payment_intent);
+        if (intent) {
+          await this.bookingService.refundedByProvider(intent, charge.amount_refunded);
           if (this.config.WORKER_ENABLED) void this.outbox.drain();
         }
         break;
