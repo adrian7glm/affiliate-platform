@@ -57,6 +57,50 @@ export const verifyOtpBody = z.object({
 });
 export type VerifyOtpBody = z.infer<typeof verifyOtpBody>;
 
+/** Passwords: at least 8 characters; the upper bound keeps hashing cheap. */
+export const newPassword = z.string().min(8, 'use at least 8 characters').max(200);
+
+export const passwordLoginBody = z.object({
+  email,
+  password: z.string().min(1).max(200),
+});
+export type PasswordLoginBody = z.infer<typeof passwordLoginBody>;
+
+/** Sets a new password with a code sent by email (first password or a forgotten one). */
+export const passwordResetBody = z.object({
+  email,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'the code has 6 digits'),
+  password: newPassword,
+});
+export type PasswordResetBody = z.infer<typeof passwordResetBody>;
+
+/** Exchanges the short-lived token the Google sign-in hands to the web app for a session. */
+export const loginHandoffBody = z.object({ token: z.string().min(10).max(2000) });
+export type LoginHandoffBody = z.infer<typeof loginHandoffBody>;
+
+export type DemoAccountRole = 'admin' | 'owner' | 'affiliate' | 'scanner';
+
+/** A ready-made account shown on the sign-in page while the platform runs in demo mode. */
+export interface DemoAccountDto {
+  role: DemoAccountRole;
+  name: string;
+  email: string;
+  password: string;
+}
+
+/** Which ways of signing in the sign-in page offers. */
+export interface AuthOptionsDto {
+  /** Code by SMS; the platform owner turns it on in the admin area. */
+  sms: boolean;
+  /** "Sign in with Google"; on when the Google client is configured. */
+  google: boolean;
+  /** Empty unless DEMO_MODE is on. */
+  demoAccounts: DemoAccountDto[];
+}
+
 /** `scanner`: boarding staff who can only scan tickets at the departure point. */
 export type Role = 'owner' | 'staff' | 'affiliate' | 'scanner';
 

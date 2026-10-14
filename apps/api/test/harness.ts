@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { createDb, memberships, runMigrations, tenants, users } from '@ap/db';
+import { createDb, memberships, platformSettings, runMigrations, tenants, users } from '@ap/db';
 import { sql } from 'drizzle-orm';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
@@ -106,6 +106,10 @@ export async function startHarness(
   await seed.db
     .insert(memberships)
     .values({ userId: owner!.id, tenantId: tenant!.id, role: 'owner' });
+  // Most flows sign affiliates in by SMS; the platform owner's switch starts off.
+  if (env.SMS_LOGIN !== 'false') {
+    await seed.db.insert(platformSettings).values({ key: 'sms_login', value: true });
+  }
   await seed.close();
 
   const notifications = app.get(NotificationsService);

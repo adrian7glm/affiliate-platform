@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
 import { Field, SelectField, TextareaField } from '@/components/Field';
+import { planDescription } from '@/lib/platform-labels';
 import { useT } from '@/components/I18nProvider';
 import { IconPlus } from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
@@ -72,7 +73,9 @@ export function PlansAdmin() {
                     {!plan.isActive ? <StatusChip>{t('admin.plans.retired')}</StatusChip> : null}
                   </div>
                 </div>
-                {plan.description ? <p className="text-muted">{plan.description}</p> : null}
+                {plan.description ? (
+                  <p className="text-muted">{planDescription(i18n, plan)}</p>
+                ) : null}
                 <p>
                   <MoneyText
                     amountMinor={plan.monthlyPriceMinor}

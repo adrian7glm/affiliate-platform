@@ -34,14 +34,32 @@ pnpm db:seed                               # operator demo, plan progresiv, o ex
 pnpm dev                                   # API pe :4000, aplicația web pe :3000
 ```
 
-Date demo după `pnpm db:seed`:
+Date demo după `pnpm db:seed` (toate conturile au parola `demo1234`; cât timp `DEMO_MODE=true`,
+pagina `/login` le afișează cu butoane de copiere și „Intră”):
 
-- proprietarul platformei: `admin@demo.test` (deschide `/admin`: operatori, planuri și tarife, invitații)
+- proprietarul platformei: `admin@demo.test` (deschide `/admin`: operatori, planuri și tarife, invitații, setări)
 - operator: `owner@demo.test` (operatorul „Delta Boats”, excursia „Plimbare cu barca la apus”)
-- afiliat: `+40700000001` (Ana), cu plan progresiv 15% / 20% / 25% pe lună
+- afiliat: `ana@demo.test` (Ana, și `+40700000001` prin SMS), cu plan progresiv 15% / 20% / 25% pe lună
+- lucrător la îmbarcare (doar scanare bilete): `scanner@demo.test`
 
-Login-ul se face cu cod unic (fără parolă), trimis prin SMS sau email. Local, codul apare în
-log-ul API-ului.
+`pnpm db:seed` se poate rula din nou pe o bază existentă: adaugă doar parolele demo și contul de scanare.
+
+Login-ul se face cu email + parolă, cu Google sau cu un cod unic trimis pe email (local, codul apare
+în log-ul API-ului). Codul prin SMS e oprit implicit; se pornește din `/admin/settings`.
+
+### Login cu Google
+
+Butonul „Continuă cu Google” apare când API-ul are `GOOGLE_CLIENT_ID` și `GOOGLE_CLIENT_SECRET`:
+
+1. Deschide https://console.cloud.google.com, creează un proiect și configurează ecranul de consimțământ
+   OAuth (tip „External”, numele aplicației, emailul tău).
+2. La „APIs & Services → Credentials → Create credentials → OAuth client ID” alege „Web application”.
+3. La „Authorized redirect URIs” adaugă `API_URL/auth/google/callback` (local:
+   `http://localhost:4000/auth/google/callback`).
+4. Copiază „Client ID” și „Client secret” în `apps/api/.env` și repornește API-ul.
+
+La lansare: `DEMO_MODE=false` ascunde conturile demo de pe pagina de login.
+
 Plățile folosesc implicit un procesator de test (`PAYMENTS_PROVIDER=fake`): după checkout se
 deschide o pagină locală de plată, fără cont Stripe. Pentru Stripe real, setează
 `PAYMENTS_PROVIDER=stripe`, `STRIPE_SECRET_KEY` și `STRIPE_WEBHOOK_SECRET` în `apps/api/.env`.

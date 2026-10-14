@@ -1,4 +1,8 @@
 import type {
+  AuthOptionsDto,
+  LoginHandoffBody,
+  PasswordLoginBody,
+  PasswordResetBody,
   AccountSecurityDto,
   ContactChangeRequestBody,
   ContactChangeVerifyBody,
@@ -94,6 +98,26 @@ export interface DateRange {
 }
 
 export const authApi = {
+  options: (o?: Opts) => apiFetch<AuthOptionsDto>('/auth/options', { ...o, auth: false }),
+  passwordLogin: (body: PasswordLoginBody, o?: Opts) =>
+    apiFetch<VerifyOtpResultDto>('/auth/password/login', {
+      ...o,
+      method: 'POST',
+      body,
+      auth: false,
+    }),
+  passwordReset: (body: PasswordResetBody, o?: Opts) =>
+    apiFetch<VerifyOtpResultDto>('/auth/password/reset', {
+      ...o,
+      method: 'POST',
+      body,
+      auth: false,
+    }),
+  handoff: (body: LoginHandoffBody, o?: Opts) =>
+    apiFetch<VerifyOtpResultDto>('/auth/handoff', { ...o, method: 'POST', body, auth: false }),
+  /** "Continue with Google" is a plain link: the API sends the browser on to Google. */
+  googleStartUrl: (next: string | null) =>
+    buildUrl(API_URL, '/auth/google/start', { next: next ?? undefined }),
   requestOtp: (body: RequestOtpBody, o?: Opts) =>
     apiFetch<void>('/auth/otp/request', { ...o, method: 'POST', body, auth: false }),
   verifyOtp: (body: VerifyOtpBody, o?: Opts) =>

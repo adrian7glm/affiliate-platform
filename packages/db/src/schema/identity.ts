@@ -91,6 +91,10 @@ export const users = pgTable(
     /** Wrong second-step codes in a row, and until when the second step is locked after too many. */
     totpFailedAttempts: integer('totp_failed_attempts').notNull().default(0),
     totpLockedUntil: timestamp('totp_locked_until', { withTimezone: true }),
+    /** scrypt hash for email + password sign-in; null until the person sets a password. */
+    passwordHash: text('password_hash'),
+    /** Google account id ("sub") once the person has signed in with Google. */
+    googleSub: text('google_sub').unique(),
     createdAt: createdAt(),
   },
   (t) => [check('users_contact_present', sql`${t.email} is not null or ${t.phone} is not null`)],

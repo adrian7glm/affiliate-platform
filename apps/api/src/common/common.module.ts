@@ -3,6 +3,7 @@ import { Clock, SystemClock } from './clock';
 import { TenantsService } from './tenants';
 import { AuthGuard, TenantGuard } from './auth';
 import { RateLimitGuard, RateLimiter } from './rate-limit';
+import { PlatformSettings } from './platform-settings';
 
 @Global()
 @Module({
@@ -13,7 +14,16 @@ import { RateLimitGuard, RateLimiter } from './rate-limit';
     TenantGuard,
     RateLimiter,
     RateLimitGuard,
+    PlatformSettings,
   ],
-  exports: [Clock, TenantsService, AuthGuard, TenantGuard, RateLimiter, RateLimitGuard],
+  exports: [
+    Clock,
+    TenantsService,
+    AuthGuard,
+    TenantGuard,
+    RateLimiter,
+    RateLimitGuard,
+    PlatformSettings,
+  ],
 })
 export class CommonModule {}
