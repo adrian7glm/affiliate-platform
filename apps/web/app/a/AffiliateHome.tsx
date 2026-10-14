@@ -32,6 +32,7 @@ import {
   daysLeftInPeriod,
   nextTierExtraMinor,
 } from '@/lib/insights';
+import { affiliateApi } from '@/lib/endpoints';
 import { useAffiliateHome } from '@/lib/useAffiliateHome';
 import { errorMessage } from '@/lib/useApi';
 
@@ -160,7 +161,76 @@ export function AffiliateHome() {
           <IconChevronRight />
         </Link>
       </div>
+
+      {data ? (
+        <SaleMessages
+          key={data.affiliate.id}
+          enabled={data.affiliate.notifySales}
+          contact={me.user.phone ?? me.user.email}
+          onSaved={home.reload}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/** The affiliate's own switch for "you made a sale" and "your commission was paid". */
+function SaleMessages({
+  enabled,
+  contact,
+  onSaved,
+}: {
+  enabled: boolean;
+  contact: string | null;
+  onSaved: () => void;
+}) {
+  const i18n = useT();
+  const { t } = i18n;
+  const [on, setOn] = useState(enabled);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(next: boolean) {
+    setOn(next);
+    setBusy(true);
+    setError(null);
+    try {
+      const saved = await affiliateApi.updateNotifications({ sales: next });
+      setOn(saved.sales);
+      onSaved();
+    } catch (err) {
+      setOn(!next);
+      setError(errorMessage(err, i18n));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title={t('affiliate.home.messagesTitle')}>
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          className="mt-0.5 size-6 shrink-0"
+          checked={on}
+          disabled={busy}
+          onChange={(e) => void toggle(e.target.checked)}
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="font-semibold">{t('affiliate.home.saleMessages')}</span>
+          <span className="text-sm text-muted">
+            {contact
+              ? t('affiliate.home.saleMessagesHelp', { contact })
+              : t('affiliate.home.saleMessagesHelpNoContact')}
+          </span>
+        </span>
+      </label>
+      {error ? (
+        <Alert tone="error" className="mt-3">
+          {error}
+        </Alert>
+      ) : null}
+    </Card>
   );
 }
 

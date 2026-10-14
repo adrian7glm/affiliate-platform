@@ -49,6 +49,16 @@ export const tenants = pgTable('tenants', {
    * subscribe to it). Null until someone opens the calendar settings; replaced to revoke old links.
    */
   calendarFeedToken: text('calendar_feed_token').unique(),
+  /** Where happy customers leave a review (Google, TripAdvisor); asked the day after the trip. */
+  reviewUrl: text('review_url'),
+  /** Automatic messages the operator can switch off: departure reminder to customers... */
+  remindCustomers: boolean('remind_customers').notNull().default(true),
+  /** ...the review request after the trip (needs review_url)... */
+  askForReviews: boolean('ask_for_reviews').notNull().default(true),
+  /** ..."you made a sale" and "your commission was paid" to affiliates... */
+  notifyAffiliates: boolean('notify_affiliates').notNull().default(true),
+  /** ...and the monthly report to the owners. */
+  monthlyReport: boolean('monthly_report').notNull().default(true),
   /** Suspended operators cannot sign in to their console and their booking pages are offline. */
   status: tenantStatusEnum('status').notNull().default('active'),
   suspendedAt: timestamp('suspended_at', { withTimezone: true }),
@@ -64,6 +74,8 @@ export const users = pgTable(
     email: text('email').unique(),
     phone: text('phone').unique(),
     name: text('name'),
+    /** Language of the app at the last sign-in: messages to this person are written in it. */
+    locale: text('locale'),
     isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
     /** Signed into every session token; raising it signs the person out on every device. */
     sessionVersion: integer('session_version').notNull().default(0),

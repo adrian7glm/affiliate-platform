@@ -8,7 +8,7 @@ import { Clock } from '../common/clock';
 import { NotFound } from '../common/errors';
 import { type Tenant, TenantsService } from '../common/tenants';
 import { paidBetween } from '../common/sales';
-import { DB } from '../database/database.module';
+import { DB, type DbOrTx } from '../database/database.module';
 import { LinksService } from '../tracking/links.service';
 import { CommissionPlansService } from './commission-plans.service';
 import { sumMinor } from '../common/sql';
@@ -25,13 +25,15 @@ export class AffiliateEarningsService {
     private readonly plans: CommissionPlansService,
   ) {}
 
-  private async paidSalesCount(
+  /** Paid, non-cancelled sales of an affiliate in a month: what the tiers count. */
+  async paidSalesCount(
     affiliateId: string,
-    tenant: Tenant,
+    tenant: Pick<Tenant, 'timezone'>,
     periodKey: string,
+    db: DbOrTx = this.db,
   ): Promise<number> {
     const { start, end } = periodRange(periodKey, tenant.timezone);
-    const [row] = await this.db
+    const [row] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(bookings)
       .where(and(eq(bookings.affiliateId, affiliateId), paidBetween(start, end)));
@@ -78,7 +80,12 @@ export class AffiliateEarningsService {
     const [primaryLink] = await this.links.list(affiliateId, [linkId]);
 
     return {
-      affiliate: { id: affiliate.id, displayName: affiliate.displayName, status: affiliate.status },
+      affiliate: {
+        id: affiliate.id,
+        displayName: affiliate.displayName,
+        status: affiliate.status,
+        notifySales: affiliate.notifySales,
+      },
       tenant: {
         id: tenant.id,
         slug: tenant.slug,

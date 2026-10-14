@@ -15,7 +15,7 @@ import { StatusChip } from '@/components/StatusChip';
 import { formatDate } from '@/lib/dates';
 import { formatBps } from '@/lib/format';
 import { operatorPlatformApi } from '@/lib/platform-endpoints';
-import { daysUntil, subscriptionStatus } from '@/lib/platform-labels';
+import { daysUntil, salesPaused, subscriptionStatus } from '@/lib/platform-labels';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useOperator } from '../OperatorContext';
 import { Rich, slots } from '@/components/Rich';
@@ -170,13 +170,22 @@ function BillingContent({
                 </Alert>
               ) : null}
               {sub.status === 'past_due' ? (
-                <Alert tone="warning">
+                <Alert tone={salesPaused(sub.salesPauseAt) ? 'error' : 'warning'}>
                   {sub.currentPeriodEnd
                     ? t('operator.billing.paymentFailed')
                     : t('operator.billing.trialEnded')}{' '}
                   {data.provider === 'stripe'
                     ? t('operator.billing.addCardToContinue')
                     : t('operator.billing.invoiceContact')}
+                  {sub.salesPauseAt ? (
+                    <span className="mt-1 block font-semibold">
+                      {salesPaused(sub.salesPauseAt)
+                        ? t('operator.billing.salesPaused')
+                        : t('operator.billing.salesPauseOn', {
+                            date: formatDate(sub.salesPauseAt, timezone, lang),
+                          })}
+                    </span>
+                  ) : null}
                 </Alert>
               ) : null}
               {sub.currentPeriodEnd && sub.status === 'active' ? (

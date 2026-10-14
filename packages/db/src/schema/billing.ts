@@ -64,6 +64,8 @@ export const tenantSubscriptions = pgTable('tenant_subscriptions', {
   stripeCustomerId: text('stripe_customer_id').unique(),
   stripeSubscriptionId: text('stripe_subscription_id').unique(),
   canceledAt: timestamp('canceled_at', { withTimezone: true }),
+  /** When Stripe first reported a failed payment; new sales pause a grace period later. */
+  pastDueSince: timestamp('past_due_since', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

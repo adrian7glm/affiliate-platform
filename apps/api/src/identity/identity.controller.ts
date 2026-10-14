@@ -43,8 +43,13 @@ export class IdentityController {
   @HttpCode(200)
   @UseGuards(RateLimitGuard)
   @RateLimit('otp-verify', { limit: 30, windowMs: 15 * 60_000 })
-  verifyOtp(@ZodBody(verifyOtpBody) body: VerifyOtpBody): Promise<VerifyOtpResultDto> {
-    return this.identity.verifyOtp(body.destination, body.code);
+  async verifyOtp(
+    @ZodBody(verifyOtpBody) body: VerifyOtpBody,
+    @Req() request: Request,
+  ): Promise<VerifyOtpResultDto> {
+    const result = await this.identity.verifyOtp(body.destination, body.code);
+    if ('user' in result) await this.rememberLocale(result.user.id, request);
+    return result;
   }
 
   /** Second step for people with two-step login on: a code from their authenticator app. */
@@ -52,13 +57,26 @@ export class IdentityController {
   @HttpCode(200)
   @UseGuards(RateLimitGuard)
   @RateLimit('mfa-verify', { limit: 30, windowMs: 15 * 60_000 })
-  verifyMfa(@ZodBody(verifyMfaBody) body: VerifyMfaBody): Promise<SessionDto> {
-    return this.identity.verifyMfa(body.mfaToken, body.code);
+  async verifyMfa(
+    @ZodBody(verifyMfaBody) body: VerifyMfaBody,
+    @Req() request: Request,
+  ): Promise<SessionDto> {
+    const session = await this.identity.verifyMfa(body.mfaToken, body.code);
+    await this.rememberLocale(session.user.id, request);
+    return session;
   }
 
   @Get('me')
   @UseGuards(AuthGuard)
-  me(@CurrentUser() user: AuthUser): Promise<MeDto> {
+  async me(@CurrentUser() user: AuthUser, @Req() request: Request): Promise<MeDto> {
+    await this.rememberLocale(user.id, request);
     return this.identity.me(user.id);
+  }
+
+  /** The app sends its language with every call: messages to this person follow it. */
+  private async rememberLocale(userId: string, request: Request): Promise<void> {
+    // Only a language the platform offers; an unknown one leaves the stored choice alone.
+    const lang = this.i18n.pick(request.headers['accept-language'], '');
+    if (lang) await this.identity.setLocale(userId, lang);
   }
 }

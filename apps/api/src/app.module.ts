@@ -19,6 +19,7 @@ import { OutboxModule } from './outbox/outbox.module';
 import { PaymentsModule } from './payments/payments.module';
 import { SettingsModule } from './settings/settings.module';
 import { PlatformModule } from './platform/platform.module';
+import { RetentionModule } from './retention/retention.module';
 import { SourcesModule } from './sources/sources.module';
 import { TrackingModule } from './tracking/tracking.module';
 
@@ -64,6 +65,7 @@ export class AppModule {
         SettingsModule,
         PlatformModule,
         IntegrationsModule,
+        RetentionModule,
         JobsModule,
       ],
       controllers: [HealthController],
