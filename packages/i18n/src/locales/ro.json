@@ -183,6 +183,10 @@
       "morning": "Bună dimineața",
       "afternoon": "Bună ziua",
       "evening": "Bună seara"
+    },
+    "platformPlan": {
+      "start": "Pentru operatori mici: până la 15 afiliați.",
+      "pro": "Afiliați nelimitați și comision de platformă redus."
     }
   },
   "errors": {
@@ -226,7 +230,11 @@
       "tooManyCodes": "ai cerut prea multe coduri, încearcă din nou mai târziu",
       "codeExpired": "codul a expirat, cere unul nou",
       "wrongCode": "cod greșit",
-      "ownerOnly": "doar administratorul operatorului poate schimba comisioanele și plățile"
+      "ownerOnly": "doar administratorul operatorului poate schimba comisioanele și plățile",
+      "wrongPassword": "emailul sau parola nu sunt corecte",
+      "tooManyAttempts": "prea multe parole greșite, încearcă din nou peste 15 minute sau setează o parolă nouă",
+      "smsOff": "intrarea prin SMS este oprită, intră cu emailul",
+      "googleOff": "intrarea cu Google nu este configurată"
     },
     "webhooks": {
       "invalidSignature": "semnătură Stripe invalidă",
@@ -376,12 +384,9 @@
     },
     "login": {
       "title": "Intră în cont",
-      "intro": "Îți trimitem un cod de 6 cifre. Nu ai nevoie de parolă.",
+      "intro": "Intră cu emailul și parola, cu Google sau cu un cod primit pe email.",
       "noAccessTitle": "Contul nu are acces",
       "noAccessBody": "Contul tău nu este încă legat de niciun operator. Cere operatorului o invitație.",
-      "methodLegend": "Primește codul prin",
-      "methodSms": "SMS",
-      "methodEmail": "Email",
       "phoneLabel": "Număr de telefon",
       "phoneHint": "De exemplu 0722 123 456 sau +40 722 123 456",
       "phoneInvalid": "Scrie numărul complet, de exemplu 0722 123 456 sau +40 722 123 456.",
@@ -408,7 +413,50 @@
       "noMembershipBody": "Contul tău nu este încă legat de niciun operator. Dacă ești afiliat, deschide linkul de invitație primit de la operator.",
       "membershipLine": "{role} · {area}",
       "platformAdmin": "Administrare platformă",
-      "openOperator": "Deschide un cont de operator"
+      "openOperator": "Deschide un cont de operator",
+      "howLegend": "Cum vrei să intri?",
+      "methodPassword": "Parolă",
+      "methodEmailCode": "Cod pe email",
+      "methodSmsCode": "Cod prin SMS",
+      "passwordLabel": "Parola",
+      "passwordRequired": "Scrie parola.",
+      "passwordWrong": "Emailul sau parola nu sunt corecte. Verifică-le sau setează o parolă nouă cu un cod pe email.",
+      "forgotPassword": "Ai uitat parola sau nu ai încă una?",
+      "resetTitle": "Alege o parolă",
+      "newPasswordLabel": "Parola nouă",
+      "newPasswordHint": "Cel puțin 8 caractere.",
+      "newPasswordShort": "Parola trebuie să aibă cel puțin 8 caractere.",
+      "resetSubmit": "Salvează parola și intră",
+      "or": "sau",
+      "google": "Continuă cu Google",
+      "googleError": {
+        "cancelled": "Ai anulat intrarea cu Google.",
+        "expired": "Intrarea cu Google a expirat. Încearcă din nou.",
+        "google": "Google nu a răspuns. Încearcă din nou sau intră cu parola.",
+        "email": "Contul Google nu are o adresă de email confirmată."
+      },
+      "demo": {
+        "title": "Conturi demo",
+        "intro": "Doar pentru testare: copiază datele sau intră direct. Le scoatem la lansare.",
+        "email": "Email",
+        "password": "Parolă",
+        "copy": "Copiază {what}",
+        "copyShort": "Copiază",
+        "copied": "Copiat",
+        "signIn": "Intră",
+        "role": {
+          "admin": "Admin platformă",
+          "owner": "Proprietar operator",
+          "affiliate": "Afiliat",
+          "scanner": "Lucrător la îmbarcare"
+        },
+        "what": {
+          "admin": "Toți operatorii, planuri și tarife, setări",
+          "owner": "Delta Boats: excursii, afiliați, comisioane",
+          "affiliate": "Ana: cod QR, rezervări, câștiguri",
+          "scanner": "Doar scanează biletele la îmbarcare"
+        }
+      }
     },
     "join": {
       "cannotUse": "Invitația nu mai poate fi folosită.",
@@ -508,38 +556,138 @@
     "durationValue": "Durată: {duration}",
     "numbered": "{number}. {title}",
     "landing": {
-      "tagline": "Pentru operatori de excursii și plimbări cu barca",
-      "title": "Recepționerii îți vând excursiile. Tu plătești doar comision.",
-      "intro": "Construiește-ți propria rețea de afiliați: hoteluri, pensiuni și ghizi care recomandă turiștilor plimbările tale, cu linkuri, coduri QR și comisioane calculate automat.",
       "startFree": "Începe gratuit",
-      "howItWorks": "Cum funcționează",
-      "featuresTitle": "Ce primești",
-      "features": {
-        "qr": {
-          "title": "Un cod QR pentru fiecare afiliat",
-          "text": "Recepționerul arată codul, turistul îl scanează și rezervă singur. Fiecare vânzare ajunge la cine a recomandat-o."
-        },
-        "fast": {
-          "title": "Rezervare în 30 de secunde",
-          "text": "Afiliatul rezervă direct de pe telefon, iar clientul plătește scanând un cod sau din linkul primit pe WhatsApp."
-        },
-        "commission": {
-          "title": "Comisioane fixe sau progresive",
-          "text": "Stabilești procentul sau niveluri care cresc cu vânzările. Afiliații își văd câștigurile în timp real."
-        },
-        "tickets": {
-          "title": "Bilete cu cod QR la îmbarcare",
-          "text": "Turistul primește biletul pe telefon; la îmbarcare îl scanezi cu camera, fără aplicații în plus."
+      "copyright": "© {year} {name}",
+      "requestDemo": "Cere un demo",
+      "hero": {
+        "eyebrow": "Pentru plimbări cu barca, tururi și experiențe",
+        "title": "Creează-ți propria rețea de {emphasis}",
+        "titleEmphasis": "promotori",
+        "lede": "Recepționeri de hotel, ghizi și parteneri locali îți vând excursiile cu propriul cod QR. Tu câștigi clienți. Ei câștigă un % din fiecare vânzare. Nu mai depinzi doar de marile platforme de rezervări.",
+        "pills": {
+          "customers": "Mai mulți clienți",
+          "realSales": "Plătești doar vânzările reale",
+          "anyPhone": "Merge pe orice telefon"
         }
       },
-      "steps": {
-        "products": "Îți adaugi excursiile, prețurile și plecările.",
-        "invite": "Inviți recepționeri, concierge și ghizi ca afiliați.",
-        "recommend": "Ei recomandă cu codul QR sau rezervă pentru turist.",
-        "pay": "Turistul plătește online; comisionul se calculează singur."
+      "map": {
+        "label": "Afacerea ta în centru, iar în jur promotorii care îți trimit clienți",
+        "hub": "Excursiile tale",
+        "hubSub": "vin rezervările",
+        "nodes": {
+          "hotel": "Recepție hotel",
+          "guide": "Ghid turistic",
+          "beachBar": "Bar pe plajă",
+          "taxi": "Taximetrist",
+          "apartment": "Gazdă apartament",
+          "shop": "Magazin local"
+        }
       },
-      "copyright": "© {year} {name}",
-      "requestDemo": "Cere un demo"
+      "how": {
+        "eyebrow": "Cum funcționează",
+        "title": "Patru pași. Fără cunoștințe tehnice."
+      },
+      "who": {
+        "promoter": "Promotor",
+        "you": "Tu"
+      },
+      "person": {
+        "name": "Maria Popescu",
+        "first": "Maria"
+      },
+      "step1": {
+        "title": "Promotorul își face cont",
+        "text": "Un recepționer, un ghid sau un partener local se înscrie de pe telefon într-un minut. Îl poți invita și cu un link.",
+        "mockTitle": "Devino promotor pentru Sea Breeze Boat Trips",
+        "name": "Nume",
+        "where": "Unde lucrezi",
+        "workplace": "Hotel Astoria, recepție",
+        "phone": "Telefon",
+        "send": "Trimite cererea"
+      },
+      "step2": {
+        "title": "Tu aprobi și decizi procentul",
+        "text": "Dai fiecărui promotor un % fix negociat sau alegi un plan standard în care procentul crește cu numărul de vânzări. Nivelurile se resetează lunar, așa că promotorii rămân motivați.",
+        "request": "Cerere nouă · Hotel Astoria",
+        "fixed": "Comision fix",
+        "fixedText": "Același % la fiecare vânzare, ex. 18%",
+        "standard": "Plan standard",
+        "tier1": "1–3 vânzări",
+        "tier2": "4–10 vânzări",
+        "tier3": "11+ vânzări",
+        "reset": "Reîncepe de la nivelul 1 în fiecare lună",
+        "approve": "Aprobă-o pe Maria"
+      },
+      "step3": {
+        "title": "Promotorul vinde cu codul lui QR unic",
+        "text": "Fiecare promotor primește propriul cod QR și link, gata de printat pe un afiș sau cartonaș. Clientul scanează, alege data și plătește cu cardul. Promotorul poate face și rezervarea pe loc pentru client.",
+        "qrLabel": "Codul QR al Mariei",
+        "scan": "Clientul scanează",
+        "pick": "Alege data și locurile",
+        "pay": "Plătește cu cardul",
+        "ticket": "Bilet pe telefon"
+      },
+      "step4": {
+        "title": "Tu câștigi clienți. Promotorul câștigă un %.",
+        "text": "Fiecare vânzare e legată de promotorul care a făcut-o. Comisionul se calculează automat, iar la final de lună primești un raport clar cu cine cât a câștigat.",
+        "trip": "Apus pe mare cu barca",
+        "tripMeta": "2 adulți · vândut de Maria",
+        "forYou": "pentru tine",
+        "sales": "Vânzările Mariei luna asta",
+        "earned": "Maria a câștigat",
+        "auto": "Calculat automat, fără tabele Excel"
+      },
+      "wins": {
+        "eyebrow": "Rezultatul",
+        "title": "Toată lumea e mulțumită",
+        "owner": {
+          "title": "Tu, proprietarul",
+          "text": "Mai mulți clienți, aduși de oameni care vorbesc zilnic cu turiștii. Plătești comision doar când o excursie e vândută și plătită."
+        },
+        "promoter": {
+          "title": "Promotorul",
+          "text": "Bani în plus în fiecare lună dintr-un cod QR pus pe birou. Vede pe telefon fiecare vânzare și cât a câștigat."
+        },
+        "guest": {
+          "title": "Clientul",
+          "text": "O recomandare locală de încredere, rezervare într-un minut și bilet pe telefon, în limba lui."
+        }
+      },
+      "included": {
+        "eyebrow": "Deja inclus",
+        "title": "Tot ce îi trebuie unei afaceri cu excursii",
+        "payments": {
+          "title": "Plăți cu cardul",
+          "text": "Plăți online sigure prin Stripe"
+        },
+        "tickets": {
+          "title": "Bilete PDF",
+          "text": "Trimise instant, fiecare cu QR propriu"
+        },
+        "scanner": {
+          "title": "Scanare la îmbarcare",
+          "text": "Echipajul scanează biletele; fiecare merge o singură dată"
+        },
+        "report": {
+          "title": "Raport lunar de comisioane",
+          "text": "Cine ce a vândut și cât trebuie plătit"
+        },
+        "languages": {
+          "title": "9 limbi",
+          "text": "RO, EN, DE, FR, ES, IT, PT, RU, UK"
+        },
+        "phones": {
+          "title": "Făcut pentru telefon",
+          "text": "Nimic de instalat, se deschide în browser"
+        }
+      },
+      "closing": {
+        "eyebrow": "Excursiile tale. Vânzătorii tăi.",
+        "title": "Nu mai aștepta marile platforme.",
+        "emphasis": "Construiește-ți propria echipă de vânzări.",
+        "text": "Începe cu oamenii care deja îți trimit clienți. Zece promotori, fiecare cu codul lui QR, pot umple locuri în fiecare zi."
+      },
+      "footnote": "Cifrele sunt exemple. Nivelurile de comision și procentele le stabilește fiecare afacere."
     },
     "policy": {
       "title": "Politica de anulare",
@@ -1415,7 +1563,8 @@
       "translations": "Traduceri",
       "contact": "Mesaje",
       "system": "Sistem",
-      "accounts": "Conturi"
+      "accounts": "Conturi",
+      "settings": "Setări"
     },
     "shell": {
       "loadError": "Nu am putut încărca contul",
@@ -1726,6 +1875,23 @@
       "signOutBody": "Fiecare telefon și calculator conectat la acest cont trebuie să intre din nou cu un cod.",
       "signOutConfirm": "Deconectează de peste tot",
       "signOutDone": "Contul a fost deconectat de pe toate dispozitivele."
+    },
+    "settings": {
+      "title": "Setări platformă",
+      "description": "Cum pot intra oamenii în platformă.",
+      "on": "Pornit",
+      "off": "Oprit",
+      "smsTitle": "Cod de intrare prin SMS",
+      "smsText": "Oamenii pot cere un cod de intrare prin SMS. Fiecare SMS se plătește la furnizorul de SMS. Cât timp e oprit, se intră cu email și parolă, cu Google sau cu un cod pe email, așa că invită afiliații și angajații pe email.",
+      "smsUnavailable": "Pe server nu e configurat niciun furnizor de SMS (SMS_PROVIDER=disabled), așa că rămân oprite.",
+      "smsTurnOn": "Pornește codurile prin SMS",
+      "smsTurnOff": "Oprește codurile prin SMS",
+      "googleTitle": "Intrare cu Google",
+      "googleOn": "Butonul „Continuă cu Google” apare pe pagina de intrare.",
+      "googleOff": "Neconfigurat. Pornește când serverul are GOOGLE_CLIENT_ID și GOOGLE_CLIENT_SECRET.",
+      "demoTitle": "Conturi demo pe pagina de intrare",
+      "demoOn": "Afișate, cu parolele lor (DEMO_MODE=true pe server). Pune DEMO_MODE=false înainte de lansare.",
+      "demoOff": "Ascunse (DEMO_MODE=false pe server)."
     }
   },
   "signup": {

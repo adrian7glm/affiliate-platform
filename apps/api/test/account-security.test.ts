@@ -124,6 +124,36 @@ describe.skipIf(!databaseUrl)('account security (needs TEST_DATABASE_URL)', () =
         .expect(422);
     });
 
+    it('asks for the app code after a password too', async () => {
+      tick(61 * 60); // a new hour of login codes
+      await h.http.post('/auth/otp/request').send({ destination: email }).expect(204);
+      const code = /(\d{6})/.exec(h.messages.last(email)?.text ?? '')?.[1];
+      // Setting a password proves the email address, not the second step.
+      const reset = (
+        await h.http
+          .post('/auth/password/reset')
+          .send({ email, code, password: 'two-step-pass' })
+          .expect(200)
+      ).body as MfaChallengeDto;
+      expect(reset).toMatchObject({ mfaRequired: true });
+      const login = (
+        await h.http
+          .post('/auth/password/login')
+          .send({ email, password: 'two-step-pass' })
+          .expect(200)
+      ).body as SessionDto | MfaChallengeDto;
+      expect('token' in login).toBe(false);
+      const { mfaToken } = login as MfaChallengeDto;
+      tick(30);
+      const session = (
+        await h.http
+          .post('/auth/mfa/verify')
+          .send({ mfaToken, code: codeNow(secret) })
+          .expect(200)
+      ).body as SessionDto;
+      await authed(session.token, 'get', '/me').expect(200);
+    });
+
     it('refuses the challenge as a session and expires it', async () => {
       const { mfaToken } = (await firstStep(email)) as MfaChallengeDto;
       await authed(mfaToken, 'get', '/me').expect(401);

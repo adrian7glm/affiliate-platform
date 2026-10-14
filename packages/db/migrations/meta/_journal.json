@@ -92,6 +92,13 @@
       "when": 1791866251336,
       "tag": "0012_retention",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791906026695,
+      "tag": "0013_password_google_login",
+      "breakpoints": true
     }
   ]
 }

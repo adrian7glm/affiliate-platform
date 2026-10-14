@@ -235,6 +235,7 @@ export interface SignupOptionsDto {
   plans: Pick<
     PlatformPlanDto,
     | 'id'
+    | 'code'
     | 'name'
     | 'description'
     | 'monthlyPriceMinor'
@@ -297,6 +298,26 @@ export interface BillingRedirectDto {
   /** Where to send the browser: Stripe Checkout / Customer Portal, or back to the app. */
   url: string;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Platform settings
+// ---------------------------------------------------------------------------------------------
+
+export interface PlatformSettingsDto {
+  /** People can ask for a sign-in code by SMS. */
+  smsLogin: boolean;
+  /** An SMS provider is configured (SMS_PROVIDER is not disabled). */
+  smsAvailable: boolean;
+  /** "Sign in with Google" is configured on the server. */
+  googleLogin: boolean;
+  /** Demo accounts are shown on the sign-in page (DEMO_MODE). */
+  demoMode: boolean;
+}
+
+export const updatePlatformSettingsBody = z.object({
+  smsLogin: z.boolean().optional(),
+});
+export type UpdatePlatformSettingsBody = z.infer<typeof updatePlatformSettingsBody>;
 
 // ---------------------------------------------------------------------------------------------
 // Admin: system health

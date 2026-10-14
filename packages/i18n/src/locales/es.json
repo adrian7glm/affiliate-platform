@@ -183,6 +183,10 @@
       "morning": "Buenos días",
       "afternoon": "Buenas tardes",
       "evening": "Buenas noches"
+    },
+    "platformPlan": {
+      "start": "Para operadores pequeños: hasta 15 afiliados.",
+      "pro": "Afiliados ilimitados y una comisión de la plataforma más baja."
     }
   },
   "errors": {
@@ -226,7 +230,11 @@
       "tooManyCodes": "demasiados códigos solicitados, inténtalo más tarde",
       "codeExpired": "el código ha caducado, pide uno nuevo",
       "wrongCode": "código incorrecto",
-      "ownerOnly": "solo el administrador del operador puede cambiar las comisiones y los pagos"
+      "ownerOnly": "solo el administrador del operador puede cambiar las comisiones y los pagos",
+      "wrongPassword": "correo o contraseña incorrectos",
+      "tooManyAttempts": "demasiadas contraseñas incorrectas, inténtalo en 15 minutos o crea una contraseña nueva",
+      "smsOff": "el acceso por SMS está desactivado, entra con tu correo",
+      "googleOff": "el acceso con Google no está configurado"
     },
     "webhooks": {
       "invalidSignature": "firma de Stripe no válida",
@@ -376,12 +384,9 @@
     },
     "login": {
       "title": "Iniciar sesión",
-      "intro": "Te enviaremos un código de 6 dígitos. Sin contraseña.",
+      "intro": "Entra con tu correo y contraseña, con Google o con un código que te llega por correo.",
       "noAccessTitle": "Esta cuenta no tiene acceso",
       "noAccessBody": "Tu cuenta aún no está vinculada a ningún operador. Pide una invitación al operador.",
-      "methodLegend": "Recibir el código por",
-      "methodSms": "SMS",
-      "methodEmail": "Correo",
       "phoneLabel": "Número de teléfono",
       "phoneHint": "Con el prefijo del país, p. ej. +34 612 345 678 o +40 722 123 456",
       "phoneInvalid": "Introduce el número completo con el prefijo del país, p. ej. +34 612 345 678.",
@@ -408,7 +413,50 @@
       "noMembershipBody": "Tu cuenta aún no está vinculada a ningún operador. Si eres afiliado, abre el enlace de invitación que te envió el operador.",
       "membershipLine": "{role} · {area}",
       "platformAdmin": "Administración de la plataforma",
-      "openOperator": "Abrir una cuenta de operador"
+      "openOperator": "Abrir una cuenta de operador",
+      "howLegend": "¿Cómo quieres entrar?",
+      "methodPassword": "Contraseña",
+      "methodEmailCode": "Código por correo",
+      "methodSmsCode": "Código por SMS",
+      "passwordLabel": "Contraseña",
+      "passwordRequired": "Escribe tu contraseña.",
+      "passwordWrong": "El correo o la contraseña no son correctos. Revísalos o crea una contraseña nueva con un código por correo.",
+      "forgotPassword": "¿Olvidaste la contraseña o aún no tienes una?",
+      "resetTitle": "Elige una contraseña",
+      "newPasswordLabel": "Contraseña nueva",
+      "newPasswordHint": "Al menos 8 caracteres.",
+      "newPasswordShort": "La contraseña necesita al menos 8 caracteres.",
+      "resetSubmit": "Guardar la contraseña y entrar",
+      "or": "o",
+      "google": "Continuar con Google",
+      "googleError": {
+        "cancelled": "Se canceló el acceso con Google.",
+        "expired": "El acceso con Google ha caducado. Inténtalo de nuevo.",
+        "google": "Google no ha respondido. Inténtalo de nuevo o entra con tu contraseña.",
+        "email": "Esta cuenta de Google no tiene un correo confirmado."
+      },
+      "demo": {
+        "title": "Cuentas de demostración",
+        "intro": "Solo para pruebas: copia los datos o entra directamente. Se quitarán en el lanzamiento.",
+        "email": "Correo",
+        "password": "Contraseña",
+        "copy": "Copiar {what}",
+        "copyShort": "Copiar",
+        "copied": "Copiado",
+        "signIn": "Entrar",
+        "role": {
+          "admin": "Administrador de la plataforma",
+          "owner": "Propietario del operador",
+          "affiliate": "Afiliado",
+          "scanner": "Personal de embarque"
+        },
+        "what": {
+          "admin": "Todos los operadores, planes y tarifas, ajustes",
+          "owner": "Delta Boats: excursiones, afiliados, comisiones",
+          "affiliate": "Ana: código QR, reservas, ganancias",
+          "scanner": "Solo escanea billetes en el embarque"
+        }
+      }
     },
     "join": {
       "cannotUse": "Esta invitación ya no se puede usar.",
@@ -508,38 +556,138 @@
     "durationValue": "Duración: {duration}",
     "numbered": "{number}. {title}",
     "landing": {
-      "tagline": "Para operadores de excursiones y paseos en barco",
-      "title": "Los recepcionistas venden tus excursiones. Tú solo pagas comisión.",
-      "intro": "Crea tu propia red de afiliados: hoteles, pensiones y guías que recomiendan tus excursiones a los turistas, con enlaces, códigos QR y comisiones calculadas automáticamente.",
       "startFree": "Empieza gratis",
-      "howItWorks": "Cómo funciona",
-      "featuresTitle": "Lo que obtienes",
-      "features": {
-        "qr": {
-          "title": "Un código QR para cada afiliado",
-          "text": "El recepcionista muestra el código, el turista lo escanea y reserva por su cuenta. Cada venta se asigna a quien la recomendó."
-        },
-        "fast": {
-          "title": "Reserva en 30 segundos",
-          "text": "El afiliado reserva directamente desde su móvil, y el cliente paga escaneando un código o desde el enlace que recibe por WhatsApp."
-        },
-        "commission": {
-          "title": "Comisiones fijas o progresivas",
-          "text": "Tú fijas el porcentaje, o niveles que suben con las ventas. Los afiliados ven sus ganancias en tiempo real."
-        },
-        "tickets": {
-          "title": "Billetes con código QR al embarcar",
-          "text": "El turista recibe el billete en su móvil; al embarcar lo escaneas con la cámara, sin apps adicionales."
+      "copyright": "© {year} {name}",
+      "requestDemo": "Solicitar una demo",
+      "hero": {
+        "eyebrow": "Para paseos en barco, tours y experiencias",
+        "title": "Crea tu propia red de {emphasis}",
+        "titleEmphasis": "promotores",
+        "lede": "Recepcionistas de hotel, guías y socios locales venden tus excursiones con su propio código QR. Tú ganas clientes. Ellos ganan un % de cada venta. Y dejas de depender solo de las grandes plataformas de reservas.",
+        "pills": {
+          "customers": "Más clientes",
+          "realSales": "Pagas solo por ventas reales",
+          "anyPhone": "Funciona en cualquier móvil"
         }
       },
-      "steps": {
-        "products": "Añades tus excursiones, precios y salidas.",
-        "invite": "Invitas a recepcionistas, conserjes y guías como afiliados.",
-        "recommend": "Ellos recomiendan con el código QR o reservan por el turista.",
-        "pay": "El turista paga en línea; la comisión se calcula sola."
+      "map": {
+        "label": "Tu negocio en el centro, rodeado de promotores que te envían clientes",
+        "hub": "Tus excursiones",
+        "hubSub": "llegan las reservas",
+        "nodes": {
+          "hotel": "Recepción de hotel",
+          "guide": "Guía turístico",
+          "beachBar": "Chiringuito",
+          "taxi": "Taxista",
+          "apartment": "Pisos turísticos",
+          "shop": "Café y tienda"
+        }
       },
-      "copyright": "© {year} {name}",
-      "requestDemo": "Solicitar una demo"
+      "how": {
+        "eyebrow": "Cómo funciona",
+        "title": "Cuatro pasos. Sin conocimientos técnicos."
+      },
+      "who": {
+        "promoter": "Promotor",
+        "you": "Tú"
+      },
+      "person": {
+        "name": "Maria Popescu",
+        "first": "Maria"
+      },
+      "step1": {
+        "title": "El promotor se crea una cuenta",
+        "text": "Un recepcionista, un guía o un socio local se registra desde el móvil en un minuto. También puedes invitarlo con un enlace.",
+        "mockTitle": "Hazte promotor de Sea Breeze Boat Trips",
+        "name": "Nombre",
+        "where": "Dónde trabajas",
+        "workplace": "Hotel Astoria, recepción",
+        "phone": "Teléfono",
+        "send": "Enviar solicitud"
+      },
+      "step2": {
+        "title": "Tú apruebas y decides el %",
+        "text": "Asigna a cada promotor un % fijo negociado o elige un plan estándar en el que el % sube con el número de ventas. Los niveles se reinician cada mes, así los promotores siguen motivados.",
+        "request": "Nueva solicitud · Hotel Astoria",
+        "fixed": "Comisión fija",
+        "fixedText": "El mismo % en cada venta, p. ej. 18 %",
+        "standard": "Plan estándar",
+        "tier1": "1–3 ventas",
+        "tier2": "4–10 ventas",
+        "tier3": "11+ ventas",
+        "reset": "Vuelve al nivel 1 cada mes",
+        "approve": "Aprobar a Maria"
+      },
+      "step3": {
+        "title": "El promotor vende con su código QR único",
+        "text": "Cada promotor recibe su propio código QR y enlace, listos para imprimir en un cartel de mostrador o una tarjeta. El cliente escanea, elige la fecha y paga con tarjeta. El promotor también puede reservar en el momento por el cliente.",
+        "qrLabel": "Código QR de Maria",
+        "scan": "El cliente escanea",
+        "pick": "Elige fecha y plazas",
+        "pay": "Paga con tarjeta",
+        "ticket": "Entrada en el móvil"
+      },
+      "step4": {
+        "title": "Tú ganas clientes. El promotor gana un %.",
+        "text": "Cada venta queda asignada al promotor que la hizo. La comisión se calcula sola y, a fin de mes, recibes un informe claro de quién ha ganado cuánto.",
+        "trip": "Paseo en barco al atardecer",
+        "tripMeta": "2 adultos · vendido por Maria",
+        "forYou": "para ti",
+        "sales": "Ventas de Maria este mes",
+        "earned": "Maria ha ganado",
+        "auto": "Calculado automáticamente, sin hojas de cálculo"
+      },
+      "wins": {
+        "eyebrow": "El resultado",
+        "title": "Todos salen ganando",
+        "owner": {
+          "title": "Tú, el propietario",
+          "text": "Más clientes gracias a personas que hablan con turistas todos los días. Solo pagas comisión cuando una excursión se vende y se paga."
+        },
+        "promoter": {
+          "title": "El promotor",
+          "text": "Un dinero extra cada mes gracias a un código QR en el mostrador. Ve cada venta y lo que ha ganado en tiempo real en su móvil."
+        },
+        "guest": {
+          "title": "El cliente",
+          "text": "Una recomendación local de confianza, una reserva en un minuto y la entrada en el móvil, en su propio idioma."
+        }
+      },
+      "included": {
+        "eyebrow": "Ya incluido",
+        "title": "Todo lo que necesita un negocio de excursiones",
+        "payments": {
+          "title": "Pagos con tarjeta",
+          "text": "Pagos online seguros con Stripe"
+        },
+        "tickets": {
+          "title": "Entradas en PDF",
+          "text": "Enviadas al instante, cada una con su QR"
+        },
+        "scanner": {
+          "title": "Escáner de embarque",
+          "text": "Tu tripulación escanea las entradas; cada una vale una sola vez"
+        },
+        "report": {
+          "title": "Informe mensual de comisiones",
+          "text": "Quién vendió qué y cuánto hay que pagar"
+        },
+        "languages": {
+          "title": "9 idiomas",
+          "text": "RO, EN, DE, FR, ES, IT, PT, RU, UK"
+        },
+        "phones": {
+          "title": "Hecho para el móvil",
+          "text": "Nada que instalar, se abre en el navegador"
+        }
+      },
+      "closing": {
+        "eyebrow": "Tus excursiones. Tus vendedores.",
+        "title": "Deja de esperar a las grandes plataformas.",
+        "emphasis": "Crea tu propio equipo de ventas.",
+        "text": "Empieza con las personas que ya te envían clientes. Diez promotores, cada uno con su código QR, pueden llenar plazas todos los días."
+      },
+      "footnote": "Cifras de ejemplo con fines ilustrativos. Los niveles de comisión y los porcentajes los fija cada negocio."
     },
     "policy": {
       "title": "Política de cancelación",
@@ -1415,7 +1563,8 @@
       "translations": "Traducciones",
       "contact": "Mensajes",
       "system": "Sistema",
-      "accounts": "Cuentas"
+      "accounts": "Cuentas",
+      "settings": "Ajustes"
     },
     "shell": {
       "loadError": "No pudimos cargar tu cuenta",
@@ -1726,6 +1875,23 @@
       "signOutBody": "Todos los móviles y ordenadores con la sesión iniciada en esta cuenta tendrán que volver a iniciar sesión con un código.",
       "signOutConfirm": "Cerrar sesión en todas partes",
       "signOutDone": "Se ha cerrado la sesión de esta cuenta en todos los dispositivos."
+    },
+    "settings": {
+      "title": "Ajustes de la plataforma",
+      "description": "Cómo pueden entrar las personas en la plataforma.",
+      "on": "Activado",
+      "off": "Desactivado",
+      "smsTitle": "Código de acceso por SMS",
+      "smsText": "Las personas pueden pedir un código de acceso por SMS. Cada SMS lo cobra tu proveedor de SMS. Mientras esté desactivado, se entra con correo y contraseña, con Google o con un código por correo, así que invita a afiliados y personal por correo.",
+      "smsUnavailable": "No hay ningún proveedor de SMS configurado en el servidor (SMS_PROVIDER=disabled), así que los códigos por SMS siguen desactivados.",
+      "smsTurnOn": "Activar los códigos por SMS",
+      "smsTurnOff": "Desactivar los códigos por SMS",
+      "googleTitle": "Acceso con Google",
+      "googleOn": "El botón «Continuar con Google» aparece en la página de acceso.",
+      "googleOff": "Sin configurar. Se activa cuando el servidor tiene GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET.",
+      "demoTitle": "Cuentas de demostración en la página de acceso",
+      "demoOn": "Visibles, con sus contraseñas (DEMO_MODE=true en el servidor). Pon DEMO_MODE=false antes del lanzamiento.",
+      "demoOff": "Ocultas (DEMO_MODE=false en el servidor)."
     }
   },
   "signup": {

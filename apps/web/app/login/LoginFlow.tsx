@@ -1,6 +1,12 @@
 'use client';
 
-import type { MeDto, MembershipDto, SessionDto } from '@ap/contracts';
+import type {
+  AuthOptionsDto,
+  MeDto,
+  MembershipDto,
+  SessionDto,
+  VerifyOtpResultDto,
+} from '@ap/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -9,6 +15,8 @@ import { Button, ButtonLink } from '@/components/Button';
 import { ChoiceGroup, Field } from '@/components/Field';
 import { useT } from '@/components/I18nProvider';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
+import { DemoAccounts } from './DemoAccounts';
+import { GoogleButton } from './GoogleButton';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { isApiError } from '@/lib/api';
 import {
@@ -37,11 +45,13 @@ import {
 import { readString, writeString } from '@/lib/storage';
 import { errorMessage } from '@/lib/useApi';
 
-type Method = 'phone' | 'email';
-type Step = 'destination' | 'code' | 'mfa' | 'tenant';
+type Method = 'password' | 'email' | 'phone';
+type Step = 'destination' | 'code' | 'reset' | 'mfa' | 'tenant';
 
 const METHOD_KEY = 'ap.loginMethod';
 const RESEND_SECONDS = 30;
+const MIN_PASSWORD = 8;
+const GOOGLE_ERRORS = ['cancelled', 'expired', 'google', 'email'] as const;
 
 export function LoginFlow({
   next,
@@ -58,10 +68,14 @@ export function LoginFlow({
   const { t, lang } = i18n;
   const nextPath = safeNextPath(next);
   const [step, setStep] = useState<Step>('destination');
-  const [method, setMethod] = useState<Method>('phone');
+  const [method, setMethod] = useState<Method>('password');
   const [rawDestination, setRawDestination] = useState('');
   const [destination, setDestination] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [options, setOptions] = useState<AuthOptionsDto | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,6 +84,7 @@ export function LoginFlow({
   const [mfaToken, setMfaToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [useRecovery, setUseRecovery] = useState(false);
+  const [mfaNext, setMfaNext] = useState<string | null>(null);
   const mfaFormRef = useRef<HTMLFormElement>(null);
   const codeFormRef = useRef<HTMLFormElement>(null);
   const otpAbortRef = useRef<AbortController | null>(null);
@@ -80,7 +95,8 @@ export function LoginFlow({
     if (prefill) {
       setMethod(prefill.includes('@') ? 'email' : 'phone');
       setRawDestination(prefill);
-    } else if (saved === 'email' || saved === 'phone') setMethod(saved);
+    } else if (saved === 'email' || saved === 'phone' || saved === 'password') setMethod(saved);
+    if (finishGoogle()) return;
     const cached = getCachedMe();
     if (getToken() && cached && cached.memberships.length > 0 && !nextPath) {
       setMe(cached);
@@ -88,6 +104,53 @@ export function LoginFlow({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Which ways of signing in the server offers: SMS, Google, demo accounts.
+  useEffect(() => {
+    const controller = new AbortController();
+    authApi
+      .options({ signal: controller.signal })
+      .then(setOptions)
+      .catch(() => {
+        // Password and email codes still work; Google and SMS stay hidden.
+      });
+    return () => controller.abort();
+  }, []);
+
+  // SMS codes can be switched off by the platform owner.
+  useEffect(() => {
+    if (options && !options.sms && method === 'phone' && step === 'destination') {
+      setMethod('password');
+      setRawDestination('');
+    }
+  }, [options, method, step]);
+
+  /** Back from Google: the URL fragment carries a short-lived token, or why it failed. */
+  function finishGoogle(): boolean {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const handoff = hash.get('handoff');
+    const failure = hash.get('google_error');
+    if (!handoff && !failure) return false;
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (failure) {
+      const reason = GOOGLE_ERRORS.find((r) => r === failure) ?? 'google';
+      setError(t(`auth.login.googleError.${reason}`));
+      return true;
+    }
+    setBusy(true);
+    authApi
+      .handoff({ token: handoff! })
+      .then((session) => signedIn(session, safeNextPath(hash.get('next')) ?? nextPath))
+      .catch((err: unknown) => {
+        setError(
+          isApiError(err) && err.status === 401
+            ? t('auth.login.googleError.expired')
+            : errorMessage(err, i18n),
+        );
+        setBusy(false);
+      });
+    return true;
+  }
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -119,14 +182,15 @@ export function LoginFlow({
     otpAbortRef.current = null;
   }
 
-  async function requestCode(target: string) {
+  async function requestCode(target: string, then: 'code' | 'reset' = 'code') {
     setError(null);
     setBusy(true);
     try {
       await authApi.requestOtp({ destination: target, locale: lang });
       setDestination(target);
       setCode('');
-      setStep('code');
+      setNewPassword('');
+      setStep(then);
       setResendIn(RESEND_SECONDS);
     } catch (err) {
       setError(errorMessage(err, i18n));
@@ -135,10 +199,51 @@ export function LoginFlow({
     }
   }
 
+  /** The email typed in the form, or null after showing why it is not valid. */
+  function typedEmail(): string | null {
+    const target = normalizeEmail(rawDestination);
+    if (!isValidEmail(target)) {
+      setFieldError(t('auth.login.emailInvalid'));
+      return null;
+    }
+    return target;
+  }
+
+  async function passwordLogin(email: string, secret: string) {
+    setError(null);
+    setBusy(true);
+    try {
+      signedIn(await authApi.passwordLogin({ email, password: secret }), nextPath);
+    } catch (err) {
+      setError(
+        isApiError(err) && err.status === 401
+          ? t('auth.login.passwordWrong')
+          : errorMessage(err, i18n),
+      );
+      setBusy(false);
+    }
+  }
+
+  function forgotPassword() {
+    setFieldError(null);
+    setPasswordError(null);
+    const target = typedEmail();
+    if (target) void requestCode(target, 'reset');
+  }
+
   function onSubmitDestination(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFieldError(null);
+    setPasswordError(null);
     let target: string;
+    if (method === 'password') {
+      const email = typedEmail();
+      if (!password) setPasswordError(t('auth.login.passwordRequired'));
+      if (!email || !password) return;
+      writeString(METHOD_KEY, method);
+      void passwordLogin(email, password);
+      return;
+    }
     if (method === 'phone') {
       target = normalizePhone(rawDestination);
       if (!isValidPhone(target)) {
@@ -156,7 +261,25 @@ export function LoginFlow({
     void requestCode(target);
   }
 
-  function routeAfterLogin(session: MeDto) {
+  function signedIn(result: VerifyOtpResultDto, next: string | null) {
+    if (result.mfaRequired) {
+      // Two-step login is on: the code from the authenticator app comes next.
+      setMfaToken(result.mfaToken);
+      setMfaNext(next);
+      setMfaCode('');
+      setUseRecovery(false);
+      setFieldError(null);
+      setStep('mfa');
+      setBusy(false);
+      return;
+    }
+    const session: SessionDto = result;
+    const profile: MeDto = { user: session.user, memberships: session.memberships };
+    saveSession(session.token, profile);
+    routeAfterLogin(profile, next);
+  }
+
+  function routeAfterLogin(session: MeDto, nextPath: string | null) {
     const memberships = session.memberships;
     // Invite links and operator signup work before the person has any membership.
     if (
@@ -210,17 +333,7 @@ export function LoginFlow({
     setError(null);
     setBusy(true);
     try {
-      const result = await authApi.verifyOtp({ destination, code: clean });
-      if (result.mfaRequired) {
-        // Two-step login is on: the code from the authenticator app comes next.
-        setMfaToken(result.mfaToken);
-        setMfaCode('');
-        setUseRecovery(false);
-        setStep('mfa');
-        setBusy(false);
-        return;
-      }
-      finishLogin(result);
+      signedIn(await authApi.verifyOtp({ destination, code: clean }), nextPath);
     } catch (err) {
       // The API answers 401 for a wrong or expired code, 400 for a malformed one.
       const message =
@@ -232,10 +345,25 @@ export function LoginFlow({
     }
   }
 
-  function finishLogin(session: SessionDto) {
-    const profile: MeDto = { user: session.user, memberships: session.memberships };
-    saveSession(session.token, profile);
-    routeAfterLogin(profile);
+  async function onSubmitReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const clean = code.replace(/\D/g, '');
+    setFieldError(clean.length === 6 ? null : t('auth.login.codeLength'));
+    setPasswordError(newPassword.length >= MIN_PASSWORD ? null : t('auth.login.newPasswordShort'));
+    if (clean.length !== 6 || newPassword.length < MIN_PASSWORD) return;
+    setError(null);
+    setBusy(true);
+    try {
+      signedIn(
+        await authApi.passwordReset({ email: destination, code: clean, password: newPassword }),
+        nextPath,
+      );
+    } catch (err) {
+      setError(
+        isApiError(err) && err.status === 401 ? t('auth.login.codeWrong') : errorMessage(err, i18n),
+      );
+      setBusy(false);
+    }
   }
 
   async function onSubmitMfa(event: FormEvent<HTMLFormElement>) {
@@ -249,7 +377,7 @@ export function LoginFlow({
     setError(null);
     setBusy(true);
     try {
-      finishLogin(await authApi.verifyMfa({ mfaToken, code: clean }));
+      signedIn(await authApi.verifyMfa({ mfaToken, code: clean }), mfaNext);
     } catch (err) {
       // Wrong code, too many tries, or the first step expired (the message says which).
       setError(errorMessage(err, i18n));
@@ -289,79 +417,219 @@ export function LoginFlow({
       ) : null}
 
       {step === 'destination' ? (
-        <form
-          onSubmit={onSubmitDestination}
-          method="post"
-          noValidate
-          className="flex flex-col gap-5"
-        >
+        <div className="flex flex-col gap-5">
           <div>
             <h1 className="text-3xl font-bold">{t('auth.login.title')}</h1>
             <p className="mt-2 text-muted">{t('auth.login.intro')}</p>
           </div>
 
-          <ChoiceGroup<Method>
-            legend={t('auth.login.methodLegend')}
-            name="method"
-            value={method}
-            onChange={(m) => {
-              setMethod(m);
-              setRawDestination('');
+          {options?.google ? (
+            <>
+              <GoogleButton
+                href={authApi.googleStartUrl(nextPath)}
+                label={t('auth.login.google')}
+              />
+              <div className="flex items-center gap-3 text-sm text-muted" aria-hidden="true">
+                <span className="h-px flex-1 bg-line" />
+                {t('auth.login.or')}
+                <span className="h-px flex-1 bg-line" />
+              </div>
+            </>
+          ) : null}
+
+          <form
+            onSubmit={onSubmitDestination}
+            method="post"
+            noValidate
+            className="flex flex-col gap-5"
+          >
+            <ChoiceGroup<Method>
+              legend={t('auth.login.howLegend')}
+              name="method"
+              value={method}
+              onChange={(m) => {
+                if (m === 'phone' || method === 'phone') setRawDestination('');
+                setMethod(m);
+                setFieldError(null);
+                setPasswordError(null);
+                setError(null);
+              }}
+              gridClassName={`grid gap-2 ${options?.sms ? 'grid-cols-3' : 'grid-cols-2'}`}
+              options={[
+                { value: 'password', label: t('auth.login.methodPassword') },
+                { value: 'email', label: t('auth.login.methodEmailCode') },
+                ...(options?.sms
+                  ? [{ value: 'phone' as const, label: t('auth.login.methodSmsCode') }]
+                  : []),
+              ]}
+            />
+
+            {method === 'phone' ? (
+              <Field
+                key="phone"
+                label={t('auth.login.phoneLabel')}
+                hint={t('auth.login.phoneHint')}
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                enterKeyHint="send"
+                required
+                value={rawDestination}
+                onChange={(e) => setRawDestination(e.target.value)}
+                error={fieldError}
+              />
+            ) : (
+              <Field
+                key="email"
+                label={t('auth.login.emailLabel')}
+                name="email"
+                type="email"
+                inputMode="email"
+                autoComplete={method === 'password' ? 'username' : 'email'}
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint={method === 'password' ? 'next' : 'send'}
+                required
+                value={rawDestination}
+                onChange={(e) => setRawDestination(e.target.value)}
+                error={fieldError}
+              />
+            )}
+
+            {method === 'password' ? (
+              <Field
+                label={t('auth.login.passwordLabel')}
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                enterKeyHint="go"
+                required
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setPasswordError(null);
+                }}
+                error={passwordError}
+              />
+            ) : null}
+
+            {error ? <Alert tone="error">{error}</Alert> : null}
+
+            <Button
+              type="submit"
+              size="lg"
+              block
+              loading={busy}
+              loadingText={
+                method === 'password' ? t('auth.login.verifying') : t('auth.login.sending')
+              }
+            >
+              {method === 'password' ? t('auth.login.submit') : t('auth.login.sendCode')}
+            </Button>
+
+            {method === 'password' ? (
+              <Button variant="ghost" disabled={busy} onClick={forgotPassword}>
+                {t('auth.login.forgotPassword')}
+              </Button>
+            ) : null}
+          </form>
+
+          {options && options.demoAccounts.length > 0 ? (
+            <DemoAccounts
+              accounts={options.demoAccounts}
+              busy={busy}
+              onUse={(account) => {
+                setMethod('password');
+                setRawDestination(account.email);
+                setPassword(account.password);
+                setFieldError(null);
+                setPasswordError(null);
+                void passwordLogin(account.email, account.password);
+              }}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {step === 'reset' ? (
+        <form onSubmit={onSubmitReset} method="post" noValidate className="flex flex-col gap-5">
+          <div>
+            <h1 className="text-3xl font-bold">{t('auth.login.resetTitle')}</h1>
+            <p className="mt-2 text-muted">
+              {t('auth.login.codeSentBefore')}{' '}
+              <strong className="text-fg">{maskDestination(destination)}</strong>
+              {t('auth.login.codeSentAfter')}
+            </p>
+          </div>
+          <Field
+            label={t('auth.login.codeLabel')}
+            hint={t('auth.login.codeHint')}
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="\d{6}"
+            maxLength={6}
+            required
+            autoFocus
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
               setFieldError(null);
             }}
-            gridClassName="grid grid-cols-2 gap-2"
-            options={[
-              { value: 'phone', label: t('auth.login.methodSms') },
-              { value: 'email', label: t('auth.login.methodEmail') },
-            ]}
+            error={fieldError}
+            className="[&_input]:text-center [&_input]:font-mono [&_input]:text-2xl [&_input]:tracking-[0.4em]"
           />
-
-          {method === 'phone' ? (
-            <Field
-              key="phone"
-              label={t('auth.login.phoneLabel')}
-              hint={t('auth.login.phoneHint')}
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              enterKeyHint="send"
-              required
-              value={rawDestination}
-              onChange={(e) => setRawDestination(e.target.value)}
-              error={fieldError}
-              autoFocus
-            />
-          ) : (
-            <Field
-              key="email"
-              label={t('auth.login.emailLabel')}
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              autoCapitalize="off"
-              spellCheck={false}
-              enterKeyHint="send"
-              required
-              value={rawDestination}
-              onChange={(e) => setRawDestination(e.target.value)}
-              error={fieldError}
-              autoFocus
-            />
-          )}
-
+          <Field
+            label={t('auth.login.newPasswordLabel')}
+            hint={t('auth.login.newPasswordHint')}
+            name="new-password"
+            type="password"
+            autoComplete="new-password"
+            minLength={MIN_PASSWORD}
+            enterKeyHint="go"
+            required
+            value={newPassword}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              setPasswordError(null);
+            }}
+            error={passwordError}
+          />
           {error ? <Alert tone="error">{error}</Alert> : null}
-
           <Button
             type="submit"
             size="lg"
             block
             loading={busy}
-            loadingText={t('auth.login.sending')}
+            loadingText={t('auth.login.verifying')}
           >
-            {t('auth.login.sendCode')}
+            {t('auth.login.resetSubmit')}
           </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              icon={<IconChevronLeft />}
+              onClick={() => {
+                setStep('destination');
+                setError(null);
+                setFieldError(null);
+                setPasswordError(null);
+              }}
+            >
+              {t('auth.login.otherEmail')}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={resendIn > 0 || busy}
+              onClick={() => void requestCode(destination, 'reset')}
+            >
+              {resendIn > 0
+                ? t('auth.login.resendIn', { seconds: resendIn })
+                : t('auth.login.resend')}
+            </Button>
+          </div>
         </form>
       ) : null}
 

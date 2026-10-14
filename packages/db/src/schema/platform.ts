@@ -52,3 +52,10 @@ export const auditLog = pgTable(
   },
   (t) => [index('audit_log_entity').on(t.entityType, t.entityId)],
 );
+
+/** Platform-wide switches the platform owner changes from the admin area, e.g. SMS sign-in. */
+export const platformSettings = pgTable('platform_settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
