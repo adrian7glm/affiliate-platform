@@ -306,6 +306,55 @@ export class BookingService {
     throw new Error('could not generate a unique booking reference');
   }
 
+  async exists(bookingId: string): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: bookings.id })
+      .from(bookings)
+      .where(eq(bookings.id, bookingId));
+    return Boolean(row);
+  }
+
+  /**
+   * The payment provider says money was given back outside the platform (a refund made in the
+   * Stripe dashboard). A full refund cancels the booking: the ticket stops being valid, the seats
+   * are freed and the affiliate's commission is reversed. A partial refund is only recorded.
+   * Idempotent, and a no-op for refunds the platform made itself.
+   */
+  async refundedByProvider(paymentIntentId: string, refundedMinor: number): Promise<void> {
+    const [payment] = await this.db
+      .select()
+      .from(payments)
+      .where(eq(payments.paymentIntentId, paymentIntentId));
+    if (!payment || payment.status === 'refunded') return;
+    if (refundedMinor >= payment.amountMinor) {
+      await this.cancel(payment.tenantId, payment.bookingId, 'refunded_in_stripe', null, null, {
+        refundedByProvider: true,
+      });
+      // A booking that was not confirmed (unpaid in time, then paid and refunded) keeps its status.
+      await this.db
+        .update(payments)
+        .set({
+          status: 'refunded',
+          refundedMinor: payment.amountMinor,
+          updatedAt: this.clock.now(),
+        })
+        .where(eq(payments.id, payment.id));
+      return;
+    }
+    if (refundedMinor <= payment.refundedMinor) return;
+    await this.db
+      .update(payments)
+      .set({ refundedMinor, updatedAt: this.clock.now() })
+      .where(eq(payments.id, payment.id));
+    await this.db.insert(auditLog).values({
+      tenantId: payment.tenantId,
+      action: 'partial_refund_in_stripe',
+      entityType: 'booking',
+      entityId: payment.bookingId,
+      data: { paymentIntentId, refundedMinor, amountMinor: payment.amountMinor },
+    });
+  }
+
   /** Called when the payment provider confirms the money arrived. Idempotent. */
   async confirmPayment(bookingId: string, paymentIntentId: string | null): Promise<void> {
     const now = this.clock.now();
@@ -425,6 +474,7 @@ export class BookingService {
     reason: string,
     actorUserId: string | null,
     notice: CancellationNotice | null = null,
+    options: { refundedByProvider?: boolean } = {},
   ): Promise<BookingDto> {
     const now = this.clock.now();
     const tenant = await this.tenants.get(tenantId);
@@ -441,7 +491,7 @@ export class BookingService {
       .select()
       .from(payments)
       .where(and(eq(payments.bookingId, bookingId), eq(payments.status, 'succeeded')));
-    if (payment && current.status === 'confirmed') {
+    if (payment && current.status === 'confirmed' && !options.refundedByProvider) {
       // Refund first: the provider call is idempotent per booking, the database update below is not lost.
       await this.gateway.refund(
         payment.paymentIntentId,

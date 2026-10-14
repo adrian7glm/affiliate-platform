@@ -95,6 +95,12 @@ A `scanner` account sees nothing else: besides this route it can only call
 | POST   | `/public/dev-payments/:bookingId/succeed`           | `?k=<ticket key>`    | 204, only with `PAYMENTS_PROVIDER=fake`     |
 | POST   | `/webhooks/stripe`                                  | Stripe event         | 200                                         |
 
+`/webhooks/stripe` handles `checkout.session.completed` and
+`checkout.session.async_payment_succeeded` (confirms the booking once the session is paid) and
+`charge.refunded` (a full refund made in the Stripe dashboard cancels the booking, voids its ticket
+and reverses the commission; a partial one is only recorded). Events for payments that are not
+bookings of the platform are acknowledged and ignored.
+
 `PublicCheckoutBody.acceptTerms` must be `true` (the customer ticked the booking terms and
 privacy policy); the time is stored on the booking. Cancelling departures closes them, then
 cancels and refunds every booking on them and tells each customer why; departures that already

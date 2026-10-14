@@ -7,7 +7,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { Clock } from '../src/common/clock';
-import { loadConfig } from '../src/config';
+import { type AppConfig, loadConfig } from '../src/config';
 import { NotificationsService } from '../src/notifications/notifications.service';
 import { MemoryTransport, type SentMessage } from '../src/notifications/transports/dev';
 import { EmailTransport, SmsTransport } from '../src/notifications/transports/transport';
@@ -48,6 +48,7 @@ export interface Harness {
   /** Sends the queued messages, then returns the last one sent to `to`. */
   lastMessage(to: string): Promise<SentMessage | undefined>;
   outbox: Outbox;
+  /** The payment provider: the in-memory one, unless `gateway` was given. */
   payments: FakeGateway;
   tenantId: string;
   ownerEmail: string;
@@ -59,6 +60,8 @@ export async function startHarness(
   url: string,
   now: string,
   env: Record<string, string> = {},
+  /** Replaces the payment provider, e.g. with a Stripe gateway that never calls Stripe. */
+  gateway?: (config: AppConfig) => PaymentsGateway,
 ): Promise<Harness> {
   await resetDatabase(url);
   const config = loadConfig({
@@ -73,7 +76,9 @@ export async function startHarness(
   });
   const clock = new TestClock(new Date(now));
   const messages = new MemoryTransport();
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule.with(config)] })
+  const builder = Test.createTestingModule({ imports: [AppModule.with(config)] });
+  if (gateway) builder.overrideProvider(PaymentsGateway).useValue(gateway(config));
+  const moduleRef = await builder
     .overrideProvider(Clock)
     .useValue(clock)
     .overrideProvider(EmailTransport)
