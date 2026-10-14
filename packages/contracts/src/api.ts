@@ -564,7 +564,11 @@ export interface BookingDto {
   startsAt: string;
   seats: number;
   customerName: string;
+  customerEmail: string | null;
+  customerPhone: string | null;
   totalMinor: number;
+  /** VAT included in the total. */
+  taxMinor: number;
   currency: string;
   paymentMode: 'online' | 'on_site';
   affiliateName: string | null;

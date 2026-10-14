@@ -111,6 +111,17 @@ Imagini Docker pentru API, worker și aplicația web, migrări automate, monitor
 [`docs/deploy.md`](docs/deploy.md). Structura modulelor și cine scrie în ce tabele:
 [`docs/architecture.md`](docs/architecture.md).
 
+## Integrări cu alte programe
+
+Pagina `/o/integrations` a operatorului are:
+
+- **Calendarul plecărilor**: o adresă `.ics` la care operatorul se abonează din Google Calendar,
+  Outlook sau telefon (plecări + locuri ocupate, fără numele clienților).
+- **Webhooks**: la confirmarea, plata, anularea sau îmbarcarea unei rezervări, platforma trimite
+  un `POST` semnat la adresa aleasă (Zapier, Make, n8n, sistemul propriu), cu reîncercări timp de
+  două zile. Formatul și verificarea semnăturii: [docs/webhooks.md](docs/webhooks.md).
+- Link-uri către exporturile CSV din Rezervări și Comisioane.
+
 ## Teste
 
 ```bash

@@ -13,6 +13,7 @@ import { CommissionLedgerService } from '../commissions/ledger.service';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB } from '../database/database.module';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WebhooksService } from '../integrations/webhooks.service';
 import { Outbox } from '../outbox/outbox';
 import { SourcesService } from '../sources/sources.service';
 import { CleanupService } from './cleanup.service';
@@ -42,12 +43,15 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
     private readonly sources: SourcesService,
     private readonly notifications: NotificationsService,
     private readonly cleanup: CleanupService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   onApplicationBootstrap(): void {
     if (!this.config.WORKER_ENABLED) return;
     this.every('outbox', () => this.outbox.drain());
     this.every('send-notifications', () => this.notifications.deliverDue());
+    this.every('send-webhooks', () => this.webhooks.deliverDue());
+    this.every('prune-webhook-history', () => this.webhooks.prune());
     this.every('expire-unpaid-bookings', () => this.bookingService.expireUnpaid());
     this.every('approve-commissions', () => this.commissions.approveDue());
     this.every('sync-availability-sources', () => this.sources.syncAll());
