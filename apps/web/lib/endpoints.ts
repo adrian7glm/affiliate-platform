@@ -9,6 +9,14 @@ import type {
   VerifyMfaBody,
   VerifyOtpResultDto,
   ArchivePlanResultDto,
+  CalendarFeedDto,
+  CreateWebhookBody,
+  CreatedWebhookDto,
+  UpdateWebhookBody,
+  WebhookDeliveryDto,
+  WebhookEndpointDto,
+  WebhookSecretDto,
+  WebhookTestResultDto,
   DeleteSlotsResultDto,
   OperatorSettingsDto,
   OperatorSlotDto,
@@ -235,6 +243,27 @@ export const operatorApi = {
     apiFetch<SourceDto>('/operator/sources', { ...o, method: 'POST', body }),
   syncSource: (id: string, o?: Opts) =>
     apiFetch<SyncResultDto>(`/operator/sources/${enc(id)}/sync`, { ...o, method: 'POST' }),
+  webhooks: (o?: Opts) => apiFetch<WebhookEndpointDto[]>('/operator/webhooks', o),
+  createWebhook: (body: CreateWebhookBody, o?: Opts) =>
+    apiFetch<CreatedWebhookDto>('/operator/webhooks', { ...o, method: 'POST', body }),
+  updateWebhook: (id: string, body: UpdateWebhookBody, o?: Opts) =>
+    apiFetch<WebhookEndpointDto>(`/operator/webhooks/${enc(id)}`, { ...o, method: 'PATCH', body }),
+  deleteWebhook: (id: string, o?: Opts) =>
+    apiFetch<void>(`/operator/webhooks/${enc(id)}`, { ...o, method: 'DELETE' }),
+  webhookSecret: (id: string, o?: Opts) =>
+    apiFetch<WebhookSecretDto>(`/operator/webhooks/${enc(id)}/secret`, o),
+  testWebhook: (id: string, o?: Opts) =>
+    apiFetch<WebhookTestResultDto>(`/operator/webhooks/${enc(id)}/test`, { ...o, method: 'POST' }),
+  webhookDeliveries: (id: string, o?: Opts) =>
+    apiFetch<WebhookDeliveryDto[]>(`/operator/webhooks/${enc(id)}/deliveries`, o),
+  retryWebhookDelivery: (id: string, deliveryId: string, o?: Opts) =>
+    apiFetch<WebhookDeliveryDto>(
+      `/operator/webhooks/${enc(id)}/deliveries/${enc(deliveryId)}/retry`,
+      { ...o, method: 'POST' },
+    ),
+  calendarFeed: (o?: Opts) => apiFetch<CalendarFeedDto>('/operator/calendar-feed', o),
+  resetCalendarFeed: (o?: Opts) =>
+    apiFetch<CalendarFeedDto>('/operator/calendar-feed/reset', { ...o, method: 'POST' }),
   scanners: (o?: Opts) => apiFetch<ScannerAccountDto[]>('/operator/scanners', o),
   addScanner: (body: AddScannerBody, o?: Opts) =>
     apiFetch<ScannerAccountDto>('/operator/scanners', { ...o, method: 'POST', body }),

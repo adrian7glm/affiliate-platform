@@ -3,3 +3,4 @@ export * from './api';
 export * from './platform';
 export * from './i18n';
 export * from './calendar';
+export * from './integrations';

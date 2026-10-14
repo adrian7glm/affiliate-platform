@@ -52,6 +52,13 @@
       "breakpoints": true
     },
     {
+      "idx": 7,
+      "version": "7",
+      "when": 1791855527212,
+      "tag": "0007_integrations",
+      "breakpoints": true
+    },
+    {
       "idx": 8,
       "version": "7",
       "when": 1791855526212,

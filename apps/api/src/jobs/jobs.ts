@@ -6,6 +6,8 @@ import type { WorkerJobDto } from '@ap/contracts';
 export const JOBS = {
   outbox: 3_000,
   'send-notifications': 3_000,
+  'send-webhooks': 5_000,
+  'prune-webhook-history': 60 * 60_000,
   'expire-unpaid-bookings': 60_000,
   'approve-commissions': 10 * 60_000,
   'sync-availability-sources': 10 * 60_000,
