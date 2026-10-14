@@ -15,13 +15,22 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly details: unknown;
+  /** Translation key of the message (`errors.discounts.usedUp`), when the API sent one. */
+  readonly key: string | null;
 
-  constructor(status: number, code: string, message: string, details?: unknown) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    details?: unknown,
+    key: string | null = null,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.details = details;
+    this.key = key;
   }
 
   get isNetwork(): boolean {
@@ -86,6 +95,7 @@ function parseErrorBody(status: number, body: unknown, fallback: string): ApiErr
       typeof b.error === 'string' ? b.error : 'error',
       message,
       b.details,
+      typeof b.code === 'string' ? b.code : null,
     );
   }
   return new ApiError(status, 'error', fallback);

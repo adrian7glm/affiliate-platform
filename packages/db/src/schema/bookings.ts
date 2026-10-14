@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -13,6 +14,14 @@ import { createdAt, id } from './_common';
 import { tenants, users } from './identity';
 import { holds, productPrices, products, slots } from './catalog';
 import { affiliateLinks, affiliates } from './affiliates';
+import { discountCodes } from './discounts';
+
+/** An answer to a booking question, in the operator's language. */
+export interface BookingAnswer {
+  questionId: string;
+  label: string;
+  value: string;
+}
 
 export const bookingStatusEnum = pgEnum('booking_status', [
   'pending_payment',
@@ -61,11 +70,25 @@ export const bookings = pgTable(
     customerPhone: text('customer_phone'),
     customerLocale: text('customer_locale').notNull().default('en'),
     hotelRoom: text('hotel_room'),
+    /** Answers to the trip's booking questions, with the question as it was asked. */
+    answers: jsonb('answers').$type<BookingAnswer[]>().notNull().default([]),
     seats: integer('seats').notNull(),
     currency: text('currency').notNull(),
     totalMinor: integer('total_minor').notNull(),
     taxMinor: integer('tax_minor').notNull().default(0),
     platformFeeMinor: integer('platform_fee_minor').notNull().default(0),
+    /** The discount code used, as typed then, and how much it took off `total_minor`. */
+    discountCodeId: uuid('discount_code_id').references(() => discountCodes.id, {
+      onDelete: 'set null',
+    }),
+    discountCode: text('discount_code'),
+    discountMinor: integer('discount_minor').notNull().default(0),
+    /**
+     * The part of the total affiliates earn commission on (extras without commission left out),
+     * with its VAT. Null on bookings made before extras: the whole total.
+     */
+    commissionGrossMinor: integer('commission_gross_minor'),
+    commissionTaxMinor: integer('commission_tax_minor'),
     paymentMode: paymentModeEnum('payment_mode').notNull().default('online'),
     externalRef: text('external_ref'),
     /** When the customer accepted the booking terms and privacy policy (public checkout). */
@@ -84,6 +107,7 @@ export const bookings = pgTable(
     index('bookings_awaiting_payment')
       .on(t.holdId)
       .where(sql`status = 'pending_payment'`),
+    index('bookings_discount_code').on(t.discountCodeId),
   ],
 );
 

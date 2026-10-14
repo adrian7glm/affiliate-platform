@@ -17,6 +17,7 @@ import { StatusChip } from '@/components/StatusChip';
 import { affiliateApi } from '@/lib/endpoints';
 import type { Translator } from '@/lib/i18n';
 import { errorMessage, useApi } from '@/lib/useApi';
+import { OwnCodes } from './OwnCodes';
 
 export function linkTitle(link: LinkDto, { t }: Translator): string {
   return link.label || link.productName || t('affiliate.links.general');
@@ -105,6 +106,8 @@ export function LinksScreen() {
           </Button>
         </form>
       </Card>
+
+      <OwnCodes />
 
       {links.loading && !links.data ? <LoadingBlock /> : null}
       {links.error ? (

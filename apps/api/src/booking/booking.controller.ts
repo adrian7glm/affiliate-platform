@@ -23,6 +23,8 @@ import {
   type CheckInBody,
   type CheckInResultDto,
   type CheckoutResultDto,
+  type DepartureDayDto,
+  type DeparturePassengersDto,
   type ProductDto,
   type PublicCheckoutBody,
   type PublicTenantDto,
@@ -45,7 +47,7 @@ import {
   type TenantContext,
   TenantGuard,
 } from '../common/auth';
-import { CatalogService } from '../catalog/catalog.service';
+import { CatalogService, type ProductView } from '../catalog/catalog.service';
 import { Clock } from '../common/clock';
 import { checkTicketLinkKey } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
@@ -57,6 +59,7 @@ import { APP_CONFIG, type AppConfig } from '../config';
 import { I18nService } from '../i18n/i18n.service';
 import { Outbox } from '../outbox/outbox';
 import { BookingService } from './booking.service';
+import { DeparturesService } from './departures.service';
 import { TicketsService } from './tickets.service';
 
 @Controller('public')
@@ -69,10 +72,12 @@ export class PublicBookingController {
     private readonly clock: Clock,
     private readonly outbox: Outbox,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly i18n: I18nService,
   ) {}
 
+  /** Trips are in the request's language (Accept-Language) where the operator translated them. */
   @Get('tenants/:slug')
-  async tenant(@Param('slug') slug: string): Promise<PublicTenantDto> {
+  async tenant(@Param('slug') slug: string, @Req() request: Request): Promise<PublicTenantDto> {
     const tenant = await this.tenants.bySlug(slug);
     return {
       slug: tenant.slug,
@@ -80,7 +85,7 @@ export class PublicBookingController {
       currency: tenant.currency,
       timezone: tenant.timezone,
       branding: tenant.branding,
-      products: await this.catalog.listProducts(tenant.id),
+      products: await this.catalog.listProducts(tenant.id, true, this.view(request)),
       cancellationPolicy: tenant.cancellationPolicy,
       contactEmail: tenant.contactEmail,
       contactPhone: tenant.contactPhone,
@@ -91,9 +96,14 @@ export class PublicBookingController {
   async product(
     @Param('slug') slug: string,
     @Param('productSlug') productSlug: string,
+    @Req() request: Request,
   ): Promise<ProductDto> {
     const tenant = await this.tenants.bySlug(slug);
-    return this.catalog.productBySlug(tenant.id, productSlug);
+    return this.catalog.productBySlug(tenant.id, productSlug, this.view(request));
+  }
+
+  private view(request: Request): ProductView {
+    return { kind: 'public', lang: this.i18n.langOf(request) };
   }
 
   @Get('tenants/:slug/products/:productSlug/slots')
@@ -104,7 +114,10 @@ export class PublicBookingController {
     @Query('to') to: unknown,
   ): Promise<SlotDto[]> {
     const tenant = await this.tenants.bySlug(slug);
-    const product = await this.catalog.productBySlug(tenant.id, productSlug);
+    const product = await this.catalog.productBySlug(tenant.id, productSlug, {
+      kind: 'public',
+      lang: 'en',
+    });
     return this.catalog.listSlots(
       tenant.id,
       product.id,
@@ -129,8 +142,13 @@ export class PublicBookingController {
   ticket(
     @Param('bookingId', ParseUUIDPipe) bookingId: string,
     @Query('k') key: unknown,
+    @Query('lang') lang: unknown,
   ): Promise<TicketDto> {
-    return this.tickets.view(bookingId, typeof key === 'string' ? key : '');
+    return this.tickets.view(
+      bookingId,
+      typeof key === 'string' ? key : '',
+      typeof lang === 'string' ? lang : null,
+    );
   }
 
   /** The ticket as a PDF the customer can save on the phone. */
@@ -284,6 +302,25 @@ export class OperatorBookingController {
     return result;
   }
 
+  /** Boarding from the passenger list, for a customer who cannot show their ticket. */
+  @Post('bookings/:id/board')
+  @HttpCode(200)
+  async board(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: Request,
+  ): Promise<CheckInResultDto> {
+    const result = await this.tickets.boardBooking(
+      tenant.tenantId,
+      id,
+      user.id,
+      this.i18n.langOf(request),
+    );
+    if (this.config.WORKER_ENABLED) void this.outbox.drain();
+    return result;
+  }
+
   /** Boarding scan. Scanner accounts reach only this route of the operator API. */
   @Post('tickets/check-in')
   @HttpCode(200)
@@ -303,5 +340,29 @@ export class OperatorBookingController {
     );
     if (this.config.WORKER_ENABLED) void this.outbox.drain();
     return result;
+  }
+}
+
+/** The boarding list: a day's departures and the passengers of each. */
+@Controller('operator/departures')
+@UseGuards(AuthGuard, TenantGuard)
+@Roles('owner', 'staff')
+export class OperatorDeparturesController {
+  constructor(private readonly departures: DeparturesService) {}
+
+  @Get()
+  day(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('date') date: unknown,
+  ): Promise<DepartureDayDto> {
+    return this.departures.day(tenant.tenantId, parseDateParam(date, 'date'));
+  }
+
+  @Get(':slotId/passengers')
+  passengers(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('slotId', ParseUUIDPipe) slotId: string,
+  ): Promise<DeparturePassengersDto> {
+    return this.departures.passengers(tenant.tenantId, slotId);
   }
 }

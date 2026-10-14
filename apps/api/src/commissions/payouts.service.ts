@@ -151,9 +151,12 @@ export class CommissionPayoutsService {
         const sales: Sale[] = bookingRows.map((b) => ({
           bookingId: b.id,
           paidAt: b.paidAt!,
-          grossMinor: b.totalMinor,
-          taxMinor: b.taxMinor,
+          grossMinor: b.commissionGrossMinor ?? b.totalMinor,
+          taxMinor: b.commissionTaxMinor ?? b.taxMinor,
           cancelled: b.status !== 'confirmed',
+          // The trip rate frozen when the sale was recorded.
+          tripRateBps:
+            entryRows.find((e) => e.bookingId === b.id && e.kind === 'sale')?.tripRateBps ?? null,
         }));
         // The rules frozen with the month's first sale apply to the whole month.
         const plan = firstSale.planSnapshot as CommissionPlan;

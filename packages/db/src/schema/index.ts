@@ -1,6 +1,7 @@
 export * from './identity';
 export * from './affiliates';
 export * from './catalog';
+export * from './discounts';
 export * from './bookings';
 export * from './payments';
 export * from './commissions';

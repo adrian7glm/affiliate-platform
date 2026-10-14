@@ -17,18 +17,32 @@ import { useOperator } from '../OperatorContext';
 
 interface PriceDraft {
   key: string;
-  /** Set for ticket types that already exist. */
+  /** Set for ticket types and extras that already exist. */
   id?: string;
+  kind: 'ticket' | 'extra';
   label: string;
   amount: string;
   tax: string;
   seats: string;
+  /** Extras: affiliates earn commission on it. */
+  commissionable: boolean;
 }
 
+/** Ticket types and extras together (the API's limit). */
+const MAX_PRICES = 30;
+
 let priceCounter = 0;
-function newPrice(label = '', amount = '', seats = '1', tax = '0', id?: string): PriceDraft {
+function newPrice(
+  label = '',
+  amount = '',
+  seats = '1',
+  tax = '0',
+  id?: string,
+  kind: PriceDraft['kind'] = 'ticket',
+  commissionable = true,
+): PriceDraft {
   priceCounter += 1;
-  return { key: `price-${priceCounter}`, id, label, amount, tax, seats };
+  return { key: `price-${priceCounter}`, id, kind, label, amount, tax, seats, commissionable };
 }
 
 function defaultPrices(t: Translator['t']): PriceDraft[] {
@@ -72,6 +86,8 @@ export function ProductForm({
             String(p.seats),
             String(p.taxRateBps / 100),
             p.id,
+            p.kind,
+            p.commissionable,
           ),
         )
       : defaultPrices(t),
@@ -99,8 +115,12 @@ export function ProductForm({
     for (const price of prices) {
       const amountMinor = parseMoneyInput(price.amount, tenant.currency);
       const taxRateBps = price.tax.trim() ? percentToBps(price.tax) : 0;
-      const seats = Number(price.seats);
-      if (!price.label.trim()) next[price.key] = t('catalog.productForm.errPriceLabel');
+      const extra = price.kind === 'extra';
+      const seats = extra ? 0 : Number(price.seats);
+      if (!price.label.trim())
+        next[price.key] = t(
+          extra ? 'catalog.productForm.errExtraLabel' : 'catalog.productForm.errPriceLabel',
+        );
       else if (amountMinor === null) next[price.key] = t('catalog.productForm.errPriceAmount');
       else if (taxRateBps === null) next[price.key] = t('catalog.productForm.errPriceTax');
       else if (!Number.isInteger(seats) || seats < 0 || seats > 10)
@@ -117,11 +137,14 @@ export function ProductForm({
           amountMinor,
           taxRateBps,
           seats,
+          kind: price.kind,
+          commissionable: extra ? price.commissionable : true,
         });
       }
     }
-    if (prices.length === 0) next.prices = t('catalog.productForm.errPricesMin');
-    if (prices.length > 20) next.prices = t('catalog.productForm.errPricesMax');
+    if (!prices.some((p) => p.kind === 'ticket'))
+      next.prices = t('catalog.productForm.errPricesMin');
+    if (prices.length > MAX_PRICES) next.prices = t('catalog.productForm.errPricesMax');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -168,6 +191,113 @@ export function ProductForm({
     } finally {
       setBusy(false);
     }
+  }
+
+  const tickets = prices.filter((p) => p.kind === 'ticket');
+  const extras = prices.filter((p) => p.kind === 'extra');
+
+  /** One ticket type or extra: name, price, VAT, seats (tickets) or commission (extras). */
+  function priceRow(price: PriceDraft, index: number, lastTicket: boolean) {
+    const extra = price.kind === 'extra';
+    const removeLabel = extra
+      ? price.label
+        ? t('catalog.productForm.removeExtraNamed', { label: price.label })
+        : t('catalog.productForm.removeExtra', { number: index + 1 })
+      : price.label
+        ? t('catalog.productForm.removePriceNamed', { number: index + 1, label: price.label })
+        : t('catalog.productForm.removePrice', { number: index + 1 });
+    return (
+      <li key={price.key} className="rounded-2xl border border-line p-3">
+        <div
+          className={`grid gap-2 ${extra ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_5rem_auto]' : 'grid-cols-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_5rem_5rem_auto]'}`}
+        >
+          <label
+            className={`flex flex-col gap-1 sm:col-span-1 ${extra ? 'col-span-3' : 'col-span-2'}`}
+          >
+            <span className="text-sm font-semibold">
+              {extra ? t('catalog.productForm.extra') : t('catalog.productForm.ticket')}
+            </span>
+            <input
+              className={INPUT_CLASSES}
+              autoComplete="off"
+              value={price.label}
+              maxLength={80}
+              placeholder={extra ? t('catalog.productForm.extraPlaceholder') : undefined}
+              onChange={(e) => updatePrice(price.key, { label: e.target.value })}
+              aria-invalid={!!errors[price.key] || undefined}
+              aria-describedby={errors[price.key] ? `${price.key}-error` : undefined}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">{t('catalog.productForm.price')}</span>
+            <input
+              className={INPUT_CLASSES}
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0"
+              value={price.amount}
+              onChange={(e) => updatePrice(price.key, { amount: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">{t('catalog.productForm.vat')}</span>
+            <input
+              className={INPUT_CLASSES}
+              inputMode="decimal"
+              autoComplete="off"
+              value={price.tax}
+              onChange={(e) => updatePrice(price.key, { tax: e.target.value })}
+            />
+          </label>
+          {extra ? null : (
+            <label className="flex flex-col gap-1">
+              <span className="text-sm font-semibold">{t('catalog.productForm.seats')}</span>
+              <input
+                className={INPUT_CLASSES}
+                inputMode="numeric"
+                autoComplete="off"
+                value={price.seats}
+                onChange={(e) =>
+                  updatePrice(price.key, { seats: e.target.value.replace(/\D/g, '') })
+                }
+              />
+            </label>
+          )}
+          <div className="flex items-end justify-end">
+            <button
+              type="button"
+              className="inline-flex size-12 items-center justify-center rounded-xl text-muted hover:bg-surface-2 disabled:invisible"
+              onClick={() => setPrices((prev) => prev.filter((p) => p.key !== price.key))}
+              disabled={lastTicket}
+              aria-label={removeLabel}
+            >
+              <IconX />
+            </button>
+          </div>
+        </div>
+        {extra ? (
+          <label className="mt-2 flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-6 shrink-0"
+              checked={price.commissionable}
+              onChange={(e) => updatePrice(price.key, { commissionable: e.target.checked })}
+            />
+            <span>
+              <span className="block font-medium">{t('catalog.productForm.extraCommission')}</span>
+              <span className="block text-sm text-muted">
+                {t('catalog.productForm.extraCommissionHint')}
+              </span>
+            </span>
+          </label>
+        ) : null}
+        {errors[price.key] ? (
+          <p id={`${price.key}-error`} className="mt-1.5 text-sm font-medium text-danger-fg">
+            {errors[price.key]}
+          </p>
+        ) : null}
+      </li>
+    );
   }
 
   const slugPath = `/b/${tenant.slug}/${slug || t('catalog.productForm.slugPlaceholder')}`;
@@ -243,80 +373,7 @@ export function ProductForm({
             : t('catalog.productForm.pricesHelp')}
         </p>
         <ol className="flex flex-col gap-3">
-          {prices.map((price, index) => (
-            <li key={price.key} className="rounded-2xl border border-line p-3">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_5rem_5rem_auto]">
-                <label className="col-span-2 flex flex-col gap-1 sm:col-span-1">
-                  <span className="text-sm font-semibold">{t('catalog.productForm.ticket')}</span>
-                  <input
-                    className={INPUT_CLASSES}
-                    autoComplete="off"
-                    value={price.label}
-                    maxLength={80}
-                    onChange={(e) => updatePrice(price.key, { label: e.target.value })}
-                    aria-invalid={!!errors[price.key] || undefined}
-                    aria-describedby={errors[price.key] ? `${price.key}-error` : undefined}
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">{t('catalog.productForm.price')}</span>
-                  <input
-                    className={INPUT_CLASSES}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder="0"
-                    value={price.amount}
-                    onChange={(e) => updatePrice(price.key, { amount: e.target.value })}
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">{t('catalog.productForm.vat')}</span>
-                  <input
-                    className={INPUT_CLASSES}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    value={price.tax}
-                    onChange={(e) => updatePrice(price.key, { tax: e.target.value })}
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">{t('catalog.productForm.seats')}</span>
-                  <input
-                    className={INPUT_CLASSES}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={price.seats}
-                    onChange={(e) =>
-                      updatePrice(price.key, { seats: e.target.value.replace(/\D/g, '') })
-                    }
-                  />
-                </label>
-                <div className="flex items-end justify-end">
-                  <button
-                    type="button"
-                    className="inline-flex size-12 items-center justify-center rounded-xl text-muted hover:bg-surface-2 disabled:invisible"
-                    onClick={() => setPrices((prev) => prev.filter((p) => p.key !== price.key))}
-                    disabled={prices.length === 1}
-                    aria-label={
-                      price.label
-                        ? t('catalog.productForm.removePriceNamed', {
-                            number: index + 1,
-                            label: price.label,
-                          })
-                        : t('catalog.productForm.removePrice', { number: index + 1 })
-                    }
-                  >
-                    <IconX />
-                  </button>
-                </div>
-              </div>
-              {errors[price.key] ? (
-                <p id={`${price.key}-error`} className="mt-1.5 text-sm font-medium text-danger-fg">
-                  {errors[price.key]}
-                </p>
-              ) : null}
-            </li>
-          ))}
+          {tickets.map((price, index) => priceRow(price, index, tickets.length === 1))}
         </ol>
         {errors.prices ? (
           <p className="mt-2 text-sm font-medium text-danger-fg">{errors.prices}</p>
@@ -326,9 +383,32 @@ export function ProductForm({
           icon={<IconPlus />}
           className="mt-2"
           onClick={() => setPrices((prev) => [...prev, newPrice()])}
-          disabled={prices.length >= 20}
+          disabled={prices.length >= MAX_PRICES}
         >
           {t('catalog.productForm.addPrice')}
+        </Button>
+      </fieldset>
+
+      <fieldset className="min-w-0">
+        <legend className="mb-1.5 font-semibold">
+          {t('catalog.productForm.extrasLegend', { currency: tenant.currency })}
+        </legend>
+        <p className="mb-3 text-sm text-muted">{t('catalog.productForm.extrasHelp')}</p>
+        {extras.length > 0 ? (
+          <ol className="flex flex-col gap-3">
+            {extras.map((price, index) => priceRow(price, index, false))}
+          </ol>
+        ) : null}
+        <Button
+          variant="ghost"
+          icon={<IconPlus />}
+          className="mt-2"
+          onClick={() =>
+            setPrices((prev) => [...prev, newPrice('', '', '0', '0', undefined, 'extra')])
+          }
+          disabled={prices.length >= MAX_PRICES}
+        >
+          {t('catalog.productForm.addExtra')}
         </Button>
       </fieldset>
 

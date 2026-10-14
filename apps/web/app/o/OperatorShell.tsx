@@ -11,6 +11,7 @@ import { useT } from '@/components/I18nProvider';
 import {
   IconBanknote,
   IconBoat,
+  IconClipboard,
   IconGauge,
   IconLink,
   IconList,
@@ -21,6 +22,7 @@ import {
   IconScan,
   IconShield,
   IconSettings,
+  IconTag,
   IconTicket,
   IconUsers,
   IconWallet,
@@ -36,10 +38,12 @@ import { OperatorContext, type OperatorContextValue } from './OperatorContext';
 const NAV = [
   { href: '/o', label: 'operator.nav.dashboard', icon: <IconGauge />, exact: true },
   { href: '/o/bookings', label: 'operator.nav.bookings', icon: <IconList /> },
+  { href: '/o/departures', label: 'operator.nav.departures', icon: <IconClipboard /> },
   { href: '/o/scan', label: 'operator.nav.scan', icon: <IconScan /> },
   { href: '/o/team', label: 'operator.nav.team', icon: <IconTicket /> },
   { href: '/o/affiliates', label: 'operator.nav.affiliates', icon: <IconUsers /> },
   { href: '/o/plans', label: 'operator.nav.plans', icon: <IconPercent /> },
+  { href: '/o/discounts', label: 'operator.nav.discounts', icon: <IconTag /> },
   { href: '/o/products', label: 'operator.nav.products', icon: <IconBoat /> },
   { href: '/o/payouts', label: 'operator.nav.payouts', icon: <IconBanknote /> },
   { href: '/o/sources', label: 'operator.nav.sources', icon: <IconRefresh /> },
@@ -129,6 +133,7 @@ function OperatorFrame({ children }: { children: ReactNode }) {
         slug: loaded?.slug ?? membership.tenantSlug,
         currency: loaded?.currency ?? 'RON',
         timezone: loaded?.timezone ?? DEFAULT_TIMEZONE,
+        defaultLocale: loaded?.defaultLocale ?? 'ro',
       },
     };
   }, [dashboard, membership]);
@@ -141,9 +146,9 @@ function OperatorFrame({ children }: { children: ReactNode }) {
       <a href="#content" className="skip-link visually-hidden">
         {t('operator.nav.skipToContent')}
       </a>
-      <div className="lg:grid lg:min-h-dvh lg:grid-cols-[17rem_minmax(0,1fr)]">
+      <div className="lg:grid lg:min-h-dvh lg:grid-cols-[17rem_minmax(0,1fr)] print:block">
         {/* Desktop sidebar */}
-        <aside className="hidden border-r border-line bg-surface lg:block">
+        <aside className="no-print hidden border-r border-line bg-surface lg:block">
           <div className="sticky top-0 flex max-h-dvh flex-col gap-5 overflow-y-auto p-4">
             <div>
               <p className="text-sm text-muted">{t('operator.nav.area')}</p>
@@ -172,7 +177,7 @@ function OperatorFrame({ children }: { children: ReactNode }) {
         <div className="min-w-0">
           {/* Phone / tablet top bar */}
           <header
-            className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-surface/95 py-2 page-x backdrop-blur lg:hidden"
+            className="no-print sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-surface/95 py-2 page-x backdrop-blur lg:hidden"
             style={{ paddingTop: 'max(0.5rem, var(--safe-top))' }}
           >
             <p className="min-w-0 truncate font-bold">{value.tenant.name}</p>

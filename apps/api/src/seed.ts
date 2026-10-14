@@ -4,6 +4,7 @@ import {
   affiliates,
   commissionPlans,
   createDb,
+  discountCodes,
   memberships,
   platformPlans,
   productPrices,
@@ -20,7 +21,7 @@ import { loadDotEnv } from './env';
 
 /**
  * Local demo data: one operator, a progressive plan, a trip with departures for the next
- * 30 days and one affiliate. Safe to run again: it does nothing if the demo operator exists.
+ * 30 days, one affiliate and two discount codes (VARA10, and the affiliate's CENTRAL). Safe to run again: it does nothing if the demo operator exists.
  */
 async function main(): Promise<void> {
   loadDotEnv();
@@ -113,6 +114,16 @@ async function main(): Promise<void> {
           amountMinor: 7_500,
           taxRateBps: 900,
         },
+        {
+          tenantId,
+          productId: product!.id,
+          code: 'photos',
+          label: 'Pozele excursiei',
+          amountMinor: 5_000,
+          taxRateBps: 1900,
+          seats: 0,
+          kind: 'extra',
+        },
       ]);
       const today = DateTime.now().setZone(tenant!.timezone).startOf('day');
       const departures = [];
@@ -148,6 +159,10 @@ async function main(): Promise<void> {
       await tx
         .insert(affiliateLinks)
         .values({ tenantId, affiliateId: affiliate!.id, code: randomCode(7), label: 'General' });
+      await tx.insert(discountCodes).values([
+        { tenantId, code: 'VARA10', percentBps: 1000 },
+        { tenantId, code: 'CENTRAL', percentBps: 1000, affiliateId: affiliate!.id },
+      ]);
     });
     console.log('demo data created');
     console.log('  platform admin:  admin@demo.test (open /admin)');

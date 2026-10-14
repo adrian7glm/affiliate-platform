@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   type CreateProductBody,
   type CreateSlotsBody,
@@ -26,10 +28,18 @@ import {
   updateProductBody,
   updateSlotsBody,
 } from '@ap/contracts';
-import { AuthGuard, CurrentTenant, Roles, type TenantContext, TenantGuard } from '../common/auth';
+import {
+  AuthGuard,
+  CurrentAffiliate,
+  CurrentTenant,
+  Roles,
+  type TenantContext,
+  TenantGuard,
+} from '../common/auth';
 import { Clock } from '../common/clock';
 import { parseDateParam } from '../common/period';
 import { ZodBody } from '../common/validation';
+import { I18nService } from '../i18n/i18n.service';
 import { CatalogService } from './catalog.service';
 
 @Controller('operator/products')
@@ -115,11 +125,25 @@ export class AffiliateCatalogController {
   constructor(
     private readonly catalog: CatalogService,
     private readonly clock: Clock,
+    private readonly i18n: I18nService,
   ) {}
 
+  /**
+   * The trips in the affiliate's language, where the operator translated them. A trip's own
+   * commission rate shows only to affiliates it applies to (not to those with a negotiated rate).
+   */
   @Get()
-  list(@CurrentTenant() tenant: TenantContext): Promise<ProductDto[]> {
-    return this.catalog.listProducts(tenant.tenantId);
+  async list(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentAffiliate() affiliateId: string,
+    @Req() request: Request,
+  ): Promise<ProductDto[]> {
+    const list = await this.catalog.listProducts(tenant.tenantId, true, {
+      kind: 'affiliate',
+      lang: this.i18n.langOf(request),
+    });
+    if (!(await this.catalog.hasNegotiatedRate(affiliateId))) return list;
+    return list.map((product) => ({ ...product, commissionRateBps: null }));
   }
 
   @Get(':id/slots')

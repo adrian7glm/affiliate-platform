@@ -280,6 +280,7 @@ export class AnalyticsService {
         name: tenant.name,
         currency: tenant.currency,
         timezone: tenant.timezone,
+        defaultLocale: tenant.defaultLocale,
       },
       periodKey,
       bookings: { count: sales?.count ?? 0, revenueMinor: sales?.revenue ?? 0 },

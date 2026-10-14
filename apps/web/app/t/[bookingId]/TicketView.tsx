@@ -44,7 +44,8 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
   const load = useCallback(
     async (signal?: AbortSignal) => {
       try {
-        const next = await publicApi.ticket(bookingId, ticketKey, { signal });
+        // The trip's texts come in the page's language, where the operator translated them.
+        const next = await publicApi.ticket(bookingId, ticketKey, { signal, lang });
         setTicket(next);
         statusRef.current = next.status;
         setOffline(false);
@@ -62,7 +63,7 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [bookingId, ticketKey],
+    [bookingId, ticketKey, lang],
   );
 
   // Show the saved copy at once, then refresh from the API.
@@ -192,6 +193,12 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
             <div className="col-span-2">
               <dt className="text-sm text-muted">{t.t('public.meetingPoint')}</dt>
               <dd className="font-semibold">{ticket.meetingPoint}</dd>
+            </div>
+          ) : null}
+          {ticket.customerNote ? (
+            <div className="col-span-2 rounded-2xl bg-brand-soft p-3">
+              <dt className="text-sm font-semibold">{t.t('public.goodToKnow')}</dt>
+              <dd className="whitespace-pre-line">{ticket.customerNote}</dd>
             </div>
           ) : null}
           <div>

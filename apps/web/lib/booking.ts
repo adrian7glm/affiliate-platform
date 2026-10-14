@@ -1,4 +1,9 @@
-import type { PriceDto, SlotDto } from '@ap/contracts';
+import {
+  discountMinorFor,
+  type DiscountPreviewDto,
+  type PriceDto,
+  type SlotDto,
+} from '@ap/contracts';
 import { dateKeyInTz } from './dates';
 
 export type Quantities = Record<string, number>;
@@ -27,12 +32,33 @@ export function totalMinor(prices: PriceDto[], quantities: Quantities): number {
   return prices.reduce((sum, p) => sum + p.amountMinor * (quantities[p.id] ?? 0), 0);
 }
 
+/** What the booking costs before and after a discount code, as the API will charge it. */
+export function bookingTotals(
+  prices: PriceDto[],
+  quantities: Quantities,
+  code: Pick<DiscountPreviewDto, 'percentBps' | 'amountMinor'> | null,
+): { subtotalMinor: number; discountMinor: number; totalMinor: number } {
+  const subtotalMinor = totalMinor(prices, quantities);
+  const discountMinor = code ? discountMinorFor(code, subtotalMinor) : 0;
+  return { subtotalMinor, discountMinor, totalMinor: subtotalMinor - discountMinor };
+}
+
+/** "2 × Adult, 1 × Lunch" for the chosen tickets and extras. */
+export function chosenItems(prices: PriceDto[], quantities: Quantities): string {
+  return prices
+    .filter((p) => (quantities[p.id] ?? 0) > 0)
+    .map((p) => `${quantities[p.id]} × ${p.label}`)
+    .join(', ');
+}
+
 export function seatsNeeded(prices: PriceDto[], quantities: Quantities): number {
   return prices.reduce((sum, p) => sum + p.seats * (quantities[p.id] ?? 0), 0);
 }
 
-export function ticketCount(quantities: Quantities): number {
-  return Object.values(quantities).reduce((sum, q) => sum + q, 0);
+/** Tickets chosen (extras left out: a booking needs at least one ticket). */
+export function ticketCount(quantities: Quantities, prices?: PriceDto[]): number {
+  const extras = new Set(prices?.filter((p) => p.kind === 'extra').map((p) => p.id));
+  return Object.entries(quantities).reduce((sum, [id, q]) => (extras.has(id) ? sum : sum + q), 0);
 }
 
 /** Items for the booking request (only chosen prices). */
@@ -61,7 +87,7 @@ export function maxQuantityFor(
  * one, otherwise the most expensive ticket that takes a seat (never a child or infant ticket).
  */
 export function defaultQuantities(prices: PriceDto[], available: number): Quantities {
-  const seated = prices.filter((p) => p.seats > 0);
+  const seated = prices.filter((p) => p.kind === 'ticket' && p.seats > 0);
   const standard =
     seated.find((p) => p.code === 'adult') ??
     [...seated].sort((a, b) => b.amountMinor - a.amountMinor)[0];

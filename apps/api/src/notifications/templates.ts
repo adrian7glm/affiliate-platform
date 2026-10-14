@@ -32,6 +32,8 @@ export interface TemplateParams {
   ticket: TripParams & {
     customerName: string;
     meetingPoint: string | null;
+    /** The operator's message for the trip's customers. Missing in older queued messages. */
+    customerNote?: string | null;
     seats: number;
     url: string;
     /** Signed QR payload; the email shows it as an image. Null when the ticket is not valid. */
@@ -289,6 +291,9 @@ const renderers: { [K in TemplateName]: (p: TemplateParams[K], t: Translator) =>
       greeting: t('email.greetingName', { name: p.customerName }),
       lines: [
         t('email.ticket.confirmed', { tenant: p.tenantName }),
+        ...(p.customerNote
+          ? [t('email.ticket.note', { tenant: p.tenantName, note: p.customerNote })]
+          : []),
         t('email.ticket.showQr'),
         t('email.ticket.link', { url: p.url }),
         ...(calendar ? [t('email.ticket.calendarAttached')] : []),

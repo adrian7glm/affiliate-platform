@@ -18,6 +18,8 @@ import type {
   WebhookSecretDto,
   WebhookTestResultDto,
   DeleteSlotsResultDto,
+  DepartureDayDto,
+  DeparturePassengersDto,
   OperatorSettingsDto,
   OperatorSlotDto,
   UpdatePlanBody,
@@ -49,7 +51,11 @@ import type {
   ClosePeriodResultDto,
   CommissionPlanDto,
   CommissionReportDto,
+  CreateDiscountCodeBody,
   CreateLinkBody,
+  DiscountCodeDto,
+  DiscountPreviewDto,
+  UpdateDiscountCodeBody,
   CreatePlanBody,
   CreateProductBody,
   CreateSlotsBody,
@@ -76,7 +82,8 @@ import { API_URL, apiFetch, buildUrl, type RequestOptions } from './api';
  * One typed function per endpoint in docs/api.md. Pages call these instead of building URLs.
  */
 
-type Opts = Pick<RequestOptions, 'signal' | 'baseUrl'>;
+/** `lang`: the language of error messages and, on public pages, of the operator's trip texts. */
+type Opts = Pick<RequestOptions, 'signal' | 'baseUrl' | 'lang'>;
 const enc = encodeURIComponent;
 
 export interface DateRange {
@@ -153,6 +160,8 @@ export const affiliateApi = {
   createBooking: (body: AssistedBookingBody, o?: Opts) =>
     apiFetch<CheckoutResultDto>('/affiliate/bookings', { ...o, method: 'POST', body }),
   bookings: (o?: Opts) => apiFetch<BookingDto[]>('/affiliate/bookings', o),
+  /** The affiliate's own discount codes, to give to their guests. */
+  discountCodes: (o?: Opts) => apiFetch<DiscountCodeDto[]>('/affiliate/discount-codes', o),
 };
 
 export const operatorApi = {
@@ -226,6 +235,16 @@ export const operatorApi = {
     apiFetch<BookingDto>(`/operator/bookings/${enc(id)}/cancel`, { ...o, method: 'POST', body }),
   checkIn: (body: CheckInBody, o?: Opts) =>
     apiFetch<CheckInResultDto>('/operator/tickets/check-in', { ...o, method: 'POST', body }),
+  /** Boards a passenger from the list, without scanning their ticket. */
+  board: (bookingId: string, o?: Opts) =>
+    apiFetch<CheckInResultDto>(`/operator/bookings/${enc(bookingId)}/board`, {
+      ...o,
+      method: 'POST',
+    }),
+  departures: (date: string, o?: Opts) =>
+    apiFetch<DepartureDayDto>('/operator/departures', { ...o, query: { date } }),
+  passengers: (slotId: string, o?: Opts) =>
+    apiFetch<DeparturePassengersDto>(`/operator/departures/${enc(slotId)}/passengers`, o),
   commissionReport: (period: string, o?: Opts) =>
     apiFetch<CommissionReportDto>('/operator/commissions/report', { ...o, query: { period } }),
   closePeriod: (body: ClosePeriodBody, o?: Opts) =>
@@ -269,6 +288,15 @@ export const operatorApi = {
     apiFetch<ScannerAccountDto>('/operator/scanners', { ...o, method: 'POST', body }),
   removeScanner: (userId: string, o?: Opts) =>
     apiFetch<void>(`/operator/scanners/${enc(userId)}`, { ...o, method: 'DELETE' }),
+  discountCodes: (o?: Opts) => apiFetch<DiscountCodeDto[]>('/operator/discount-codes', o),
+  createDiscountCode: (body: CreateDiscountCodeBody, o?: Opts) =>
+    apiFetch<DiscountCodeDto>('/operator/discount-codes', { ...o, method: 'POST', body }),
+  updateDiscountCode: (id: string, body: UpdateDiscountCodeBody, o?: Opts) =>
+    apiFetch<DiscountCodeDto>(`/operator/discount-codes/${enc(id)}`, {
+      ...o,
+      method: 'PATCH',
+      body,
+    }),
 };
 
 /** The boarding scanner app (scanner accounts and operator staff). */
@@ -297,11 +325,12 @@ export const publicApi = {
       body,
       auth: false,
     }),
+  /** The ticket, with the trip in `lang` where the operator translated it. */
   ticket: (bookingId: string, key: string, o?: Opts) =>
     apiFetch<TicketDto>(`/public/tickets/${enc(bookingId)}`, {
       ...o,
       auth: false,
-      query: { k: key },
+      query: { k: key, lang: o?.lang ?? undefined },
     }),
   /** Direct link to the PDF ticket; `download` asks the browser to save it. */
   ticketPdfUrl: (bookingId: string, key: string, lang: string, download = false) =>
@@ -313,6 +342,13 @@ export const publicApi = {
   /** The trip as a calendar event (.ics) for Apple Calendar, Outlook and phones. */
   ticketCalendarUrl: (bookingId: string, key: string, lang: string) =>
     buildUrl(API_URL, `/public/tickets/${enc(bookingId)}/calendar.ics`, { k: key, lang }),
+  /** Whether a discount code works for a trip today (the error says why not). */
+  discount: (slug: string, code: string, productId: string, o?: Opts) =>
+    apiFetch<DiscountPreviewDto>(`/public/tenants/${enc(slug)}/discount-codes/${enc(code)}`, {
+      ...o,
+      auth: false,
+      query: { productId },
+    }),
   contact: (body: ContactRequestBody, o?: Opts) =>
     apiFetch<void>('/public/contact', { ...o, method: 'POST', body, auth: false }),
   devPaymentSucceed: (bookingId: string, key: string, o?: Opts) =>
