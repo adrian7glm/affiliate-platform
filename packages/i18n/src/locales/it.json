@@ -70,7 +70,8 @@
       "qrShort": "QR",
       "book": "Prenota ora",
       "bookShort": "Prenota"
-    }
+    },
+    "discountCode": "codice {code}: −{amount}"
   },
   "labels": {
     "bookingStatus": {
@@ -211,7 +212,8 @@
       "event": "evento non trovato",
       "webhook": "indirizzo webhook non trovato",
       "webhookDelivery": "evento webhook non trovato",
-      "calendar": "calendario non trovato"
+      "calendar": "calendario non trovato",
+      "discountCode": "codice sconto non trovato"
     },
     "auth": {
       "signInAgain": "accedi di nuovo",
@@ -239,7 +241,9 @@
       "tripUnavailable": "questa escursione non è più disponibile",
       "unknownPrice": "tipo di biglietto sconosciuto per questa escursione",
       "noSeats": "scegli almeno un posto",
-      "paymentsUnavailable": "i pagamenti non sono disponibili al momento, riprova tra un minuto"
+      "paymentsUnavailable": "i pagamenti non sono disponibili al momento, riprova tra un minuto",
+      "answerRequired": "per favore rispondi: {question}",
+      "invalidAnswer": "scegli una delle risposte proposte per: {question}"
     },
     "departures": {
       "closed": "questa partenza non è più prenotabile",
@@ -341,6 +345,15 @@
       "twoFactorAlreadyOn": "la verifica in due passaggi è già attiva",
       "twoFactorNoSetup": "ricomincia la configurazione",
       "contactTaken": "questo numero di telefono o questa email appartiene già a un altro account"
+    },
+    "discounts": {
+      "invalid": "questo codice sconto non esiste o non è più valido",
+      "notToday": "questo codice sconto non si può usare oggi",
+      "notForTrip": "questo codice sconto non vale per quest'escursione",
+      "usedUp": "questo codice sconto è esaurito",
+      "otherAffiliate": "questo codice sconto appartiene a un altro affiliato",
+      "codeTaken": "il codice {code} esiste già",
+      "datesReversed": "l'ultimo giorno è prima del primo"
     }
   },
   "auth": {
@@ -565,7 +578,33 @@
       "privacyNote": "Usiamo i tuoi dati solo per risponderti. Leggi l'{privacy}.",
       "sentTitle": "Grazie, abbiamo ricevuto il tuo messaggio",
       "sentText": "Ti risponderemo a {email}."
-    }
+    },
+    "goodToKnow": "Da sapere",
+    "questions": {
+      "optional": "facoltativo",
+      "choose": "Scegli…",
+      "required": "Rispondi a questa domanda."
+    },
+    "extras": "Extra",
+    "extrasHint": "Facoltativi, si aggiungono alla prenotazione.",
+    "subtotal": "Subtotale",
+    "discountLine": "Codice {code}",
+    "discount": {
+      "question": "Hai un codice sconto?",
+      "label": "Codice sconto",
+      "apply": "Applica",
+      "remove": "Togli il codice",
+      "applied": "Codice {code}: {discount}",
+      "empty": "Scrivi il codice.",
+      "yourCodes": "I tuoi codici",
+      "invalid": "Questo codice non esiste o non è più valido.",
+      "notToday": "Questo codice non si può usare oggi.",
+      "notForTrip": "Questo codice non vale per quest'escursione.",
+      "usedUp": "Questo codice è esaurito.",
+      "otherAffiliate": "Questo codice è di un altro affiliato: usane uno tuo o uno generale."
+    },
+    "addExtra": "Aggiungi: {label}",
+    "removeExtra": "Togli: {label}"
   },
   "ticket": {
     "title": "Il tuo biglietto",
@@ -772,7 +811,8 @@
       "booking": "Prenotazione…",
       "submit": "Prenota · {total}",
       "slotWhen": "{day} alle {time}",
-      "change": "Modifica"
+      "change": "Modifica",
+      "tripCommission": "La tua commissione su questa escursione: {rate}"
     },
     "result": {
       "created": "Prenotazione creata",
@@ -796,6 +836,16 @@
     "customerMessage": {
       "pay": "Ciao {name}! La tua prenotazione per {product} il {day} alle {time} ti aspetta. Paga qui per ricevere il biglietto: {url}",
       "ticket": "Ciao {name}! Il tuo biglietto per {product} il {day} alle {time}: {url}"
+    },
+    "codes": {
+      "title": "I tuoi codici sconto",
+      "description": "Dalli ai tuoi ospiti. Chi prenota con uno dei tuoi codici ti fa guadagnare la commissione, anche se prenota da solo dal telefono.",
+      "until": "valido fino al {day}",
+      "uses_one": "usato una volta",
+      "uses_many": "usato {count} volte",
+      "uses_other": "usato {count} volte",
+      "shareTitle": "Prenota con {name}",
+      "shareText": "Prenota con il codice {code} e paghi meno: {discount}."
     }
   },
   "kit": {
@@ -876,7 +926,9 @@
       "sections": "Sezioni",
       "menu": "Menu",
       "tenant": "Operatore",
-      "integrations": "Integrazioni"
+      "integrations": "Integrazioni",
+      "departures": "Liste passeggeri",
+      "discounts": "Codici sconto"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1189,7 +1241,10 @@
       "csvEmail": "Email",
       "csvPhone": "Telefono",
       "csvTax": "IVA inclusa",
-      "csvPaidAt": "Pagato il"
+      "csvPaidAt": "Pagato il",
+      "csvAnswers": "Risposte",
+      "csvDiscountCode": "Codice sconto",
+      "csvDiscount": "Sconto"
     },
     "billing": {
       "title": "Abbonamento",
@@ -1229,6 +1284,115 @@
       "planPrice": "/ mese + {fee} / prenotazione",
       "choose": "Scegli {name}",
       "ownerOnly": "Solo l'amministratore dell'account può cambiare il piano."
+    },
+    "departures": {
+      "title": "Liste passeggeri",
+      "description": "Chi c'è su ogni partenza, cosa ha risposto alla prenotazione e cosa resta da incassare. Stampala o scaricala per l'equipaggio.",
+      "previousDay": "Giorno precedente",
+      "nextDay": "Giorno successivo",
+      "pickDay": "Giorno",
+      "none": "Nessuna partenza {day}.",
+      "chooseDeparture": "Scegli una partenza per vederne i passeggeri.",
+      "passengersTitle": "Passeggeri",
+      "seatsOf": "{booked} posti prenotati su {capacity}",
+      "boardedOf": "{boarded} su {booked} a bordo",
+      "pendingPayment_one": "1 prenotazione non ancora pagata",
+      "pendingPayment_many": "{count} prenotazioni non ancora pagate",
+      "pendingPayment_other": "{count} prenotazioni non ancora pagate",
+      "closed": "Chiusa alla vendita",
+      "downloadCsv": "Scarica CSV",
+      "noPassengers": "Nessuno ha ancora prenotato questa partenza.",
+      "search": "Cerca",
+      "searchHint": "Nome, codice, camera o telefono",
+      "toBoard_one": "1 prenotazione ancora da imbarcare",
+      "toBoard_many": "{count} prenotazioni ancora da imbarcare",
+      "toBoard_other": "{count} prenotazioni ancora da imbarcare",
+      "noMatch": "Nessuno corrisponde alla ricerca.",
+      "notPaid": "Non pagata",
+      "confirmed": "Confermata",
+      "boardedAt": "A bordo alle {time}",
+      "due": "Da incassare: {amount}",
+      "room": "Camera",
+      "soldBy": "Venduto da",
+      "board": "Segna a bordo",
+      "boardTitle": "Segnare a bordo?",
+      "boardBody": "{name} si imbarca senza scansionare il biglietto. Dopo, il biglietto non potrà più essere usato.",
+      "boardHint": "Usalo quando il cliente non ha con sé il telefono o il codice QR non si legge. Viene registrato a tuo nome.",
+      "confirmBoard": "Sì, a bordo",
+      "collectFirst": "Incassa {amount} dal cliente: paga all'imbarco.",
+      "boardedNotice": "{name} è a bordo.",
+      "boardedCollect": "{name} è a bordo. Incassa {amount}.",
+      "alreadyBoarded": "{name} era già a bordo.",
+      "csvName": "Nome",
+      "csvReference": "Codice",
+      "csvSeats": "Posti",
+      "csvTickets": "Biglietti",
+      "csvRoom": "Camera",
+      "csvPhone": "Telefono",
+      "csvAnswers": "Risposte",
+      "csvDue": "Da incassare",
+      "csvCurrency": "Valuta",
+      "csvAffiliate": "Affiliato",
+      "csvStatus": "Stato",
+      "csvBoarded": "Imbarcato alle",
+      "csvFile": "passeggeri-{date}-{time}.csv"
+    },
+    "discounts": {
+      "title": "Codici sconto",
+      "description": "I clienti scrivono il codice quando prenotano e pagano meno. Un codice dato a un affiliato (es. -10% per gli ospiti di un hotel) gli porta la prenotazione e la commissione, ovunque prenoti il cliente.",
+      "newTitle": "Nuovo codice",
+      "created": "Codice {code} creato",
+      "createdHelp": "I clienti lo scrivono nella pagina di prenotazione, in «Hai un codice sconto?». Il suo affiliato lo vede nell'app, in Link.",
+      "listTitle": "I tuoi codici",
+      "empty": "Non hai ancora creato nessun codice.",
+      "editTitle": "Modifica il codice {code}",
+      "stateActive": "Attivo",
+      "statePaused": "In pausa",
+      "stateScheduled": "Programmato",
+      "stateExpired": "Scaduto",
+      "stateUsedUp": "Esaurito",
+      "forAffiliate": "Di {name}",
+      "forEveryone": "Il tuo codice, per qualsiasi cliente",
+      "affiliateInactive": "l'affiliato non è attivo, il codice non funziona",
+      "edit": "Modifica",
+      "pause": "Metti in pausa",
+      "resume": "Riattiva",
+      "trips": "Escursioni",
+      "allTrips": "Tutte",
+      "valid": "Valido",
+      "validRange": "{from} – {until}",
+      "validFromOnly": "dal {from}",
+      "validUntilOnly": "fino al {until}",
+      "validAlways": "Sempre",
+      "uses": "Usato",
+      "usesOf": "{uses} su {max}",
+      "revenue": "Vendite",
+      "code": "Codice",
+      "codeHint": "Ciò che scrivono i clienti: 3–24 lettere, cifre o trattini, es. ESTATE10.",
+      "kind": "Sconto",
+      "kindPercent": "Percentuale",
+      "kindAmount": "Importo fisso ({currency})",
+      "percent": "Percentuale (%)",
+      "percentHint": "Al massimo il 90%.",
+      "amount": "Importo ({currency})",
+      "amountHint": "Si sottrae dal totale della prenotazione.",
+      "affiliate": "Affiliato",
+      "affiliateHint": "Le prenotazioni con questo codice diventano sue, con la sua commissione. Compaiono solo gli affiliati con l'account attivato.",
+      "noAffiliate": "Nessuno (codice tuo)",
+      "tripsHint": "Nessuna spunta: vale per tutte le escursioni.",
+      "validFrom": "Valido dal",
+      "validUntil": "Valido fino al",
+      "validHint": "I giorni in cui i clienti possono prenotare con il codice, qualunque sia la data dell'escursione.",
+      "maxUses": "Quante volte si può usare",
+      "maxUsesHint": "Vuoto: nessun limite. Una prenotazione annullata o non pagata restituisce il suo uso.",
+      "errCode": "Usa 3–24 lettere, cifre o trattini.",
+      "errPercent": "Scrivi una percentuale tra 0,01 e 90.",
+      "errAmount": "Scrivi un importo maggiore di zero.",
+      "errMaxUses": "Scrivi un numero intero, almeno 1.",
+      "errDates": "L'ultimo giorno è prima del primo.",
+      "errTaken": "Il codice {code} esiste già.",
+      "save": "Salva",
+      "create": "Crea il codice"
     }
   },
   "admin": {
@@ -1759,7 +1923,8 @@
       "sms": "{tenant}: biglietto {reference} per {product}, {when}, {seats}. Mostra il codice QR all'imbarco: {url}",
       "smsDue": "{tenant}: biglietto {reference} per {product}, {when}, {seats}, da pagare all'imbarco {due}. Mostra il codice QR all'imbarco: {url}",
       "calendarAttached": "L'escursione è allegata anche come evento di calendario: aprilo per aggiungerlo al tuo calendario.",
-      "addToGoogle": "Aggiungi a Google Calendar"
+      "addToGoogle": "Aggiungi a Google Calendar",
+      "note": "Messaggio da {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "La prenotazione {reference} è stata annullata",
@@ -1792,7 +1957,8 @@
       "dueOnSite": "Da pagare all'imbarco",
       "onlineTicket": "Biglietto online",
       "keepOnPhone": "Non serve stamparlo: tienilo sul telefono.",
-      "fileName": "biglietto-{reference}.pdf"
+      "fileName": "biglietto-{reference}.pdf",
+      "note": "Da sapere"
     },
     "calendar": {
       "description": "Prenotazione {reference}. Il tuo biglietto: {url}"
@@ -1866,7 +2032,9 @@
       "saving": "Salvataggio…",
       "pause": "Metti in pausa",
       "resume": "Riprendi le vendite",
-      "viewPublic": "Vedi la pagina cliente"
+      "viewPublic": "Vedi la pagina cliente",
+      "extraTag": "extra",
+      "extraNoCommission": "extra, senza commissione"
     },
     "productForm": {
       "defaultAdult": "Adulto",
@@ -1878,8 +2046,8 @@
       "errPriceAmount": "Inserisci il prezzo, es. 120 o 99,50.",
       "errPriceTax": "IVA: una percentuale tra 0 e 100.",
       "errPriceSeats": "Posti occupati: tra 0 e 10.",
-      "errPricesMin": "Aggiungi almeno un prezzo.",
-      "errPricesMax": "Al massimo 20 tipi di biglietto.",
+      "errPricesMin": "Aggiungi almeno un tipo di biglietto.",
+      "errPricesMax": "Al massimo 30 tipi di biglietto ed extra.",
       "errSlugTaken": "Un'altra escursione usa già questo indirizzo. Scegline uno diverso.",
       "name": "Nome",
       "nameHint": "Es. “Gita in barca al tramonto”.",
@@ -1903,7 +2071,17 @@
       "saving": "Salvataggio…",
       "saveChanges": "Salva le modifiche",
       "saveTrip": "Salva l'escursione",
-      "newTrip": "Nuova escursione"
+      "newTrip": "Nuova escursione",
+      "extrasLegend": "Extra ({currency})",
+      "extrasHelp": "Cosa possono aggiungere i clienti alla prenotazione: pranzo, transfer dall’hotel, foto. Non occupano posti.",
+      "extra": "Extra",
+      "extraPlaceholder": "es. Pranzo a bordo",
+      "addExtra": "Aggiungi un extra",
+      "extraCommission": "Gli affiliati ci guadagnano la commissione",
+      "extraCommissionHint": "Togli la spunta se non ci guadagni, es. un transfer che paghi all'autista.",
+      "removeExtra": "Rimuovi l'extra {number}",
+      "removeExtraNamed": "Rimuovi {label}",
+      "errExtraLabel": "Dai un nome all'extra."
     },
     "slots": {
       "weekdayShort": {
@@ -2015,7 +2193,8 @@
       "cancelledRefunded_other": "{count} clienti ricevono il rimborso.",
       "cancelledFailed_one": "{count} prenotazione non è stata annullata: riprova.",
       "cancelledFailed_many": "{count} prenotazioni non sono state annullate: riprova.",
-      "cancelledFailed_other": "{count} prenotazioni non sono state annullate: riprova."
+      "cancelledFailed_other": "{count} prenotazioni non sono state annullate: riprova.",
+      "passengers": "Vedi la lista passeggeri"
     },
     "settings": {
       "title": "Impostazioni e aspetto",
@@ -2131,6 +2310,57 @@
       "token": "Token di accesso",
       "connecting": "Collegamento…",
       "connect": "Collega"
+    },
+    "extras": {
+      "heading": "Per clienti e affiliati",
+      "customerButton": "Messaggio e domande",
+      "translationsButton": "Traduzioni",
+      "commissionButton": "Commissione",
+      "customerTitle": "Messaggio e domande: {name}",
+      "translationsTitle": "Traduzioni: {name}",
+      "commissionTitle": "Commissione: {name}",
+      "commissionChip": "Commissione propria {rate}",
+      "translatedChip": "Tradotta: {languages}",
+      "questionsChip_one": "1 domanda",
+      "questionsChip_many": "{count} domande",
+      "questionsChip_other": "{count} domande",
+      "note": "Messaggio per i clienti",
+      "noteHint": "Compare sulla pagina dell'escursione, sul biglietto e nell'email di conferma. Es. “Arrivate 15 minuti prima, portate un asciugamano.”",
+      "questionsLegend": "Domande nel modulo di prenotazione",
+      "questionsHelp": "Chiedi ciò che ti serve sapere prima della partenza. Le risposte compaiono sulle prenotazioni e sulla lista passeggeri.",
+      "noQuestions": "Ancora nessuna domanda: i clienti indicano solo nome e contatto.",
+      "question": "Domanda {number}",
+      "questionHint": "Es. “Quale menu desiderate a pranzo?” o “Hotel per il ritiro”.",
+      "removeQuestion": "Elimina la domanda {number}",
+      "answerKind": "Risposta",
+      "kindText": "Scritta dal cliente",
+      "kindChoice": "Scelta da un elenco",
+      "required": "Risposta obbligatoria",
+      "options": "Opzioni",
+      "optionsHint": "Una per riga, es. Pesce, Pollo, Vegetariano.",
+      "addQuestion": "Aggiungi una domanda",
+      "translateReminder": "Se cambi il messaggio o le domande, controlla anche le loro traduzioni.",
+      "errQuestionLabel": "Scrivi la domanda.",
+      "errOptionsMin": "Scrivi almeno due opzioni, una per riga.",
+      "errOptionsMax": "Al massimo {max} opzioni.",
+      "errOptionLength": "Ogni opzione: al massimo 80 caratteri.",
+      "translationsHelp": "I clienti vedono l'escursione nella loro lingua dove l'hai tradotta. Lingua dei tuoi testi: {language}.",
+      "language": "Lingua",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "{done} testi tradotti su {total}",
+      "originalText": "Originale: {text}",
+      "ticketNames": "Biglietti ed extra",
+      "questionText": "Testo della domanda",
+      "untranslatedNote": "Ciò che lasci vuoto compare nella tua lingua. Le traduzioni in tutte le lingue vengono salvate insieme.",
+      "saveTranslations": "Salva le traduzioni",
+      "commissionLegend": "Quanto guadagnano gli affiliati su questa escursione",
+      "commissionPlan": "Il piano di ogni affiliato",
+      "commissionPlanHelp": "La percentuale del loro piano commissioni, con le sue soglie.",
+      "commissionOwn": "Una percentuale solo per questa escursione",
+      "commissionOwnHelp": "La stessa percentuale per tutti gli affiliati, es. per un'escursione con un margine più basso.",
+      "rate": "Commissione (%)",
+      "errRate": "Una percentuale tra 0 e 100, es. 12,5.",
+      "commissionNote": "Le vendite di questa escursione contano comunque per le soglie del piano di ogni affiliato. Gli affiliati con una percentuale negoziata mantengono la loro."
     }
   },
   "charts": {

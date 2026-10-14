@@ -2,12 +2,15 @@
 
 import {
   localeSchema,
+  type DiscountPreviewDto,
   type ProductDto,
   type PublicCheckoutBody,
   type SlotDto,
 } from '@ap/contracts';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
+import { BookingQuestions } from '@/components/booking/BookingQuestions';
+import { DiscountCodeField } from '@/components/booking/DiscountCodeField';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { useT } from '@/components/I18nProvider';
@@ -20,17 +23,18 @@ import { LoadingBlock } from '@/components/Spinner';
 import { StickyActions } from '@/components/StickyActions';
 import { isApiError } from '@/lib/api';
 import {
+  bookingTotals,
   defaultQuantities,
   groupSlotsByDay,
   seatsNeeded,
   ticketCount,
   toItems,
-  totalMinor,
   upcomingSlots,
   type Quantities,
 } from '@/lib/booking';
 import { isValidEmail, isValidPhone, normalizeEmail, normalizePhone } from '@/lib/contact';
 import { nextDays } from '@/lib/dates';
+import { discountErrorKey } from '@/lib/discounts';
 import { publicApi } from '@/lib/endpoints';
 import { formatMoney } from '@/lib/format';
 import type { Lang } from '@/lib/i18n';
@@ -42,6 +46,7 @@ import {
   ticketPath,
   VISITOR_COOKIE,
 } from '@/lib/links';
+import { type AnswerValues, missingAnswers, toAnswers } from '@/lib/questions';
 import { useApi } from '@/lib/useApi';
 
 const REF_RE = /^[A-Za-z0-9_-]{1,32}$/;
@@ -116,11 +121,19 @@ export function PublicBookingForm({
   const [slotId, setSlotId] = useState<string | null>(null);
   const slot: SlotDto | null = upcoming.find((s) => s.id === slotId) ?? null;
   const [quantities, setQuantities] = useState<Quantities>({});
+  const [discount, setDiscount] = useState<DiscountPreviewDto | null>(null);
+  // A code in the page address (`?code=HOTEL10`, from a hotel's flyer) is tried at once.
+  const [initialCode, setInitialCode] = useState<string | null>(null);
+  useEffect(() => {
+    setInitialCode(new URLSearchParams(window.location.search).get('code')?.slice(0, 40) || null);
+  }, []);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [accepted, setAccepted] = useState(false);
+  const [answers, setAnswers] = useState<AnswerValues>({});
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
 
   const [slotError, setSlotError] = useState<string | null>(null);
   const [ticketError, setTicketError] = useState<string | null>(null);
@@ -155,7 +168,7 @@ export function PublicBookingForm({
     setSlotId(next.id);
     setSlotError(null);
     setTicketError(null);
-    if (ticketCount(quantities) === 0)
+    if (ticketCount(quantities, product.prices) === 0)
       setQuantities(defaultQuantities(product.prices, next.available));
   }
 
@@ -172,11 +185,17 @@ export function PublicBookingForm({
     if (cleanPhone && !isValidPhone(cleanPhone)) nextErrors.phone = t.t('public.errorPhone');
     if (!cleanEmail && !cleanPhone) nextErrors.contact = t.t('public.errorContact');
     if (!accepted) nextErrors.terms = t.t('public.errorTerms');
+    const unanswered = Object.fromEntries(
+      missingAnswers(product.questions, answers).map((id) => [
+        id,
+        t.t('public.questions.required'),
+      ]),
+    );
 
     const missingSlot = !slot ? t.t('public.chooseTimeFirst') : null;
     const ticketProblem = !slot
       ? null
-      : ticketCount(quantities) === 0
+      : ticketCount(quantities, product.prices) === 0
         ? t.t('public.selectTickets')
         : seatsNeeded(product.prices, quantities) > slot.available
           ? t.tp('public.notEnoughSeats', slot.available)
@@ -185,7 +204,13 @@ export function PublicBookingForm({
     setSlotError(missingSlot);
     setTicketError(ticketProblem);
     setErrors(nextErrors);
-    if (missingSlot || ticketProblem || Object.keys(nextErrors).length > 0) {
+    setAnswerErrors(unanswered);
+    if (
+      missingSlot ||
+      ticketProblem ||
+      Object.keys(nextErrors).length > 0 ||
+      Object.keys(unanswered).length > 0
+    ) {
       setAttempt((n) => n + 1);
       return;
     }
@@ -203,14 +228,21 @@ export function PublicBookingForm({
           // Emails and texts go out in this language; one the API does not know gets English.
           locale: localeSchema.catch('en').parse(lang),
         },
+        answers: toAnswers(product.questions, answers),
         acceptTerms: true,
+        discountCode: discount?.code,
         ...attribution(),
       });
       window.location.assign(nextLocation(result.paymentUrl, result.ticketUrl, lang));
       // Keep the button busy while the browser navigates away.
     } catch (err) {
       setBusy(false);
-      if (isApiError(err) && err.status === 409) {
+      const codeProblem = discountErrorKey(err);
+      if (codeProblem) {
+        // The code stopped working while the customer filled in the form (its last use went).
+        setDiscount(null);
+        setSubmitError(t.t(codeProblem));
+      } else if (isApiError(err) && err.status === 409) {
         setSubmitError(t.t('public.slotGone'));
         setSlotId(null);
         slots.reload();
@@ -227,7 +259,7 @@ export function PublicBookingForm({
     }
   }
 
-  const total = totalMinor(product.prices, quantities);
+  const { discountMinor, totalMinor: total } = bookingTotals(product.prices, quantities, discount);
   const noDepartures = slots.data !== null && !upcoming.some((s) => s.available > 0);
 
   return (
@@ -291,7 +323,17 @@ export function PublicBookingForm({
             }}
             available={slot.available}
             error={ticketError}
-          />
+            discount={discount ? { code: discount.code, minor: discountMinor } : null}
+          >
+            <DiscountCodeField
+              tenantSlug={tenantSlug}
+              productId={product.id}
+              currency={product.currency}
+              applied={discount}
+              onApplied={setDiscount}
+              initialCode={initialCode}
+            />
+          </TicketQuantities>
         </section>
       ) : null}
 
@@ -333,6 +375,15 @@ export function PublicBookingForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           error={errors.phone}
+        />
+        <BookingQuestions
+          questions={product.questions}
+          values={answers}
+          onChange={(id, value) => {
+            setAnswers((prev) => ({ ...prev, [id]: value }));
+            setAnswerErrors(({ [id]: _cleared, ...rest }) => rest);
+          }}
+          errors={answerErrors}
         />
       </section>
 

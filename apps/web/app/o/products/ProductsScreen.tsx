@@ -7,7 +7,13 @@ import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
-import { IconCalendarPlus, IconExternal } from '@/components/icons';
+import {
+  IconCalendarPlus,
+  IconExternal,
+  IconGlobe,
+  IconMessage,
+  IconPercent,
+} from '@/components/icons';
 import { MoneyText } from '@/components/MoneyText';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingBlock } from '@/components/Spinner';
@@ -15,11 +21,21 @@ import { StatusChip } from '@/components/StatusChip';
 import { operatorApi } from '@/lib/endpoints';
 import { formatBps } from '@/lib/format';
 import { formatDuration } from '@/lib/i18n';
+import { translatedLanguages } from '@/lib/tripTranslations';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { useT } from '@/components/I18nProvider';
 import { useOperator } from '../OperatorContext';
 import { ProductForm } from './ProductForm';
 import { SlotsDialog, UpcomingSlots } from './Slots';
+import { CustomerFieldsForm, TranslationsForm, TripCommissionForm } from './TripExtras';
+
+type ExtraKind = 'customer' | 'translations' | 'commission';
+
+const EXTRA_TITLES = {
+  customer: 'catalog.extras.customerTitle',
+  translations: 'catalog.extras.translationsTitle',
+  commission: 'catalog.extras.commissionTitle',
+} as const;
 
 export function ProductsScreen() {
   const i18n = useT();
@@ -27,6 +43,7 @@ export function ProductsScreen() {
   const products = useApi('operator-products', (signal) => operatorApi.products({ signal }));
   const [slotsFor, setSlotsFor] = useState<ProductDto | null>(null);
   const [editing, setEditing] = useState<ProductDto | null>(null);
+  const [extras, setExtras] = useState<{ product: ProductDto; kind: ExtraKind } | null>(null);
   const [openSlots, setOpenSlots] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -75,6 +92,7 @@ export function ProductsScreen() {
                   }
                   onAddSlots={() => setSlotsFor(product)}
                   onEdit={() => setEditing(product)}
+                  onExtras={(kind) => setExtras({ product, kind })}
                   onChanged={(updated, message) => {
                     replace(updated);
                     setNotice(message);
@@ -134,8 +152,40 @@ export function ProductsScreen() {
           />
         ) : null}
       </Dialog>
+
+      <Dialog
+        open={!!extras}
+        onClose={() => setExtras(null)}
+        title={extras ? t(EXTRA_TITLES[extras.kind], { name: extras.product.name }) : ''}
+      >
+        {extras ? (
+          <ExtrasForm
+            key={`${extras.product.id}:${extras.kind}`}
+            kind={extras.kind}
+            product={extras.product}
+            onSaved={(product) => {
+              replace(product);
+              setNotice(t('catalog.products.saved', { name: product.name }));
+              setExtras(null);
+            }}
+          />
+        ) : null}
+      </Dialog>
     </div>
   );
+}
+
+function ExtrasForm({
+  kind,
+  ...props
+}: {
+  kind: ExtraKind;
+  product: ProductDto;
+  onSaved: (product: ProductDto) => void;
+}) {
+  if (kind === 'customer') return <CustomerFieldsForm {...props} />;
+  if (kind === 'translations') return <TranslationsForm {...props} />;
+  return <TripCommissionForm {...props} />;
 }
 
 function ProductCard({
@@ -144,6 +194,7 @@ function ProductCard({
   onToggleSlots,
   onAddSlots,
   onEdit,
+  onExtras,
   onChanged,
 }: {
   product: ProductDto;
@@ -151,6 +202,7 @@ function ProductCard({
   onToggleSlots: () => void;
   onAddSlots: () => void;
   onEdit: () => void;
+  onExtras: (kind: ExtraKind) => void;
   onChanged: (product: ProductDto, message: string) => void;
 }) {
   const { tenant } = useOperator();
@@ -159,6 +211,7 @@ function ProductCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const external = product.managedExternally;
+  const languages = translatedLanguages(product);
 
   async function toggleActive() {
     setBusy(true);
@@ -196,6 +249,25 @@ function ProductCard({
             {external ? (
               <StatusChip tone="brand">{t('catalog.products.externalChip')}</StatusChip>
             ) : null}
+            {product.commissionRateBps !== null ? (
+              <StatusChip tone="brand">
+                {t('catalog.extras.commissionChip', {
+                  rate: formatBps(product.commissionRateBps, lang),
+                })}
+              </StatusChip>
+            ) : null}
+            {languages.length > 0 ? (
+              <StatusChip>
+                {t('catalog.extras.translatedChip', {
+                  languages: languages.map((code) => code.toUpperCase()).join(' · '),
+                })}
+              </StatusChip>
+            ) : null}
+            {product.questions.length > 0 ? (
+              <StatusChip>
+                {tp('catalog.extras.questionsChip', product.questions.length)}
+              </StatusChip>
+            ) : null}
           </div>
         </div>
         <table className="w-full border-collapse text-left text-sm">
@@ -217,7 +289,15 @@ function ProductCard({
               <tr key={price.id} className="border-b border-line last:border-0">
                 <th scope="row" className="py-1.5 font-normal">
                   {price.label}
-                  {price.seats !== 1 ? (
+                  {price.kind === 'extra' ? (
+                    <span className="text-muted">
+                      {' '}
+                      ·{' '}
+                      {price.commissionable
+                        ? t('catalog.products.extraTag')
+                        : t('catalog.products.extraNoCommission')}
+                    </span>
+                  ) : price.seats !== 1 ? (
                     <span className="text-muted">
                       {' '}
                       ·{' '}
@@ -293,6 +373,28 @@ function ProductCard({
               {t('catalog.products.viewPublic')}
             </a>
           ) : null}
+        </div>
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <p className="text-sm font-semibold text-muted">{t('catalog.extras.heading')}</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Button variant="secondary" icon={<IconMessage />} onClick={() => onExtras('customer')}>
+              {t('catalog.extras.customerButton')}
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<IconGlobe />}
+              onClick={() => onExtras('translations')}
+            >
+              {t('catalog.extras.translationsButton')}
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<IconPercent />}
+              onClick={() => onExtras('commission')}
+            >
+              {t('catalog.extras.commissionButton')}
+            </Button>
+          </div>
         </div>
         <div id={`slots-${product.id}`} hidden={!slotsOpen}>
           {slotsOpen ? <UpcomingSlots product={product} /> : null}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LANG_CODE } from './i18n';
 
 /**
  * HTTP API contract shared by the API (which validates requests with these schemas) and the
@@ -307,7 +308,97 @@ const priceFields = {
   label: z.string().trim().min(1).max(80),
   amountMinor: z.number().int().min(0),
   taxRateBps: rateBps.default(0),
+  /** Ignored for extras: they take no seat. */
   seats: z.number().int().min(0).max(10).default(1),
+  /**
+   * `ticket`: a place on the trip. `extra`: something customers add to their booking (lunch, a
+   * transfer from the hotel, photos); a booking needs at least one ticket.
+   */
+  kind: z.enum(['ticket', 'extra']).default('ticket'),
+  /** False: affiliates earn no commission on it (e.g. a transfer the operator pays a driver for). */
+  commissionable: z.boolean().default(true),
+};
+
+/** Up to 30 ticket types and extras together, at least one ticket type among them. */
+function priceList<T extends z.ZodTypeAny>(item: T) {
+  return z
+    .array(item)
+    .min(1)
+    .max(30)
+    .refine((list) => list.some((p: { kind: string }) => p.kind === 'ticket'), {
+      message: 'a trip needs at least one ticket type',
+    });
+}
+
+export const MAX_BOOKING_QUESTIONS = 10;
+export const MAX_QUESTION_OPTIONS = 20;
+
+/**
+ * A question the operator asks on the booking form. `choice` questions offer `options` (at least
+ * two, all different); `text` questions take a free answer and have no options.
+ */
+export const bookingQuestionSchema = z
+  .object({
+    /** Stable id (the web app makes one): answers and translations refer to it. */
+    id: z.string().regex(/^[a-z0-9]{4,16}$/),
+    label: z.string().trim().min(1).max(200),
+    kind: z.enum(['text', 'choice']),
+    required: z.boolean().default(false),
+    options: z.array(z.string().trim().min(1).max(80)).max(MAX_QUESTION_OPTIONS).default([]),
+  })
+  .refine((q) => (q.kind === 'text' ? q.options.length === 0 : q.options.length >= 2), {
+    message: 'a choice needs at least two options, a text question none',
+    path: ['options'],
+  })
+  .refine((q) => new Set(q.options.map((o) => o.toLowerCase())).size === q.options.length, {
+    message: 'options must be different',
+    path: ['options'],
+  });
+export type BookingQuestion = z.infer<typeof bookingQuestionSchema>;
+
+const bookingQuestionsSchema = z
+  .array(bookingQuestionSchema)
+  .max(MAX_BOOKING_QUESTIONS)
+  .refine((list) => new Set(list.map((q) => q.id)).size === list.length, {
+    message: 'question ids must be unique',
+  });
+
+/**
+ * A trip's texts in one language. Empty or missing texts show in the operator's own language;
+ * ticket types and questions are keyed by their id, a question's options keep their order.
+ */
+export const productTranslationSchema = z.object({
+  name: z.string().trim().max(120).optional(),
+  description: z.string().trim().max(4000).optional(),
+  meetingPoint: z.string().trim().max(400).optional(),
+  customerNote: z.string().trim().max(1000).optional(),
+  prices: z.record(z.string().uuid(), z.string().trim().max(80)).optional(),
+  questions: z
+    .record(
+      z.string().max(16),
+      z.object({
+        label: z.string().trim().max(200).optional(),
+        options: z.array(z.string().trim().max(80)).max(MAX_QUESTION_OPTIONS).optional(),
+      }),
+    )
+    .optional(),
+});
+export type ProductTranslation = z.infer<typeof productTranslationSchema>;
+
+/** A trip's translations, by language code ("de", "pt-br"). */
+export const productTranslationsSchema = z
+  .record(z.string().trim().toLowerCase().regex(LANG_CODE), productTranslationSchema)
+  .refine((all) => Object.keys(all).length <= 40, { message: 'too many languages' });
+export type ProductTranslations = z.infer<typeof productTranslationsSchema>;
+
+/** Fields a trip has whether its prices and departures are ours or come from the operator's system. */
+const tripExtras = {
+  /** Shown to every customer of the trip on the ticket and in the email ("Come 15 minutes early"). */
+  customerNote: z.string().trim().max(1000).nullable().optional(),
+  questions: bookingQuestionsSchema.optional(),
+  /** Every affiliate earns this rate on the trip instead of their plan's; null: their plan. */
+  commissionRateBps: rateBps.nullable().optional(),
+  translations: productTranslationsSchema.optional(),
 };
 
 export const createProductBody = z.object({
@@ -316,17 +407,16 @@ export const createProductBody = z.object({
   description: z.string().trim().max(4000).optional(),
   durationMinutes,
   meetingPoint: z.string().trim().max(400).optional(),
-  prices: z
-    .array(z.object({ code: priceCodeSchema, ...priceFields }))
-    .min(1)
-    .max(20),
+  prices: priceList(z.object({ code: priceCodeSchema, ...priceFields })),
+  ...tripExtras,
 });
 export type CreateProductBody = z.infer<typeof createProductBody>;
 
 /**
  * Changes to a trip. `prices` replaces the whole price list: entries with an `id` update that
  * ticket type, entries without one are added, and ticket types left out stop being sold (they
- * stay on past bookings). Trips from the operator's own system only accept `active`.
+ * stay on past bookings). Trips from the operator's own system only accept `active`, the
+ * customer note, the questions, the commission rate and the translations.
  */
 export const updateProductBody = z.object({
   name: z.string().trim().min(1).max(120).optional(),
@@ -336,17 +426,14 @@ export const updateProductBody = z.object({
   meetingPoint: z.string().trim().max(400).nullable().optional(),
   /** False hides the trip from the booking page and from affiliates. */
   active: z.boolean().optional(),
-  prices: z
-    .array(
-      z.object({
-        id: z.string().uuid().optional(),
-        code: priceCodeSchema.optional(),
-        ...priceFields,
-      }),
-    )
-    .min(1)
-    .max(20)
-    .optional(),
+  prices: priceList(
+    z.object({
+      id: z.string().uuid().optional(),
+      code: priceCodeSchema.optional(),
+      ...priceFields,
+    }),
+  ).optional(),
+  ...tripExtras,
 });
 export type UpdateProductBody = z.infer<typeof updateProductBody>;
 
@@ -357,8 +444,24 @@ export interface PriceDto {
   amountMinor: number;
   taxRateBps: number;
   seats: number;
+  kind: 'ticket' | 'extra';
+  commissionable: boolean;
 }
 
+export interface BookingQuestionDto {
+  id: string;
+  label: string;
+  kind: 'text' | 'choice';
+  required: boolean;
+  /** `value` is what is sent back as the answer; `label` is the option in the page's language. */
+  options: { value: string; label: string }[];
+}
+
+/**
+ * A trip. On the public pages and for affiliates its texts are in the request's language
+ * (Accept-Language) where the operator translated them; operators get their own texts plus
+ * `translations`.
+ */
 export interface ProductDto {
   id: string;
   slug: string;
@@ -369,6 +472,12 @@ export interface ProductDto {
   images: string[];
   currency: string;
   prices: PriceDto[];
+  customerNote: string | null;
+  questions: BookingQuestionDto[];
+  /** The trip's own commission rate; null: each affiliate's plan. Not on the public pages. */
+  commissionRateBps: number | null;
+  /** Operators only. */
+  translations?: ProductTranslations;
   /** Lowest adult-like price, for listings. */
   fromMinor: number;
   /** True when prices and departures come from the operator's own system (not editable here). */
@@ -506,6 +615,103 @@ export interface ClickResultDto {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Discount codes
+// ---------------------------------------------------------------------------------------------
+
+/** What customers type: letters, digits and dashes, any case (kept in upper case). */
+export const discountCodeText = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z0-9][A-Z0-9-]{2,23}$/, '3 to 24 letters, digits or dashes');
+
+const dayString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** Percentages up to 90%: a booking always costs something. */
+export const MAX_DISCOUNT_BPS = 9000;
+
+const discountCodeFields = {
+  /** Percentage off, in basis points (1000 = 10%). Exactly one of this and `amountMinor`. */
+  percentBps: z.number().int().min(1).max(MAX_DISCOUNT_BPS).nullable().optional(),
+  /** Fixed amount off the booking, in the operator's currency. */
+  amountMinor: z.number().int().min(1).max(100_000_000).nullable().optional(),
+  /** The affiliate the code belongs to: bookings with it count as theirs. */
+  affiliateId: z.string().uuid().nullable().optional(),
+  /** Trips it is valid for; empty: every trip. */
+  productIds: z.array(z.string().uuid()).max(100).optional(),
+  /** First and last day it can be used (the day the customer books, operator's timezone). */
+  validFrom: dayString.nullable().optional(),
+  validUntil: dayString.nullable().optional(),
+  /** How many bookings can use it; null: no limit. */
+  maxUses: z.number().int().min(1).max(1_000_000).nullable().optional(),
+  active: z.boolean().optional(),
+};
+
+const validDates = (b: { validFrom?: string | null; validUntil?: string | null }) =>
+  !b.validFrom || !b.validUntil || b.validFrom <= b.validUntil;
+
+export const createDiscountCodeBody = z
+  .object({ code: discountCodeText, ...discountCodeFields })
+  .refine((b) => (b.percentBps == null) !== (b.amountMinor == null), {
+    message: 'give a percentage or an amount',
+    path: ['percentBps'],
+  })
+  .refine(validDates, { message: 'the last day is before the first', path: ['validUntil'] });
+export type CreateDiscountCodeBody = z.infer<typeof createDiscountCodeBody>;
+
+/** Changes to a code. Setting a percentage removes the amount and the other way round. */
+export const updateDiscountCodeBody = z
+  .object({ code: discountCodeText.optional(), ...discountCodeFields })
+  .refine((b) => b.percentBps == null || b.amountMinor == null, {
+    message: 'give a percentage or an amount',
+    path: ['percentBps'],
+  })
+  .refine(validDates, { message: 'the last day is before the first', path: ['validUntil'] });
+export type UpdateDiscountCodeBody = z.infer<typeof updateDiscountCodeBody>;
+
+export interface DiscountCodeDto {
+  id: string;
+  code: string;
+  percentBps: number | null;
+  amountMinor: number | null;
+  affiliateId: string | null;
+  affiliateName: string | null;
+  productIds: string[];
+  validFrom: string | null;
+  validUntil: string | null;
+  maxUses: number | null;
+  active: boolean;
+  /** Bookings holding the code: paid, to pay at boarding, or waiting for payment. */
+  uses: number;
+  /** What the paid bookings with the code brought in, after the discount. */
+  revenueMinor: number;
+  createdAt: string;
+}
+
+/** GET /public/tenants/:slug/discount-codes/:code?productId=: whether a code works for a trip. */
+export interface DiscountPreviewDto {
+  code: string;
+  percentBps: number | null;
+  amountMinor: number | null;
+}
+
+/**
+ * How much a code takes off a booking total. A fixed amount larger than the booking leaves 10% to
+ * pay, like the largest percentage. The API and the booking forms both use this.
+ */
+export function discountMinorFor(
+  code: { percentBps: number | null; amountMinor: number | null },
+  totalMinor: number,
+): number {
+  if (totalMinor <= 0) return 0;
+  const raw =
+    code.percentBps != null
+      ? Math.round((totalMinor * code.percentBps) / 10_000)
+      : (code.amountMinor ?? 0);
+  return Math.max(0, Math.min(raw, Math.floor((totalMinor * MAX_DISCOUNT_BPS) / 10_000)));
+}
+
+// ---------------------------------------------------------------------------------------------
 // Bookings
 // ---------------------------------------------------------------------------------------------
 
@@ -524,11 +730,18 @@ export const bookingItemsSchema = z
   .min(1)
   .max(10);
 
+/** Answers to the trip's booking questions (`value`: the option's `value` for a choice). */
+export const bookingAnswersSchema = z
+  .array(z.object({ questionId: z.string().max(16), value: z.string().trim().max(500) }))
+  .max(MAX_BOOKING_QUESTIONS)
+  .default([]);
+
 /** Customer booking from the public page (after scanning a QR code or opening a link). */
 export const publicCheckoutBody = z.object({
   slotId: z.string().uuid(),
   items: bookingItemsSchema,
   customer: customerSchema,
+  answers: bookingAnswersSchema,
   /** The affiliate link code from the attribution cookie, if any. */
   ref: z.string().max(32).optional(),
   /** Whether the customer arrived by scanning the QR code (`/r/CODE?s=qr`) or opening the link. */
@@ -536,6 +749,8 @@ export const publicCheckoutBody = z.object({
   visitorId: z.string().max(64).optional(),
   /** The customer ticked "I agree to the booking terms and the privacy policy". */
   acceptTerms: z.literal(true),
+  /** A discount code the customer typed; a code that belongs to an affiliate makes it theirs. */
+  discountCode: z.string().trim().max(40).optional(),
 });
 export type PublicCheckoutBody = z.infer<typeof publicCheckoutBody>;
 
@@ -544,11 +759,14 @@ export const assistedBookingBody = z.object({
   slotId: z.string().uuid(),
   items: bookingItemsSchema,
   customer: customerSchema,
+  answers: bookingAnswersSchema,
   /**
    * - `link`: the customer pays online (QR on the affiliate's screen, or a link by SMS/email).
    * - `on_site`: the customer pays when boarding (only if the operator allows it).
    */
   payment: z.enum(['link', 'on_site']).default('link'),
+  /** A discount code: the operator's, or one of this affiliate's own. */
+  discountCode: z.string().trim().max(40).optional(),
 });
 export type AssistedBookingBody = z.infer<typeof assistedBookingBody>;
 
@@ -566,9 +784,13 @@ export interface BookingDto {
   customerName: string;
   customerEmail: string | null;
   customerPhone: string | null;
+  /** What the customer pays, after the discount. */
   totalMinor: number;
   /** VAT included in the total. */
   taxMinor: number;
+  /** The discount code used, and how much it took off. */
+  discountCode: string | null;
+  discountMinor: number;
   currency: string;
   paymentMode: 'online' | 'on_site';
   affiliateName: string | null;
@@ -576,6 +798,14 @@ export interface BookingDto {
   paidAt: string | null;
   /** The booking's reference in the operator's own system, once it is confirmed there. */
   externalRef: string | null;
+  /** Answers to the trip's booking questions, as the questions were asked. */
+  answers: BookingAnswerDto[];
+}
+
+export interface BookingAnswerDto {
+  questionId: string;
+  label: string;
+  value: string;
 }
 
 export interface CheckoutResultDto {
@@ -610,6 +840,8 @@ export interface TicketDto {
   cancellationPolicy: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  /** The operator's message for the trip's customers. */
+  customerNote: string | null;
 }
 
 export const checkInBody = z.object({
@@ -633,6 +865,64 @@ export interface CheckInResultDto {
   checkedInAt: string | null;
   /** Who scanned it first, as their name or masked contact. */
   checkedInBy: string | null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Departures and passengers (the boarding list)
+// ---------------------------------------------------------------------------------------------
+
+/** One departure of a day, with how full it is and how many have boarded. */
+export interface DepartureSummaryDto {
+  slotId: string;
+  productId: string;
+  productName: string;
+  startsAt: string;
+  endsAt: string;
+  capacity: number;
+  closed: boolean;
+  /** Seats of confirmed bookings. */
+  seatsBooked: number;
+  /** Seats of confirmed bookings whose ticket was scanned (or marked boarded by hand). */
+  seatsBoarded: number;
+  /** Confirmed bookings. */
+  bookings: number;
+  /** Bookings still waiting for the customer to pay (their seats are held). */
+  pendingPayment: number;
+}
+
+/** GET /operator/departures?date=YYYY-MM-DD: every departure of a local day, all trips. */
+export interface DepartureDayDto {
+  date: string;
+  timezone: string;
+  departures: DepartureSummaryDto[];
+}
+
+/** A booking on the boarding list. */
+export interface PassengerDto {
+  bookingId: string;
+  reference: string;
+  status: 'confirmed' | 'pending_payment';
+  customerName: string;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  customerLocale: string;
+  hotelRoom: string | null;
+  seats: number;
+  items: { label: string; quantity: number }[];
+  paymentMode: 'online' | 'on_site';
+  /** Still to collect at boarding (pay-on-site bookings not paid yet). */
+  amountDueMinor: number;
+  currency: string;
+  affiliateName: string | null;
+  answers: BookingAnswerDto[];
+  boardedAt: string | null;
+}
+
+/** GET /operator/departures/:slotId/passengers */
+export interface DeparturePassengersDto {
+  departure: DepartureSummaryDto;
+  timezone: string;
+  passengers: PassengerDto[];
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -816,7 +1106,15 @@ export interface ClosePeriodResultDto {
 }
 
 export interface OperatorDashboardDto {
-  tenant: { id: string; slug: string; name: string; currency: string; timezone: string };
+  tenant: {
+    id: string;
+    slug: string;
+    name: string;
+    currency: string;
+    timezone: string;
+    /** The language the operator writes their trips in (the others are translations). */
+    defaultLocale: string;
+  };
   periodKey: string;
   bookings: { count: number; revenueMinor: number };
   commissions: { totalMinor: number };

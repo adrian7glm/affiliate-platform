@@ -11,12 +11,15 @@ import { type CheckoutInput, type CheckoutSession, PaymentsGateway } from './gat
 export class FakeGateway extends PaymentsGateway {
   readonly name = 'fake' as const;
   readonly refunds: { paymentIntentId: string | null; amountMinor: number }[] = [];
+  /** Every checkout opened, for tests to check what the customer is shown. */
+  readonly checkouts: CheckoutInput[] = [];
 
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
     super();
   }
 
   async createCheckout(input: CheckoutInput): Promise<CheckoutSession> {
+    this.checkouts.push(input);
     const key = ticketLinkKey(this.config.APP_SECRET, input.bookingId);
     return {
       sessionId: `fake_cs_${input.bookingId}`,

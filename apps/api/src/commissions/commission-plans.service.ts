@@ -237,7 +237,7 @@ export class CommissionPlansService {
   async planFor(
     db: DbOrTx,
     affiliateId: string,
-  ): Promise<{ plan: CommissionPlan; source: string } | null> {
+  ): Promise<{ plan: CommissionPlan; source: string; negotiated: boolean } | null> {
     const [affiliate] = await db.select().from(affiliates).where(eq(affiliates.id, affiliateId));
     if (!affiliate) throw new NotFound('affiliate');
     const [row] = await db
@@ -256,10 +256,11 @@ export class CommissionPlansService {
     const base: CommissionPlan = row
       ? planFromRow(row)
       : { kind: 'fixed', rateBps: 0, basis: 'gross' };
+    const negotiated = affiliate.commissionRateBpsOverride !== null;
     return {
       plan: effectivePlan(base, affiliate.commissionRateBpsOverride),
-      source:
-        affiliate.commissionRateBpsOverride !== null ? 'negotiated rate' : (row?.name ?? 'plan'),
+      source: negotiated ? 'negotiated rate' : (row?.name ?? 'plan'),
+      negotiated,
     };
   }
 }

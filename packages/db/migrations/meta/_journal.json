@@ -66,10 +66,24 @@
       "breakpoints": true
     },
     {
+      "idx": 9,
+      "version": "7",
+      "when": 1791855528212,
+      "tag": "0009_operator_customization",
+      "breakpoints": true
+    },
+    {
       "idx": 10,
       "version": "7",
       "when": 1791855525212,
       "tag": "0010_structure_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791866211706,
+      "tag": "0011_extras_discounts",
       "breakpoints": true
     }
   ]

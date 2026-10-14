@@ -3,6 +3,7 @@
 import type { BookingDto } from '@ap/contracts';
 import type { ReactNode } from 'react';
 import { formatDateTime } from '@/lib/dates';
+import { formatMoney } from '@/lib/format';
 import { bookingStatus } from '@/lib/labels';
 import { useT } from './I18nProvider';
 import { MoneyText } from './MoneyText';
@@ -39,12 +40,22 @@ export function BookingItem({
             · {t('common.seats', { count: booking.seats })}
           </p>
         </div>
-        <MoneyText
-          amountMinor={booking.totalMinor}
-          currency={booking.currency}
-          lang={lang}
-          className="font-semibold"
-        />
+        <div className="shrink-0 text-right">
+          <MoneyText
+            amountMinor={booking.totalMinor}
+            currency={booking.currency}
+            lang={lang}
+            className="font-semibold"
+          />
+          {booking.discountCode ? (
+            <p className="text-xs text-muted">
+              {t('common.discountCode', {
+                code: booking.discountCode,
+                amount: formatMoney(booking.discountMinor, booking.currency, lang),
+              })}
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="min-w-0 text-sm">

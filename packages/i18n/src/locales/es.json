@@ -70,7 +70,8 @@
       "qrShort": "QR",
       "book": "Reservar ahora",
       "bookShort": "Reservar"
-    }
+    },
+    "discountCode": "código {code}: −{amount}"
   },
   "labels": {
     "bookingStatus": {
@@ -211,7 +212,8 @@
       "event": "evento no encontrado",
       "webhook": "dirección de webhook no encontrada",
       "webhookDelivery": "evento de webhook no encontrado",
-      "calendar": "calendario no encontrado"
+      "calendar": "calendario no encontrado",
+      "discountCode": "código de descuento no encontrado"
     },
     "auth": {
       "signInAgain": "vuelve a iniciar sesión",
@@ -239,7 +241,9 @@
       "tripUnavailable": "esta excursión ya no está disponible",
       "unknownPrice": "tipo de billete desconocido para esta excursión",
       "noSeats": "elige al menos una plaza",
-      "paymentsUnavailable": "los pagos no están disponibles ahora, inténtalo de nuevo en un minuto"
+      "paymentsUnavailable": "los pagos no están disponibles ahora, inténtalo de nuevo en un minuto",
+      "answerRequired": "responda, por favor: {question}",
+      "invalidAnswer": "elija una de las respuestas ofrecidas para: {question}"
     },
     "departures": {
       "closed": "esta salida ya no se puede reservar",
@@ -341,6 +345,15 @@
       "twoFactorAlreadyOn": "la verificación en dos pasos ya está activada",
       "twoFactorNoSetup": "vuelve a empezar la configuración",
       "contactTaken": "este número de teléfono o correo ya pertenece a otra cuenta"
+    },
+    "discounts": {
+      "invalid": "este código de descuento no existe o ya no es válido",
+      "notToday": "este código de descuento no se puede usar hoy",
+      "notForTrip": "este código de descuento no es válido para esta excursión",
+      "usedUp": "este código de descuento ya se ha agotado",
+      "otherAffiliate": "este código de descuento pertenece a otro afiliado",
+      "codeTaken": "el código {code} ya existe",
+      "datesReversed": "el último día es anterior al primero"
     }
   },
   "auth": {
@@ -565,7 +578,33 @@
       "privacyNote": "Solo usamos sus datos para responderle. Consulte la {privacy}.",
       "sentTitle": "Gracias, hemos recibido su mensaje",
       "sentText": "Le responderemos en {email}."
-    }
+    },
+    "goodToKnow": "Conviene saber",
+    "questions": {
+      "optional": "opcional",
+      "choose": "Elija…",
+      "required": "Responda a esta pregunta."
+    },
+    "extras": "Extras",
+    "extrasHint": "Opcional, se añade a su reserva.",
+    "subtotal": "Subtotal",
+    "discountLine": "Código {code}",
+    "discount": {
+      "question": "¿Tiene un código de descuento?",
+      "label": "Código de descuento",
+      "apply": "Aplicar",
+      "remove": "Quitar el código",
+      "applied": "Código {code}: {discount}",
+      "empty": "Escriba el código.",
+      "yourCodes": "Tus códigos",
+      "invalid": "Este código no existe o ya no es válido.",
+      "notToday": "Este código no se puede usar hoy.",
+      "notForTrip": "Este código no es válido para esta excursión.",
+      "usedUp": "Este código ya se ha agotado.",
+      "otherAffiliate": "Este código es de otro afiliado: usa uno tuyo o uno general."
+    },
+    "addExtra": "Añadir: {label}",
+    "removeExtra": "Quitar: {label}"
   },
   "ticket": {
     "title": "Su billete",
@@ -772,7 +811,8 @@
       "booking": "Reservando…",
       "submit": "Reservar · {total}",
       "slotWhen": "{day} a las {time}",
-      "change": "Cambiar"
+      "change": "Cambiar",
+      "tripCommission": "Tu comisión en esta excursión: {rate}"
     },
     "result": {
       "created": "Reserva creada",
@@ -796,6 +836,16 @@
     "customerMessage": {
       "pay": "¡Hola, {name}! Su reserva para {product} el {day} a las {time} le espera. Pague aquí para recibir su billete: {url}",
       "ticket": "¡Hola, {name}! Su billete para {product} el {day} a las {time}: {url}"
+    },
+    "codes": {
+      "title": "Tus códigos de descuento",
+      "description": "Dáselos a tus clientes. Quien reserve con uno de tus códigos te da comisión, aunque reserve solo desde su móvil.",
+      "until": "válido hasta el {day}",
+      "uses_one": "usado una vez",
+      "uses_many": "usado {count} veces",
+      "uses_other": "usado {count} veces",
+      "shareTitle": "Reserva con {name}",
+      "shareText": "Reserve con el código {code} y pague menos: {discount}."
     }
   },
   "kit": {
@@ -876,7 +926,9 @@
       "sections": "Secciones",
       "menu": "Menú",
       "tenant": "Operador",
-      "integrations": "Integraciones"
+      "integrations": "Integraciones",
+      "departures": "Listas de pasajeros",
+      "discounts": "Códigos de descuento"
     },
     "dashboard": {
       "title": "Panel",
@@ -1189,7 +1241,10 @@
       "csvEmail": "Email",
       "csvPhone": "Teléfono",
       "csvTax": "IVA incluido",
-      "csvPaidAt": "Pagado el"
+      "csvPaidAt": "Pagado el",
+      "csvAnswers": "Respuestas",
+      "csvDiscountCode": "Código de descuento",
+      "csvDiscount": "Descuento"
     },
     "billing": {
       "title": "Suscripción",
@@ -1229,6 +1284,115 @@
       "planPrice": "/ mes + {fee} / reserva",
       "choose": "Elegir {name}",
       "ownerOnly": "Solo el administrador de la cuenta puede cambiar el plan."
+    },
+    "departures": {
+      "title": "Listas de pasajeros",
+      "description": "Quién va en cada salida, qué respondió al reservar y qué queda por cobrar. Imprímela o descárgala para la tripulación.",
+      "previousDay": "Día anterior",
+      "nextDay": "Día siguiente",
+      "pickDay": "Día",
+      "none": "No hay salidas el {day}.",
+      "chooseDeparture": "Elige una salida para ver sus pasajeros.",
+      "passengersTitle": "Pasajeros",
+      "seatsOf": "{booked} de {capacity} plazas reservadas",
+      "boardedOf": "{boarded} de {booked} a bordo",
+      "pendingPayment_one": "1 reserva aún sin pagar",
+      "pendingPayment_many": "{count} reservas aún sin pagar",
+      "pendingPayment_other": "{count} reservas aún sin pagar",
+      "closed": "Cerrada a la venta",
+      "downloadCsv": "Descargar CSV",
+      "noPassengers": "Nadie ha reservado todavía esta salida.",
+      "search": "Buscar",
+      "searchHint": "Nombre, referencia, habitación o teléfono",
+      "toBoard_one": "Falta por embarcar 1 reserva",
+      "toBoard_many": "Faltan por embarcar {count} reservas",
+      "toBoard_other": "Faltan por embarcar {count} reservas",
+      "noMatch": "Nadie coincide con la búsqueda.",
+      "notPaid": "Sin pagar",
+      "confirmed": "Confirmada",
+      "boardedAt": "A bordo a las {time}",
+      "due": "Por cobrar: {amount}",
+      "room": "Habitación",
+      "soldBy": "Vendido por",
+      "board": "Marcar a bordo",
+      "boardTitle": "¿Marcar a bordo?",
+      "boardBody": "{name} embarca sin escanear el billete. Después el billete ya no se podrá usar.",
+      "boardHint": "Úsalo cuando el cliente no lleva el móvil o el código QR no se lee. Queda registrado a tu nombre.",
+      "confirmBoard": "Sí, a bordo",
+      "collectFirst": "Cobra {amount} al cliente: paga al embarcar.",
+      "boardedNotice": "{name} está a bordo.",
+      "boardedCollect": "{name} está a bordo. Cobra {amount}.",
+      "alreadyBoarded": "{name} ya estaba a bordo.",
+      "csvName": "Nombre",
+      "csvReference": "Referencia",
+      "csvSeats": "Plazas",
+      "csvTickets": "Billetes",
+      "csvRoom": "Habitación",
+      "csvPhone": "Teléfono",
+      "csvAnswers": "Respuestas",
+      "csvDue": "Por cobrar",
+      "csvCurrency": "Moneda",
+      "csvAffiliate": "Afiliado",
+      "csvStatus": "Estado",
+      "csvBoarded": "Embarcó a las",
+      "csvFile": "pasajeros-{date}-{time}.csv"
+    },
+    "discounts": {
+      "title": "Códigos de descuento",
+      "description": "Los clientes escriben el código al reservar y pagan menos. Un código dado a un afiliado (p. ej. -10 % para los huéspedes de un hotel) le trae la reserva y su comisión, reserve donde reserve el cliente.",
+      "newTitle": "Código nuevo",
+      "created": "Código {code} creado",
+      "createdHelp": "Los clientes lo escriben en la página de reserva, en «¿Tiene un código de descuento?». Su afiliado lo ve en su aplicación, en Enlaces.",
+      "listTitle": "Tus códigos",
+      "empty": "Aún no has creado ningún código.",
+      "editTitle": "Editar el código {code}",
+      "stateActive": "Activo",
+      "statePaused": "Pausado",
+      "stateScheduled": "Programado",
+      "stateExpired": "Caducado",
+      "stateUsedUp": "Agotado",
+      "forAffiliate": "De {name}",
+      "forEveryone": "Tu código, para cualquier cliente",
+      "affiliateInactive": "el afiliado no está activo, el código no funciona",
+      "edit": "Editar",
+      "pause": "Pausar",
+      "resume": "Reactivar",
+      "trips": "Excursiones",
+      "allTrips": "Todas",
+      "valid": "Válido",
+      "validRange": "{from} – {until}",
+      "validFromOnly": "desde el {from}",
+      "validUntilOnly": "hasta el {until}",
+      "validAlways": "Siempre",
+      "uses": "Usado",
+      "usesOf": "{uses} de {max}",
+      "revenue": "Ventas",
+      "code": "Código",
+      "codeHint": "Lo que escriben los clientes: de 3 a 24 letras, cifras o guiones, p. ej. VERANO10.",
+      "kind": "Descuento",
+      "kindPercent": "Porcentaje",
+      "kindAmount": "Importe fijo ({currency})",
+      "percent": "Porcentaje (%)",
+      "percentHint": "Como máximo el 90 %.",
+      "amount": "Importe ({currency})",
+      "amountHint": "Se descuenta del total de la reserva.",
+      "affiliate": "Afiliado",
+      "affiliateHint": "Las reservas con este código pasan a ser suyas, con su comisión. Solo aparecen los afiliados con la cuenta activada.",
+      "noAffiliate": "Ninguno (código propio)",
+      "tripsHint": "Sin marcar: vale para todas las excursiones.",
+      "validFrom": "Válido desde",
+      "validUntil": "Válido hasta",
+      "validHint": "Los días en que los clientes pueden reservar con él, sea cuando sea la excursión.",
+      "maxUses": "Cuántas veces se puede usar",
+      "maxUsesHint": "Vacío: sin límite. Una reserva cancelada o no pagada devuelve su uso.",
+      "errCode": "Usa de 3 a 24 letras, cifras o guiones.",
+      "errPercent": "Escribe un porcentaje entre 0,01 y 90.",
+      "errAmount": "Escribe un importe mayor que cero.",
+      "errMaxUses": "Escribe un número entero, al menos 1.",
+      "errDates": "El último día es anterior al primero.",
+      "errTaken": "El código {code} ya existe.",
+      "save": "Guardar",
+      "create": "Crear el código"
     }
   },
   "admin": {
@@ -1759,7 +1923,8 @@
       "sms": "{tenant}: billete {reference} para {product}, {when}, {seats}. Muestre el código QR al embarcar: {url}",
       "smsDue": "{tenant}: billete {reference} para {product}, {when}, {seats}, a pagar al embarcar {due}. Muestre el código QR al embarcar: {url}",
       "calendarAttached": "La excursión también va adjunta como evento de calendario: ábralo para añadirlo a su calendario.",
-      "addToGoogle": "Añadir a Google Calendar"
+      "addToGoogle": "Añadir a Google Calendar",
+      "note": "Mensaje de {tenant}: {note}"
     },
     "bookingCancelled": {
       "subject": "La reserva {reference} ha sido cancelada",
@@ -1792,7 +1957,8 @@
       "dueOnSite": "A pagar al embarcar",
       "onlineTicket": "Billete en línea",
       "keepOnPhone": "No hace falta imprimirlo: guárdelo en su móvil.",
-      "fileName": "billete-{reference}.pdf"
+      "fileName": "billete-{reference}.pdf",
+      "note": "Conviene saber"
     },
     "calendar": {
       "description": "Reserva {reference}. Su billete: {url}"
@@ -1866,7 +2032,9 @@
       "saving": "Guardando…",
       "pause": "Pausar",
       "resume": "Reanudar ventas",
-      "viewPublic": "Ver la página del cliente"
+      "viewPublic": "Ver la página del cliente",
+      "extraTag": "extra",
+      "extraNoCommission": "extra, sin comisión"
     },
     "productForm": {
       "defaultAdult": "Adulto",
@@ -1878,8 +2046,8 @@
       "errPriceAmount": "Introduce el precio, p. ej. 120 o 99,50.",
       "errPriceTax": "IVA: un porcentaje entre 0 y 100.",
       "errPriceSeats": "Plazas ocupadas: entre 0 y 10.",
-      "errPricesMin": "Añade al menos un precio.",
-      "errPricesMax": "Como máximo 20 tipos de billete.",
+      "errPricesMin": "Añade al menos un tipo de billete.",
+      "errPricesMax": "Como máximo 30 tipos de billete y extras.",
       "errSlugTaken": "Otra excursión ya usa esta dirección. Elige otra.",
       "name": "Nombre",
       "nameHint": "P. ej. “Paseo en barco al atardecer”.",
@@ -1903,7 +2071,17 @@
       "saving": "Guardando…",
       "saveChanges": "Guardar cambios",
       "saveTrip": "Guardar la excursión",
-      "newTrip": "Nueva excursión"
+      "newTrip": "Nueva excursión",
+      "extrasLegend": "Extras ({currency})",
+      "extrasHelp": "Lo que los clientes pueden añadir a la reserva: almuerzo, traslado desde el hotel, fotos. No ocupan plaza.",
+      "extra": "Extra",
+      "extraPlaceholder": "p. ej. Almuerzo a bordo",
+      "addExtra": "Añadir un extra",
+      "extraCommission": "Los afiliados ganan comisión por él",
+      "extraCommissionHint": "Desmárcalo si no ganas nada con él, p. ej. un traslado que pagas al conductor.",
+      "removeExtra": "Quitar el extra {number}",
+      "removeExtraNamed": "Quitar {label}",
+      "errExtraLabel": "Ponle nombre al extra."
     },
     "slots": {
       "weekdayShort": {
@@ -2015,7 +2193,8 @@
       "cancelledRefunded_other": "{count} clientes recuperan su dinero.",
       "cancelledFailed_one": "{count} reserva no se pudo cancelar: inténtalo de nuevo.",
       "cancelledFailed_many": "{count} reservas no se pudieron cancelar: inténtalo de nuevo.",
-      "cancelledFailed_other": "{count} reservas no se pudieron cancelar: inténtalo de nuevo."
+      "cancelledFailed_other": "{count} reservas no se pudieron cancelar: inténtalo de nuevo.",
+      "passengers": "Ver la lista de pasajeros"
     },
     "settings": {
       "title": "Ajustes y apariencia",
@@ -2131,6 +2310,57 @@
       "token": "Token de acceso",
       "connecting": "Conectando…",
       "connect": "Conectar"
+    },
+    "extras": {
+      "heading": "Para clientes y afiliados",
+      "customerButton": "Mensaje y preguntas",
+      "translationsButton": "Traducciones",
+      "commissionButton": "Comisión",
+      "customerTitle": "Mensaje y preguntas: {name}",
+      "translationsTitle": "Traducciones: {name}",
+      "commissionTitle": "Comisión: {name}",
+      "commissionChip": "Comisión propia {rate}",
+      "translatedChip": "Traducida: {languages}",
+      "questionsChip_one": "1 pregunta",
+      "questionsChip_many": "{count} preguntas",
+      "questionsChip_other": "{count} preguntas",
+      "note": "Mensaje para los clientes",
+      "noteHint": "Aparece en la página de la excursión, en el billete y en el email de confirmación. P. ej. “Llegue 15 minutos antes y traiga una toalla.”",
+      "questionsLegend": "Preguntas del formulario de reserva",
+      "questionsHelp": "Pregunta lo que necesitas saber antes de la salida. Las respuestas aparecen en las reservas y en la lista de pasajeros.",
+      "noQuestions": "Aún no hay preguntas: los clientes solo dan su nombre y contacto.",
+      "question": "Pregunta {number}",
+      "questionHint": "P. ej. “¿Qué menú desea para comer?” u “Hotel de recogida”.",
+      "removeQuestion": "Eliminar la pregunta {number}",
+      "answerKind": "Respuesta",
+      "kindText": "Escrita por el cliente",
+      "kindChoice": "Elegida de una lista",
+      "required": "Respuesta obligatoria",
+      "options": "Opciones",
+      "optionsHint": "Una por línea, p. ej. Pescado, Pollo, Vegetariano.",
+      "addQuestion": "Añadir una pregunta",
+      "translateReminder": "Si cambias el mensaje o las preguntas, revisa también sus traducciones.",
+      "errQuestionLabel": "Escribe la pregunta.",
+      "errOptionsMin": "Escribe al menos dos opciones, una por línea.",
+      "errOptionsMax": "Como máximo {max} opciones.",
+      "errOptionLength": "Cada opción: como máximo 80 caracteres.",
+      "translationsHelp": "Los clientes ven la excursión en su idioma donde la hayas traducido. Idioma de tus textos: {language}.",
+      "language": "Idioma",
+      "languageOption": "{language} ({done}/{total})",
+      "progress": "{done} de {total} textos traducidos",
+      "originalText": "Original: {text}",
+      "ticketNames": "Billetes y extras",
+      "questionText": "Texto de la pregunta",
+      "untranslatedNote": "Lo que dejes vacío se muestra en tu idioma. Las traducciones de todos los idiomas se guardan juntas.",
+      "saveTranslations": "Guardar las traducciones",
+      "commissionLegend": "Lo que ganan los afiliados con esta excursión",
+      "commissionPlan": "El plan de cada afiliado",
+      "commissionPlanHelp": "El porcentaje de su plan de comisión, con sus tramos.",
+      "commissionOwn": "Un porcentaje solo para esta excursión",
+      "commissionOwnHelp": "El mismo porcentaje para todos los afiliados, p. ej. para una excursión con menos margen.",
+      "rate": "Comisión (%)",
+      "errRate": "Un porcentaje entre 0 y 100, p. ej. 12,5.",
+      "commissionNote": "Las ventas de esta excursión siguen contando para los tramos del plan de cada afiliado. Los afiliados con un porcentaje negociado mantienen el suyo."
     }
   },
   "charts": {

@@ -11,7 +11,7 @@ import type {
   UpdateSlotsBody,
   UpdateSlotsResultDto,
 } from '@ap/contracts';
-import { type Database, bookings, productPrices, products, slots } from '@ap/db';
+import { type Database, affiliates, bookings, productPrices, products, slots } from '@ap/db';
 import { and, asc, desc, eq, gt, gte, inArray, lt, ne, sql } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { Clock } from '../common/clock';
@@ -19,9 +19,23 @@ import { DomainError, NotFound } from '../common/errors';
 import { TenantsService } from '../common/tenants';
 import { DB, type DbOrTx, type Tx } from '../database/database.module';
 import { SourcesService } from '../sources/sources.service';
+import {
+  cleanTranslations,
+  localizedPriceLabel,
+  localizedQuestions,
+  localizedTexts,
+} from './translations';
 
 export type Product = typeof products.$inferSelect;
 export type Price = typeof productPrices.$inferSelect;
+
+/**
+ * Who a trip is shown to. Operators get their own texts plus the translations; customers and
+ * affiliates get the texts in their language, and customers never see the commission rate.
+ */
+export type ProductView = { kind: 'operator' } | { kind: 'public' | 'affiliate'; lang: string };
+
+const OPERATOR_VIEW: ProductView = { kind: 'operator' };
 
 const MAX_GENERATED_SLOTS = 2000;
 
@@ -34,7 +48,11 @@ export class CatalogService {
     private readonly clock: Clock,
   ) {}
 
-  async listProducts(tenantId: string, onlyActive = true): Promise<ProductDto[]> {
+  async listProducts(
+    tenantId: string,
+    onlyActive = true,
+    view: ProductView = OPERATOR_VIEW,
+  ): Promise<ProductDto[]> {
     const tenant = await this.tenants.get(tenantId);
     const rows = await this.db
       .select()
@@ -63,8 +81,18 @@ export class CatalogService {
         p,
         prices.filter((price) => price.productId === p.id),
         tenant.currency,
+        view,
       ),
     );
+  }
+
+  /** Whether an affiliate earns a personally negotiated rate on every trip. */
+  async hasNegotiatedRate(affiliateId: string): Promise<boolean> {
+    const [row] = await this.db
+      .select({ rate: affiliates.commissionRateBpsOverride })
+      .from(affiliates)
+      .where(eq(affiliates.id, affiliateId));
+    return row?.rate !== null && row?.rate !== undefined;
   }
 
   async product(tenantId: string, productId: string, db: DbOrTx = this.db): Promise<Product> {
@@ -83,8 +111,8 @@ export class CatalogService {
     return product;
   }
 
-  async productBySlug(tenantId: string, slug: string): Promise<ProductDto> {
-    const list = await this.listProducts(tenantId);
+  async productBySlug(tenantId: string, slug: string, view: ProductView): Promise<ProductDto> {
+    const list = await this.listProducts(tenantId, true, view);
     const product = list.find((p) => p.slug === slug);
     if (!product) throw new NotFound('product');
     return product;
@@ -105,6 +133,7 @@ export class CatalogService {
           description: body.description ?? null,
           durationMinutes: body.durationMinutes,
           meetingPoint: body.meetingPoint ?? null,
+          ...extrasChanges(body),
         })
         .onConflictDoNothing()
         .returning({ id: products.id });
@@ -112,9 +141,14 @@ export class CatalogService {
         throw new DomainError('errors.catalog.slugTaken', HttpStatus.CONFLICT, undefined, {
           slug: body.slug,
         });
-      await tx
-        .insert(productPrices)
-        .values(body.prices.map((price) => ({ ...price, tenantId, productId: product.id })));
+      await tx.insert(productPrices).values(
+        body.prices.map((price) => ({
+          ...price,
+          seats: price.kind === 'extra' ? 0 : price.seats,
+          tenantId,
+          productId: product.id,
+        })),
+      );
       return product.id;
     });
     return this.productDto(tenantId, id);
@@ -128,18 +162,23 @@ export class CatalogService {
   ): Promise<ProductDto> {
     const product = await this.product(tenantId, productId);
     if (product.sourceId) {
-      const { active, ...rest } = body;
+      // The operator's system owns the trip's name, prices and departures; the rest is ours.
+      const { active, customerNote, questions, commissionRateBps, translations, ...rest } = body;
       if (Object.values(rest).some((v) => v !== undefined)) {
         throw new DomainError('errors.catalog.managedBySource', HttpStatus.CONFLICT);
       }
-      if (active !== undefined) {
-        await this.db.update(products).set({ active }).where(eq(products.id, productId));
+      const changes: Partial<typeof products.$inferInsert> = {
+        ...extrasChanges({ customerNote, questions, commissionRateBps, translations }),
+      };
+      if (active !== undefined) changes.active = active;
+      if (Object.keys(changes).length > 0) {
+        await this.db.update(products).set(changes).where(eq(products.id, productId));
       }
       return this.productDto(tenantId, productId);
     }
 
     await this.db.transaction(async (tx) => {
-      const changes: Partial<typeof products.$inferInsert> = {};
+      const changes: Partial<typeof products.$inferInsert> = extrasChanges(body);
       if (body.name !== undefined) changes.name = body.name;
       if (body.slug !== undefined && body.slug !== product.slug) {
         const [taken] = await tx
@@ -212,7 +251,10 @@ export class CatalogService {
         label: price.label,
         amountMinor: price.amountMinor,
         taxRateBps: price.taxRateBps,
-        seats: price.seats,
+        // Extras take no seat.
+        seats: price.kind === 'extra' ? 0 : price.seats,
+        kind: price.kind,
+        commissionable: price.commissionable,
         active: true,
       };
       if (price.id) {
@@ -455,6 +497,21 @@ export class CatalogService {
   }
 }
 
+/** The customer note, questions, trip commission and translations of a create/update request. */
+function extrasChanges(
+  body: Pick<
+    UpdateProductBody,
+    'customerNote' | 'questions' | 'commissionRateBps' | 'translations'
+  >,
+): Partial<typeof products.$inferInsert> {
+  const changes: Partial<typeof products.$inferInsert> = {};
+  if (body.customerNote !== undefined) changes.customerNote = body.customerNote || null;
+  if (body.questions !== undefined) changes.questions = body.questions;
+  if (body.commissionRateBps !== undefined) changes.commissionRateBps = body.commissionRateBps;
+  if (body.translations !== undefined) changes.translations = cleanTranslations(body.translations);
+  return changes;
+}
+
 function localRange(
   fromDate: string,
   toDate: string,
@@ -496,34 +553,45 @@ export function toSlotDto(slot: typeof slots.$inferSelect): SlotDto {
   };
 }
 
-export function toPriceDto(price: Price): PriceDto {
+export function toPriceDto(price: Price, label = price.label): PriceDto {
   return {
     id: price.id,
     code: price.code,
-    label: price.label,
+    label,
     amountMinor: price.amountMinor,
     taxRateBps: price.taxRateBps,
     seats: price.seats,
+    kind: price.kind,
+    commissionable: price.commissionable,
   };
 }
 
-export function toProductDto(product: Product, prices: Price[], currency: string): ProductDto {
-  const priceDtos = prices.map(toPriceDto);
+export function toProductDto(
+  product: Product,
+  prices: Price[],
+  currency: string,
+  view: ProductView = OPERATOR_VIEW,
+): ProductDto {
+  const lang = view.kind === 'operator' ? null : view.lang;
+  const priceDtos = prices.map((price) =>
+    toPriceDto(price, localizedPriceLabel(product.translations, lang, price.id, price.label)),
+  );
   const seatPrices = priceDtos
-    .filter((p) => p.seats > 0 && p.amountMinor > 0)
+    .filter((p) => p.kind === 'ticket' && p.seats > 0 && p.amountMinor > 0)
     .map((p) => p.amountMinor);
   return {
     id: product.id,
     slug: product.slug,
-    name: product.name,
-    description: product.description,
+    ...localizedTexts(product, lang),
     durationMinutes: product.durationMinutes,
-    meetingPoint: product.meetingPoint,
     images: product.images,
     currency,
     prices: priceDtos,
     fromMinor: seatPrices.length ? Math.min(...seatPrices) : 0,
     managedExternally: product.sourceId !== null,
     active: product.active,
+    questions: localizedQuestions(product.questions, product.translations, lang),
+    commissionRateBps: view.kind === 'public' ? null : product.commissionRateBps,
+    ...(view.kind === 'operator' ? { translations: product.translations } : {}),
   };
 }

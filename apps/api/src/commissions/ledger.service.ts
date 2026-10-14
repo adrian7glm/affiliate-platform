@@ -8,7 +8,15 @@ import {
   reversalFor,
 } from '@ap/commission';
 import type { EventOfType } from '@ap/contracts';
-import { type Database, affiliates, bookings, commissionEntries, tenants, tickets } from '@ap/db';
+import {
+  type Database,
+  affiliates,
+  bookings,
+  commissionEntries,
+  products,
+  tenants,
+  tickets,
+} from '@ap/db';
 import { and, asc, eq, gte, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { TenantsService } from '../common/tenants';
@@ -84,9 +92,27 @@ export class CommissionLedgerService implements OnModuleInit {
           ),
         ),
       );
+    // A trip with its own rate pays it to every affiliate, except one with a negotiated rate:
+    // what was agreed with them personally applies to every trip.
+    const [trip] = await tx
+      .select({
+        rateBps: products.commissionRateBps,
+        grossMinor: bookings.commissionGrossMinor,
+        taxMinor: bookings.commissionTaxMinor,
+      })
+      .from(bookings)
+      .innerJoin(products, eq(products.id, bookings.productId))
+      .where(eq(bookings.id, event.bookingId));
+    const tripRateBps = resolved.negotiated ? null : (trip?.rateBps ?? null);
     const commission = commissionAtSale(
       resolved.plan,
-      { bookingId: event.bookingId, grossMinor: event.totalMinor, taxMinor: event.taxMinor },
+      {
+        bookingId: event.bookingId,
+        // Extras without commission are left out of the base; older bookings: the whole total.
+        grossMinor: trip?.grossMinor ?? event.totalMinor,
+        taxMinor: trip?.taxMinor ?? event.taxMinor,
+        tripRateBps,
+      },
       before?.count ?? 0,
     );
     await tx
@@ -101,8 +127,9 @@ export class CommissionLedgerService implements OnModuleInit {
         rateBps: commission.rateBps,
         baseMinor: commission.baseMinor,
         currency: event.currency,
-        reason: `sale #${commission.saleNumber} of ${periodKey} (${resolved.source})`,
+        reason: `sale #${commission.saleNumber} of ${periodKey} (${tripRateBps !== null ? 'trip rate' : resolved.source})`,
         planSnapshot: resolved.plan,
+        tripRateBps,
         createdAt: paidAt,
       })
       .onConflictDoNothing();

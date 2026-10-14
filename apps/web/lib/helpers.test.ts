@@ -20,9 +20,36 @@ import { validateTiers } from './plans';
 import { pickMembership, safeNextPath } from './session';
 
 const prices: PriceDto[] = [
-  { id: 'adult', code: 'adult', label: 'Adult', amountMinor: 10000, taxRateBps: 900, seats: 1 },
-  { id: 'child', code: 'child', label: 'Copil', amountMinor: 5000, taxRateBps: 900, seats: 1 },
-  { id: 'infant', code: 'infant', label: 'Bebeluș', amountMinor: 0, taxRateBps: 0, seats: 0 },
+  {
+    id: 'adult',
+    code: 'adult',
+    label: 'Adult',
+    amountMinor: 10000,
+    taxRateBps: 900,
+    seats: 1,
+    kind: 'ticket',
+    commissionable: true,
+  },
+  {
+    id: 'child',
+    code: 'child',
+    label: 'Copil',
+    amountMinor: 5000,
+    taxRateBps: 900,
+    seats: 1,
+    kind: 'ticket',
+    commissionable: true,
+  },
+  {
+    id: 'infant',
+    code: 'infant',
+    label: 'Bebeluș',
+    amountMinor: 0,
+    taxRateBps: 0,
+    seats: 0,
+    kind: 'ticket',
+    commissionable: true,
+  },
 ];
 
 describe('booking math', () => {

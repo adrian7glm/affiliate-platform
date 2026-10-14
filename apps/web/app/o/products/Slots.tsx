@@ -1,12 +1,20 @@
 'use client';
 
 import type { CancelDeparturesBody, OperatorSlotDto, ProductDto } from '@ap/contracts';
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { ChoiceGroup, Field, INPUT_CLASSES, TextareaField } from '@/components/Field';
-import { IconChevronLeft, IconChevronRight, IconPlus, IconStorm, IconX } from '@/components/icons';
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconClipboard,
+  IconPlus,
+  IconStorm,
+  IconX,
+} from '@/components/icons';
 import { LoadingBlock } from '@/components/Spinner';
 import { groupSlotsByDay } from '@/lib/booking';
 import { addDays, formatDayLabel, formatDayLong, formatTime, todayKey } from '@/lib/dates';
@@ -544,6 +552,7 @@ function SlotEditor({
 }) {
   const i18n = useT();
   const { t, tp } = i18n;
+  const { tenant } = useOperator();
   const [capacity, setCapacity] = useState(String(slot.capacity));
   const [capacityError, setCapacityError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -599,6 +608,16 @@ function SlotEditor({
           </dd>
         </div>
       </dl>
+
+      {slot.reserved > 0 ? (
+        <Link
+          href={`/o/departures?date=${todayKeyOf(slot.startsAt, tenant.timezone)}&slot=${slot.id}`}
+          className="inline-flex min-h-12 items-center gap-2 self-start rounded-2xl px-3 font-semibold text-brand hover:bg-brand-soft"
+        >
+          <IconClipboard />
+          {t('catalog.slots.passengers')}
+        </Link>
+      ) : null}
 
       <form onSubmit={saveCapacity} noValidate className="flex items-end gap-2">
         <Field
