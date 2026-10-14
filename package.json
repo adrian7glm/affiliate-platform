@@ -10,7 +10,7 @@
     "dev": "turbo run dev",
     "test": "turbo run test --concurrency=1",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @ap/db run generate",
@@ -18,10 +18,17 @@
     "db:seed": "pnpm --filter @ap/api run seed"
   },
   "devDependencies": {
+    "@eslint/js": "~9.39.5",
+    "@next/eslint-plugin-next": "~15.5.27",
     "@types/node": "^22.19.0",
+    "eslint": "~9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
     "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.2",
     "vitest": "^3.2.4"
   },
   "pnpm": {

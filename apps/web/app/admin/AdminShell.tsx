@@ -34,6 +34,7 @@ const NAV: { href: string; label: MessageKey; icon: ReactNode; exact?: boolean }
   { href: '/admin/contact', label: 'admin.nav.contact', icon: <IconMail /> },
   { href: '/admin/translations', label: 'admin.nav.translations', icon: <IconGlobe /> },
   { href: '/admin/settings', label: 'admin.nav.settings', icon: <IconSettings /> },
+  { href: '/admin/system', label: 'admin.nav.system', icon: <IconSettings /> },
 ];
 
 const AdminContext = createContext<MeDto | null>(null);

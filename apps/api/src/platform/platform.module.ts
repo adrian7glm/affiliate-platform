@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_CONFIG, type AppConfig } from '../config';
+import { IdentityModule } from '../identity/identity.module';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { BillingGateway, ManualBilling, StripeBilling } from './billing.gateway';
@@ -11,13 +12,16 @@ import { OperatorPlatformController, SignupController } from './onboarding.contr
 import { PlatformAdminGuard } from './platform-admin.guard';
 import { PlatformSettingsController } from './platform-settings.controller';
 import { SubscriptionsService } from './subscriptions.service';
+import { AdminSystemController } from './system.controller';
+import { SystemService } from './system.service';
 
 /**
  * The platform owner's business: plans and fees sold to operators, operator onboarding and
- * billing, the contact page inbox, and the super-admin area. Reads other modules' tables only
+ * billing, the contact page inbox, the super-admin area and the platform's health. Reads other modules' tables only
  * for reporting.
  */
 @Module({
+  imports: [IdentityModule],
   providers: [
     {
       provide: BillingGateway,
@@ -30,6 +34,7 @@ import { SubscriptionsService } from './subscriptions.service';
     AdminService,
     ContactService,
     PlatformAdminGuard,
+    SystemService,
   ],
   controllers: [
     AdminController,
@@ -39,6 +44,7 @@ import { SubscriptionsService } from './subscriptions.service';
     PublicContactController,
     AdminContactController,
     PlatformSettingsController,
+    AdminSystemController,
   ],
   exports: [SubscriptionsService],
 })

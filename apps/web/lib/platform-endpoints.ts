@@ -1,5 +1,6 @@
 import type {
   AdminOverviewDto,
+  AdminSystemDto,
   AdminTenantDetailDto,
   BillingRedirectDto,
   ContactRequestDto,
@@ -69,6 +70,13 @@ export const adminApi = {
   invites: (o?: Opts) => apiFetch<OperatorInviteDto[]>('/admin/invites', { ...o, tenant: false }),
   createInvite: (body: CreateOperatorInviteBody, o?: Opts) =>
     apiFetch<OperatorInviteDto>('/admin/invites', { ...o, method: 'POST', body, tenant: false }),
+  system: (o?: Opts) => apiFetch<AdminSystemDto>('/admin/system', { ...o, tenant: false }),
+  retryEvent: (id: number, o?: Opts) =>
+    apiFetch<AdminSystemDto>(`/admin/system/events/${id}/retry`, {
+      ...o,
+      method: 'POST',
+      tenant: false,
+    }),
   contactRequests: (o?: Opts) =>
     apiFetch<ContactRequestDto[]>('/admin/contact-requests', { ...o, tenant: false }),
   setContactHandled: (id: string, handled: boolean, o?: Opts) =>

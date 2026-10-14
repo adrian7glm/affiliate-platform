@@ -211,7 +211,8 @@
       "ticket": "biglietto non trovato",
       "user": "utente non trovato",
       "scannerAccount": "account scanner non trovato",
-      "contactRequest": "messaggio non trovato"
+      "contactRequest": "messaggio non trovato",
+      "event": "evento non trovato"
     },
     "auth": {
       "signInAgain": "accedi di nuovo",
@@ -1350,7 +1351,8 @@
       "invites": "Inviti",
       "translations": "Traduzioni",
       "contact": "Messaggi",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni",
+      "system": "Sistema"
     },
     "shell": {
       "loadError": "Non siamo riusciti a caricare il tuo account",
@@ -1630,6 +1632,25 @@
       "demoTitle": "Account demo nella pagina di accesso",
       "demoOn": "Visibili, con le password (DEMO_MODE=true sul server). Imposta DEMO_MODE=false prima del lancio.",
       "demoOff": "Nascosti (DEMO_MODE=false sul server)."
+    },
+    "system": {
+      "title": "Stato del sistema",
+      "description": "Se il lavoro in background è attivo (biglietti, SMS, commissioni, sincronizzazioni) e quali eventi interni si sono fermati.",
+      "workerTitle": "Lavoro in background",
+      "workerOk": "Tutto funziona.",
+      "workerStale": "Alcune attività non girano da un po'. Controlla che il processo worker sia avviato.",
+      "workerUnknown": "Il lavoro in background non è mai partito. Avvia il processo worker.",
+      "jobOk": "Attivo",
+      "jobFailed": "Ultima esecuzione fallita",
+      "jobStale": "Fermo",
+      "lastRun": "ultima esecuzione: {when}",
+      "neverRun": "non ancora eseguito",
+      "eventsTitle": "Eventi fermati ({count})",
+      "noEvents": "Nessun evento fermo. Tutto è stato elaborato.",
+      "eventsHelp": "Questi eventi sono falliti 10 volte e non vengono più ritentati da soli. Possono indicare una commissione non registrata o un biglietto non inviato. Risolvi la causa (ad esempio il sistema dell'operatore non rispondeva), poi premi Riprova.",
+      "noOperator": "Piattaforma",
+      "attempts": "Tentativi: {count}",
+      "retry": "Riprova"
     }
   },
   "signup": {
@@ -1885,6 +1906,14 @@
       "company": "Azienda",
       "action": "Vedi tutte le richieste",
       "sms": "{topic} da {name}: {contact}"
+    },
+    "systemAlert": {
+      "subject": "Attenzione: l'evento {type} si è fermato",
+      "intro": "L'evento interno {type} (n. {id}) è fallito 10 volte e non viene più ritentato da solo.",
+      "error": "Ultimo errore: {error}",
+      "next": "Risolvi la causa, poi ritenta l'evento dall'area admin.",
+      "action": "Apri lo stato del sistema",
+      "sms": "Attenzione: l'evento {type} si e fermato. Vedi {url}"
     }
   },
   "catalog": {

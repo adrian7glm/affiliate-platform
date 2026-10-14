@@ -262,9 +262,9 @@ function drawQr(ctx: Ctx, value: string, cx: number, cy: number, size: number, c
   const quiet = 3;
   const frame = Math.max(2, size * 0.022);
   const inner = size - frame * 2;
-  const module = Math.max(1, Math.floor(inner / (count + quiet * 2)));
-  const codePx = module * count;
-  const box = codePx + module * quiet * 2 + frame * 2;
+  const cell = Math.max(1, Math.floor(inner / (count + quiet * 2)));
+  const codePx = cell * count;
+  const box = codePx + cell * quiet * 2 + frame * 2;
   const x0 = Math.round(cx - box / 2);
   const y0 = Math.round(cy - box / 2);
 
@@ -275,8 +275,8 @@ function drawQr(ctx: Ctx, value: string, cx: number, cy: number, size: number, c
   roundRect(ctx, x0 + frame, y0 + frame, box - frame * 2, box - frame * 2, box * 0.045);
   ctx.fill();
 
-  const ox = Math.round(x0 + frame + module * quiet);
-  const oy = Math.round(y0 + frame + module * quiet);
+  const ox = Math.round(x0 + frame + cell * quiet);
+  const oy = Math.round(y0 + frame + cell * quiet);
   ctx.fillStyle = '#000000';
   for (let row = 0; row < count; row++) {
     let col = 0;
@@ -284,7 +284,7 @@ function drawQr(ctx: Ctx, value: string, cx: number, cy: number, size: number, c
       if (data[row * count + col]) {
         const start = col;
         while (col < count && data[row * count + col]) col++;
-        ctx.fillRect(ox + start * module, oy + row * module, (col - start) * module, module);
+        ctx.fillRect(ox + start * cell, oy + row * cell, (col - start) * cell, cell);
       } else col++;
     }
   }
@@ -394,7 +394,7 @@ function drawPortrait(ctx: Ctx, c: KitContent, w: number, h: number) {
     size: headline,
     weight: 800,
   });
-  ty += drawText(ctx, c.subline, {
+  drawText(ctx, c.subline, {
     x: w / 2,
     y: ty + sub * 0.1,
     maxWidth: w - pad * 2,

@@ -211,7 +211,8 @@
       "ticket": "bilhete não encontrado",
       "user": "utilizador não encontrado",
       "scannerAccount": "conta de leitura não encontrada",
-      "contactRequest": "mensagem não encontrada"
+      "contactRequest": "mensagem não encontrada",
+      "event": "evento não encontrado"
     },
     "auth": {
       "signInAgain": "inicie sessão novamente",
@@ -1350,7 +1351,8 @@
       "invites": "Convites",
       "translations": "Traduções",
       "contact": "Mensagens",
-      "settings": "Definições"
+      "settings": "Definições",
+      "system": "Sistema"
     },
     "shell": {
       "loadError": "Não foi possível carregar a sua conta",
@@ -1630,6 +1632,25 @@
       "demoTitle": "Contas de demonstração na página de entrada",
       "demoOn": "Visíveis, com as palavras-passe (DEMO_MODE=true no servidor). Define DEMO_MODE=false antes do lançamento.",
       "demoOff": "Ocultas (DEMO_MODE=false no servidor)."
+    },
+    "system": {
+      "title": "Estado do sistema",
+      "description": "Se o trabalho em segundo plano está a correr (bilhetes, SMS, comissões, sincronizações) e que eventos internos pararam.",
+      "workerTitle": "Trabalho em segundo plano",
+      "workerOk": "Tudo a funcionar.",
+      "workerStale": "Algumas tarefas não correm há algum tempo. Verifica se o processo worker está ligado.",
+      "workerUnknown": "O trabalho em segundo plano nunca correu. Liga o processo worker.",
+      "jobOk": "A correr",
+      "jobFailed": "A última execução falhou",
+      "jobStale": "Parado",
+      "lastRun": "última execução: {when}",
+      "neverRun": "ainda não correu",
+      "eventsTitle": "Eventos parados ({count})",
+      "noEvents": "Nenhum evento parado. Tudo foi processado.",
+      "eventsHelp": "Estes eventos falharam 10 vezes e já não são repetidos sozinhos. Podem significar uma comissão não registada ou um bilhete não enviado. Corrige a causa (por exemplo, o sistema do operador não respondia) e carrega em Tentar de novo.",
+      "noOperator": "Plataforma",
+      "attempts": "Tentativas: {count}",
+      "retry": "Tentar de novo"
     }
   },
   "signup": {
@@ -1885,6 +1906,14 @@
       "company": "Empresa",
       "action": "Ver todos os pedidos",
       "sms": "{topic} de {name}: {contact}"
+    },
+    "systemAlert": {
+      "subject": "Atenção: o evento {type} parou",
+      "intro": "O evento interno {type} (n.º {id}) falhou 10 vezes e já não é repetido sozinho.",
+      "error": "Último erro: {error}",
+      "next": "Corrige a causa e volta a tentar o evento na área de administração.",
+      "action": "Abrir o estado do sistema",
+      "sms": "Atencao: o evento {type} parou. Ver {url}"
     }
   },
   "catalog": {

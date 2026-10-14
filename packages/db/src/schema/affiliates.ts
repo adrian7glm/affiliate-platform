@@ -91,5 +91,7 @@ export const clicks = pgTable(
   (t) => [
     index('clicks_link_time').on(t.linkId, t.occurredAt),
     index('clicks_visitor_time').on(t.visitorId, t.occurredAt),
+    // Clean-up of old clicks.
+    index('clicks_time').on(t.occurredAt),
   ],
 );

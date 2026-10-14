@@ -53,17 +53,8 @@ export class ScannersService {
     const tenant = await this.tenants.get(tenantId);
     const userId = await this.db.transaction(async (tx) => {
       const id = await this.identity.findOrCreateUser(tx, body.destination, body.name);
-      // Keep a name someone already chose for themselves; fill it in when there is none.
-      await tx
-        .update(users)
-        .set({ name: body.name })
-        .where(and(eq(users.id, id), sql`${users.name} is null`));
-      const [created] = await tx
-        .insert(memberships)
-        .values({ userId: id, tenantId, role: 'scanner' })
-        .onConflictDoNothing()
-        .returning({ id: memberships.id });
-      if (!created) {
+      await this.identity.nameIfMissing(tx, id, body.name);
+      if (!(await this.identity.grantRole(tx, id, tenantId, 'scanner'))) {
         throw new DomainError('errors.scanners.exists', HttpStatus.CONFLICT);
       }
       await this.notifications.enqueue(tx, {
@@ -86,17 +77,9 @@ export class ScannersService {
 
   /** Takes away scanning access. Tickets the person already scanned keep their name. */
   async remove(tenantId: string, userId: string): Promise<void> {
-    const deleted = await this.db
-      .delete(memberships)
-      .where(
-        and(
-          eq(memberships.tenantId, tenantId),
-          eq(memberships.userId, userId),
-          eq(memberships.role, 'scanner'),
-        ),
-      )
-      .returning({ id: memberships.id });
-    if (deleted.length === 0) throw new NotFound('scannerAccount');
+    if (!(await this.identity.revokeRole(this.db, userId, tenantId, 'scanner'))) {
+      throw new NotFound('scannerAccount');
+    }
   }
 
   /** What the scanner screen needs: the operator's name, time zone and today's count. */

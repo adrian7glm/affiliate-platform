@@ -36,6 +36,7 @@ import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SubscriptionsService } from './subscriptions.service';
+import { IdentityService } from '../identity/identity.service';
 
 const INVITE_TTL_MS = 30 * 86_400_000;
 /** Self-signup cannot be used to mass-create operators from one account. */
@@ -70,6 +71,7 @@ export class OnboardingService {
     private readonly clock: Clock,
     private readonly notifications: NotificationsService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly identity: IdentityService,
   ) {}
 
   // -------------------------------------------------------------------------------------------
@@ -306,10 +308,9 @@ export class OnboardingService {
         })
         .returning();
       const tenantId = tenant!.id;
-      await tx.insert(memberships).values({ userId, tenantId, role: 'owner' });
-      if (body.ownerName && !user.name) {
-        await tx.update(users).set({ name: body.ownerName }).where(eq(users.id, userId));
-      }
+      await this.identity.grantRole(tx, userId, tenantId, 'owner');
+      if (body.ownerName && !user.name)
+        await this.identity.nameIfMissing(tx, userId, body.ownerName);
       await this.subscriptions.start(tx, tenantId, {
         planId: invite?.planId ?? body.planId ?? null,
         feeBpsOverride: invite?.feeBpsOverride ?? null,

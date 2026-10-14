@@ -139,7 +139,7 @@ export function StartFlow({ token }: { token: string | null }) {
   const here = token ? `/start/${token}` : '/start';
   const loginHref = `/login?next=${encodeURIComponent(here)}`;
 
-  async function useAnotherAccount() {
+  async function switchAccount() {
     await clearSession();
     router.push(loginHref);
   }
@@ -154,6 +154,7 @@ export function StartFlow({ token }: { token: string | null }) {
     >
       <div className="flex items-center justify-between gap-2">
         <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/icon.svg" alt="" width={32} height={32} className="rounded-xl" />
           {t('common.appName')}
         </Link>
@@ -176,7 +177,7 @@ export function StartFlow({ token }: { token: string | null }) {
           invite={invite.data}
           me={me}
           loginHref={loginHref}
-          onUseAnotherAccount={() => void useAnotherAccount()}
+          onUseAnotherAccount={() => void switchAccount()}
         />
       ) : null}
     </main>

@@ -7,6 +7,7 @@ import {
 } from '@ap/contracts';
 import { type Database, outboxEvents } from '@ap/db';
 import { eq, sql } from 'drizzle-orm';
+import { Clock } from '../common/clock';
 import { DB, type DbOrTx, type Tx } from '../database/database.module';
 
 export type EventHandler<T extends DomainEventType> = (
@@ -14,7 +15,21 @@ export type EventHandler<T extends DomainEventType> = (
   tx: Tx,
 ) => Promise<void>;
 
-const MAX_ATTEMPTS = 10;
+/** After this many failures an event stops being retried and the platform admins are told. */
+export const MAX_ATTEMPTS = 10;
+
+/** Wait before the next attempt: 5 s, 10 s, 20 s… up to an hour (about 1.5 h for all 10). */
+export function retryDelayMs(attempts: number): number {
+  return Math.min(5_000 * 2 ** Math.max(0, attempts - 1), 3_600_000);
+}
+
+export interface DeadEvent {
+  id: number;
+  type: string;
+  tenantId: string | null;
+  error: string;
+}
+export type DeadEventHandler = (event: DeadEvent) => Promise<void>;
 
 /**
  * Transactional outbox. `publish` writes the event in the caller's transaction, so the event
@@ -29,9 +44,13 @@ export class Outbox {
     DomainEventType,
     { name: string; fn: EventHandler<DomainEventType> }[]
   >();
+  private readonly deadHandlers: DeadEventHandler[] = [];
   private draining: Promise<number> | null = null;
 
-  constructor(@Inject(DB) private readonly db: Database) {}
+  constructor(
+    @Inject(DB) private readonly db: Database,
+    private readonly clock: Clock,
+  ) {}
 
   async publish(tx: DbOrTx, event: DomainEvent): Promise<void> {
     const parsed = domainEvent.parse(event);
@@ -44,6 +63,11 @@ export class Outbox {
     const list = this.handlers.get(type) ?? [];
     list.push({ name, fn: fn as unknown as EventHandler<DomainEventType> });
     this.handlers.set(type, list);
+  }
+
+  /** Called once when an event has failed MAX_ATTEMPTS times and will not be retried. */
+  onDeadEvent(fn: DeadEventHandler): void {
+    this.deadHandlers.push(fn);
   }
 
   /** Delivers every pending event; returns how many were processed. Concurrent calls share one run. */
@@ -75,6 +99,7 @@ export class Outbox {
         const rows = await tx.execute<{ id: number; type: string; payload: unknown }>(sql`
         select id, type, payload from outbox_events
         where processed_at is null and attempts < ${MAX_ATTEMPTS}
+          and (next_attempt_at is null or next_attempt_at <= ${this.clock.now()})
           ${
             skip.length
               ? sql`and id not in (${sql.join(
@@ -100,7 +125,7 @@ export class Outbox {
         }
         await tx
           .update(outboxEvents)
-          .set({ processedAt: new Date() })
+          .set({ processedAt: this.clock.now() })
           .where(eq(outboxEvents.id, Number(row.id)));
         return 'processed' as const;
       })
@@ -111,13 +136,70 @@ export class Outbox {
 
     if (outcome === 'failed' && failed) {
       const { id, error } = failed as { id: number; error: string };
-      this.logger.error(`event ${id} failed: ${error}`);
       skip.push(id);
-      await this.db
+      const [row] = await this.db
         .update(outboxEvents)
         .set({ attempts: sql`${outboxEvents.attempts} + 1`, lastError: error })
-        .where(eq(outboxEvents.id, id));
+        .where(eq(outboxEvents.id, id))
+        .returning({
+          attempts: outboxEvents.attempts,
+          type: outboxEvents.type,
+          tenantId: outboxEvents.tenantId,
+        });
+      const attempts = row?.attempts ?? MAX_ATTEMPTS;
+      if (attempts < MAX_ATTEMPTS) {
+        this.logger.warn(`event ${id} failed (attempt ${attempts}): ${error}`);
+        await this.db
+          .update(outboxEvents)
+          .set({ nextAttemptAt: new Date(this.clock.now().getTime() + retryDelayMs(attempts)) })
+          .where(eq(outboxEvents.id, id));
+      } else {
+        this.logger.error(`event ${id} failed ${attempts} times, giving up: ${error}`);
+        await this.reportDead({
+          id,
+          type: row?.type ?? 'unknown',
+          tenantId: row?.tenantId ?? null,
+          error,
+        });
+      }
     }
     return outcome;
+  }
+
+  /** Events that stopped being retried, newest first (for the platform admin). */
+  async dead(limit = 100) {
+    return this.db
+      .select({
+        id: outboxEvents.id,
+        type: outboxEvents.type,
+        tenantId: outboxEvents.tenantId,
+        attempts: outboxEvents.attempts,
+        lastError: outboxEvents.lastError,
+        occurredAt: outboxEvents.occurredAt,
+      })
+      .from(outboxEvents)
+      .where(
+        sql`${outboxEvents.processedAt} is null and ${outboxEvents.attempts} >= ${MAX_ATTEMPTS}`,
+      )
+      .orderBy(sql`${outboxEvents.id} desc`)
+      .limit(limit);
+  }
+
+  /** Gives a stopped event a fresh set of attempts, e.g. after the cause was fixed. */
+  async retry(id: number): Promise<boolean> {
+    const rows = await this.db
+      .update(outboxEvents)
+      .set({ attempts: 0, nextAttemptAt: null })
+      .where(sql`${outboxEvents.id} = ${id} and ${outboxEvents.processedAt} is null`)
+      .returning({ id: outboxEvents.id });
+    return rows.length > 0;
+  }
+
+  private async reportDead(event: DeadEvent): Promise<void> {
+    for (const handler of this.deadHandlers) {
+      await handler(event).catch((error: unknown) =>
+        this.logger.error(`dead event ${event.id}: alert failed: ${(error as Error).message}`),
+      );
+    }
   }
 }

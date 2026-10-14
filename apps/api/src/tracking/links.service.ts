@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ClickResultDto, CreateLinkBody, LinkDto, RecordClickBody } from '@ap/contracts';
 import {
   type Database,
@@ -13,7 +13,7 @@ import { and, asc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { Clock } from '../common/clock';
 import { hashIp, randomCode } from '../common/crypto';
-import { DomainError, NotFound } from '../common/errors';
+import { NotFound } from '../common/errors';
 import { DB, type DbOrTx } from '../database/database.module';
 import { col } from '../common/sql';
 

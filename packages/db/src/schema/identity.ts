@@ -82,7 +82,11 @@ export const memberships = pgTable(
     role: roleEnum('role').notNull(),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex('memberships_user_tenant_role').on(t.userId, t.tenantId, t.role)],
+  (t) => [
+    uniqueIndex('memberships_user_tenant_role').on(t.userId, t.tenantId, t.role),
+    // An operator's team.
+    index('memberships_tenant').on(t.tenantId),
+  ],
 );
 
 /** One-time login codes sent by SMS or email. Only a hash of the code is stored. */

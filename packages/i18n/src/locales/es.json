@@ -211,7 +211,8 @@
       "ticket": "billete no encontrado",
       "user": "usuario no encontrado",
       "scannerAccount": "cuenta de escaneo no encontrada",
-      "contactRequest": "mensaje no encontrado"
+      "contactRequest": "mensaje no encontrado",
+      "event": "evento no encontrado"
     },
     "auth": {
       "signInAgain": "vuelve a iniciar sesión",
@@ -1350,7 +1351,8 @@
       "invites": "Invitaciones",
       "translations": "Traducciones",
       "contact": "Mensajes",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "system": "Sistema"
     },
     "shell": {
       "loadError": "No pudimos cargar tu cuenta",
@@ -1630,6 +1632,25 @@
       "demoTitle": "Cuentas de demostración en la página de acceso",
       "demoOn": "Visibles, con sus contraseñas (DEMO_MODE=true en el servidor). Pon DEMO_MODE=false antes del lanzamiento.",
       "demoOff": "Ocultas (DEMO_MODE=false en el servidor)."
+    },
+    "system": {
+      "title": "Estado del sistema",
+      "description": "Si el trabajo en segundo plano funciona (billetes, SMS, comisiones, sincronizaciones) y qué eventos internos se han detenido.",
+      "workerTitle": "Trabajo en segundo plano",
+      "workerOk": "Todo funciona.",
+      "workerStale": "Algunas tareas no se ejecutan desde hace un rato. Comprueba que el proceso worker está en marcha.",
+      "workerUnknown": "El trabajo en segundo plano nunca se ha ejecutado. Inicia el proceso worker.",
+      "jobOk": "Funciona",
+      "jobFailed": "La última ejecución falló",
+      "jobStale": "Detenido",
+      "lastRun": "última ejecución: {when}",
+      "neverRun": "aún no se ha ejecutado",
+      "eventsTitle": "Eventos detenidos ({count})",
+      "noEvents": "No hay eventos detenidos. Todo se ha procesado.",
+      "eventsHelp": "Estos eventos fallaron 10 veces y ya no se reintentan solos. Pueden significar una comisión no registrada o un billete no enviado. Corrige la causa (por ejemplo, el sistema del operador no respondía) y pulsa Reintentar.",
+      "noOperator": "Plataforma",
+      "attempts": "Intentos: {count}",
+      "retry": "Reintentar"
     }
   },
   "signup": {
@@ -1885,6 +1906,14 @@
       "company": "Empresa",
       "action": "Ver todas las solicitudes",
       "sms": "{topic} de {name}: {contact}"
+    },
+    "systemAlert": {
+      "subject": "Atención: el evento {type} se ha detenido",
+      "intro": "El evento interno {type} (n.º {id}) falló 10 veces y ya no se reintenta solo.",
+      "error": "Último error: {error}",
+      "next": "Corrige la causa y reintenta el evento desde el área de administración.",
+      "action": "Abrir el estado del sistema",
+      "sms": "Atencion: el evento {type} se ha detenido. Ver {url}"
     }
   },
   "catalog": {

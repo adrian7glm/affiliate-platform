@@ -25,7 +25,7 @@ import {
 import { and, asc, eq, gte, lt, ne, sql } from 'drizzle-orm';
 import { Clock } from '../common/clock';
 import { DomainError, NotFound } from '../common/errors';
-import { col } from '../common/sql';
+import { col, sumMinor } from '../common/sql';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx } from '../database/database.module';
 import { BillingGateway } from './billing.gateway';
@@ -297,7 +297,7 @@ export class SubscriptionsService {
     const at = sql`coalesce(${bookings.paidAt}, ${bookings.createdAt})`;
     const [row] = await this.db
       .select({
-        amountMinor: sql<number>`coalesce(sum(${bookings.platformFeeMinor}), 0)::int`,
+        amountMinor: sumMinor(bookings.platformFeeMinor),
         bookings: sql<number>`count(*)::int`,
       })
       .from(bookings)

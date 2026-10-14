@@ -1,3 +1,5 @@
+import { calendarUtcStamp, googleCalendarUrl as googleLink } from '@ap/contracts';
+
 /**
  * "Add to calendar" for a booked trip: an iCalendar file (Apple Calendar, Outlook, Google import,
  * any phone) and a Google Calendar link that opens the event ready to save.
@@ -13,14 +15,6 @@ export interface CalendarEvent {
   url: string | null;
   /** Minutes before the start for a reminder; null for none. */
   alarmMinutes?: number | null;
-}
-
-/** 20261006T070000Z */
-function utcStamp(date: Date): string {
-  return date
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .replace(/\.\d{3}/, '');
 }
 
 /** Escapes a TEXT value (RFC 5545 §3.3.11). */
@@ -61,9 +55,9 @@ export function icsFile(event: CalendarEvent, now: Date): string {
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${event.uid}`,
-    `DTSTAMP:${utcStamp(now)}`,
-    `DTSTART:${utcStamp(event.startsAt)}`,
-    `DTEND:${utcStamp(event.endsAt)}`,
+    `DTSTAMP:${calendarUtcStamp(now)}`,
+    `DTSTART:${calendarUtcStamp(event.startsAt)}`,
+    `DTEND:${calendarUtcStamp(event.endsAt)}`,
     `SUMMARY:${escapeText(event.title)}`,
     `DESCRIPTION:${escapeText(event.description)}`,
     ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
@@ -84,12 +78,5 @@ export function icsFile(event: CalendarEvent, now: Date): string {
 }
 
 export function googleCalendarUrl(event: CalendarEvent): string {
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: event.title,
-    dates: `${utcStamp(event.startsAt)}/${utcStamp(event.endsAt)}`,
-    details: event.description,
-  });
-  if (event.location) params.set('location', event.location);
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  return googleLink({ ...event, details: event.description });
 }

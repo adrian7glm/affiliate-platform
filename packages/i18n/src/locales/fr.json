@@ -211,7 +211,8 @@
       "ticket": "billet introuvable",
       "user": "utilisateur introuvable",
       "scannerAccount": "compte de scan introuvable",
-      "contactRequest": "message introuvable"
+      "contactRequest": "message introuvable",
+      "event": "événement introuvable"
     },
     "auth": {
       "signInAgain": "reconnectez-vous",
@@ -1350,7 +1351,8 @@
       "invites": "Invitations",
       "translations": "Traductions",
       "contact": "Messages",
-      "settings": "Réglages"
+      "settings": "Réglages",
+      "system": "Système"
     },
     "shell": {
       "loadError": "Nous n'avons pas pu charger votre compte",
@@ -1630,6 +1632,25 @@
       "demoTitle": "Comptes de démonstration sur la page de connexion",
       "demoOn": "Affichés, avec leurs mots de passe (DEMO_MODE=true sur le serveur). Mets DEMO_MODE=false avant le lancement.",
       "demoOff": "Masqués (DEMO_MODE=false sur le serveur)."
+    },
+    "system": {
+      "title": "État du système",
+      "description": "Si le travail en arrière-plan tourne (billets, SMS, commissions, synchronisations) et quels événements internes se sont arrêtés.",
+      "workerTitle": "Travail en arrière-plan",
+      "workerOk": "Tout fonctionne.",
+      "workerStale": "Certaines tâches n'ont pas tourné depuis un moment. Vérifie que le processus worker est démarré.",
+      "workerUnknown": "Le travail en arrière-plan n'a jamais tourné. Démarre le processus worker.",
+      "jobOk": "En marche",
+      "jobFailed": "Dernière exécution en erreur",
+      "jobStale": "Arrêté",
+      "lastRun": "dernière exécution : {when}",
+      "neverRun": "pas encore exécuté",
+      "eventsTitle": "Événements arrêtés ({count})",
+      "noEvents": "Aucun événement arrêté. Tout a été traité.",
+      "eventsHelp": "Ces événements ont échoué 10 fois et ne sont plus relancés automatiquement. Cela peut signifier une commission non enregistrée ou un billet non envoyé. Corrige la cause (par exemple le système de l'opérateur ne répondait pas), puis appuie sur Réessayer.",
+      "noOperator": "Plateforme",
+      "attempts": "Tentatives : {count}",
+      "retry": "Réessayer"
     }
   },
   "signup": {
@@ -1885,6 +1906,14 @@
       "company": "Entreprise",
       "action": "Voir toutes les demandes",
       "sms": "{topic} de {name} : {contact}"
+    },
+    "systemAlert": {
+      "subject": "Attention : l'événement {type} s'est arrêté",
+      "intro": "L'événement interne {type} (n° {id}) a échoué 10 fois et n'est plus relancé automatiquement.",
+      "error": "Dernière erreur : {error}",
+      "next": "Corrige la cause, puis relance l'événement depuis l'espace admin.",
+      "action": "Ouvrir l'état du système",
+      "sms": "Attention : l'evenement {type} s'est arrete. Voir {url}"
     }
   },
   "catalog": {

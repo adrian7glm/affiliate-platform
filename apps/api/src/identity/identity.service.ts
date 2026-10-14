@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import type { AuthOptionsDto, MeDto, SessionDto } from '@ap/contracts';
+import type { AuthOptionsDto, MeDto, Role, SessionDto } from '@ap/contracts';
 import { type Database, affiliates, memberships, otpCodes, tenants, users } from '@ap/db';
 import { and, desc, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { APP_CONFIG, type AppConfig } from '../config';
@@ -306,6 +306,39 @@ export class IdentityService {
         this.clock.now().getTime(),
       ),
     };
+  }
+
+  /** Gives a user a role in an operator's account; false when they already had it. */
+  async grantRole(db: DbOrTx, userId: string, tenantId: string, role: Role): Promise<boolean> {
+    const created = await db
+      .insert(memberships)
+      .values({ userId, tenantId, role })
+      .onConflictDoNothing()
+      .returning({ id: memberships.id });
+    return created.length > 0;
+  }
+
+  /** Takes a role away; false when the user did not have it. */
+  async revokeRole(db: DbOrTx, userId: string, tenantId: string, role: Role): Promise<boolean> {
+    const deleted = await db
+      .delete(memberships)
+      .where(
+        and(
+          eq(memberships.tenantId, tenantId),
+          eq(memberships.userId, userId),
+          eq(memberships.role, role),
+        ),
+      )
+      .returning({ id: memberships.id });
+    return deleted.length > 0;
+  }
+
+  /** Fills in a user's name when they have none, never replacing one they chose themselves. */
+  async nameIfMissing(db: DbOrTx, userId: string, name: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ name })
+      .where(and(eq(users.id, userId), sql`${users.name} is null`));
   }
 
   async findOrCreateUser(db: DbOrTx, destination: string, name?: string): Promise<string> {

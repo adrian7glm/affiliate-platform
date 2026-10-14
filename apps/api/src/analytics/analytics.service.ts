@@ -7,7 +7,7 @@ import {
   previousPeriod,
   tierProgress,
 } from '@ap/commission';
-import type { BookingChannel, OperatorAnalyticsDto } from '@ap/contracts';
+import type { BookingChannel, OperatorAnalyticsDto, OperatorDashboardDto } from '@ap/contracts';
 import {
   type Database,
   affiliates,
@@ -16,13 +16,15 @@ import {
   commissionEntries,
   commissionPlans,
 } from '@ap/db';
-import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import { DateTime } from 'luxon';
 import { Clock } from '../common/clock';
 import { DomainError } from '../common/errors';
+import { paidBetween } from '../common/sales';
 import type { Tenant } from '../common/tenants';
-import { planFromRow } from '../commissions/commissions.service';
+import { planFromRow } from '../commissions/commission-plans.service';
 import { DB } from '../database/database.module';
+import { sumMinor, sumMinorWhere } from '../common/sql';
 
 /** Fixed display order: the affiliate channels first, then the operator's own. */
 export const CHANNELS: BookingChannel[] = [
@@ -55,13 +57,11 @@ export class AnalyticsService {
     const throughDay = isCurrent ? DateTime.fromJSDate(now, { zone: tz }).day : daysInMonth;
 
     const paidIn = (from: Date, to: Date) =>
-      and(
-        eq(bookings.tenantId, tenant.id),
-        eq(bookings.status, 'confirmed'),
-        gte(bookings.paidAt, from),
-        lt(bookings.paidAt, to),
-      );
-    const affiliateRevenue = sql<number>`coalesce(sum(${bookings.totalMinor}) filter (where ${bookings.affiliateId} is not null), 0)::int`;
+      and(eq(bookings.tenantId, tenant.id), paidBetween(from, to));
+    const affiliateRevenue = sumMinorWhere(
+      bookings.totalMinor,
+      sql`${bookings.affiliateId} is not null`,
+    );
     const day = sql<string>`to_char(${bookings.paidAt} at time zone ${tz}, 'YYYY-MM-DD')`;
 
     const [byDay, byChannel, previous, clickRows, entryRows, payableRows, affiliateRows, planRows] =
@@ -70,8 +70,8 @@ export class AnalyticsService {
           .select({
             date: day,
             bookings: sql<number>`count(*)::int`,
-            seats: sql<number>`coalesce(sum(${bookings.seats}), 0)::int`,
-            revenueMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
+            seats: sumMinor(bookings.seats),
+            revenueMinor: sumMinor(bookings.totalMinor),
             affiliateBookings: sql<number>`(count(*) filter (where ${bookings.affiliateId} is not null))::int`,
             affiliateRevenueMinor: affiliateRevenue,
           })
@@ -83,7 +83,7 @@ export class AnalyticsService {
           .select({
             channel: bookings.channel,
             bookings: sql<number>`count(*)::int`,
-            revenueMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
+            revenueMinor: sumMinor(bookings.totalMinor),
           })
           .from(bookings)
           .where(paidIn(start, end))
@@ -106,7 +106,7 @@ export class AnalyticsService {
           .select({
             affiliateId: commissionEntries.affiliateId,
             status: commissionEntries.status,
-            total: sql<number>`coalesce(sum(${commissionEntries.amountMinor}), 0)::int`,
+            total: sumMinor(commissionEntries.amountMinor),
           })
           .from(commissionEntries)
           .where(
@@ -119,7 +119,7 @@ export class AnalyticsService {
         this.db
           .select({
             affiliateId: commissionEntries.affiliateId,
-            total: sql<number>`coalesce(sum(${commissionEntries.amountMinor}), 0)::int`,
+            total: sumMinor(commissionEntries.amountMinor),
           })
           .from(commissionEntries)
           .where(
@@ -137,7 +137,7 @@ export class AnalyticsService {
       .select({
         affiliateId: bookings.affiliateId,
         paidSales: sql<number>`count(*)::int`,
-        salesMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
+        salesMinor: sumMinor(bookings.totalMinor),
       })
       .from(bookings)
       .where(and(paidIn(start, end), isNotNull(bookings.affiliateId)))
@@ -170,7 +170,7 @@ export class AnalyticsService {
         )
         .reduce((total, e) => total + e.total, 0);
 
-    // Plans resolved in memory, like CommissionsService.planFor but for the whole network.
+    // Plans resolved in memory, like CommissionPlansService.planFor but for the whole network.
     const defaultPlan = planRows.find((p) => p.isDefault && p.archivedAt === null);
     const planOf = (a: (typeof affiliateRows)[number]) => {
       const row = a.commissionPlanId
@@ -235,6 +235,63 @@ export class AnalyticsService {
     };
   }
 
+  /** The operator's home screen: this month so far. */
+  async dashboard(tenant: Tenant): Promise<OperatorDashboardDto> {
+    const periodKey = periodKeyFor(this.clock.now(), tenant.timezone);
+    const { start, end } = periodRange(periodKey, tenant.timezone);
+    const paidInMonth = and(eq(bookings.tenantId, tenant.id), paidBetween(start, end));
+    const [[sales], [commission], statuses, top] = await Promise.all([
+      this.db
+        .select({ count: sql<number>`count(*)::int`, revenue: sumMinor(bookings.totalMinor) })
+        .from(bookings)
+        .where(paidInMonth),
+      this.db
+        .select({ total: sumMinor(commissionEntries.amountMinor) })
+        .from(commissionEntries)
+        .where(
+          and(
+            eq(commissionEntries.tenantId, tenant.id),
+            eq(commissionEntries.periodKey, periodKey),
+          ),
+        ),
+      this.db
+        .select({ status: affiliates.status, count: sql<number>`count(*)::int` })
+        .from(affiliates)
+        .where(eq(affiliates.tenantId, tenant.id))
+        .groupBy(affiliates.status),
+      this.db
+        .select({
+          affiliateId: affiliates.id,
+          name: affiliates.displayName,
+          paidSales: sql<number>`count(*)::int`,
+          salesMinor: sumMinor(bookings.totalMinor),
+        })
+        .from(bookings)
+        .innerJoin(affiliates, eq(affiliates.id, bookings.affiliateId))
+        .where(and(paidInMonth, isNotNull(bookings.affiliateId)))
+        .groupBy(affiliates.id, affiliates.displayName)
+        .orderBy(desc(sql`count(*)`))
+        .limit(5),
+    ]);
+    return {
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        name: tenant.name,
+        currency: tenant.currency,
+        timezone: tenant.timezone,
+      },
+      periodKey,
+      bookings: { count: sales?.count ?? 0, revenueMinor: sales?.revenue ?? 0 },
+      commissions: { totalMinor: commission?.total ?? 0 },
+      affiliates: {
+        active: statuses.find((s) => s.status === 'active')?.count ?? 0,
+        invited: statuses.find((s) => s.status === 'invited')?.count ?? 0,
+      },
+      topAffiliates: top,
+    };
+  }
+
   /** The month before, up to the same day of the month (or its last day, if shorter). */
   private async previousMonth(
     tenant: Tenant,
@@ -250,7 +307,7 @@ export class AnalyticsService {
     const [row] = await this.db
       .select({
         bookings: sql<number>`count(*)::int`,
-        revenueMinor: sql<number>`coalesce(sum(${bookings.totalMinor}), 0)::int`,
+        revenueMinor: sumMinor(bookings.totalMinor),
       })
       .from(bookings)
       .where(paidIn(start, cut));

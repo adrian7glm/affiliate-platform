@@ -209,7 +209,8 @@
       "ticket": "Ticket nicht gefunden",
       "user": "Benutzer nicht gefunden",
       "scannerAccount": "Scanner-Konto nicht gefunden",
-      "contactRequest": "Nachricht nicht gefunden"
+      "contactRequest": "Nachricht nicht gefunden",
+      "event": "Ereignis nicht gefunden"
     },
     "auth": {
       "signInAgain": "bitte erneut anmelden",
@@ -1312,7 +1313,8 @@
       "invites": "Einladungen",
       "translations": "Übersetzungen",
       "contact": "Nachrichten",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "system": "System"
     },
     "shell": {
       "loadError": "Wir konnten Ihr Konto nicht laden",
@@ -1579,6 +1581,25 @@
       "demoTitle": "Demo-Konten auf der Anmeldeseite",
       "demoOn": "Sichtbar, mit Passwörtern (DEMO_MODE=true auf dem Server). Setze vor dem Start DEMO_MODE=false.",
       "demoOff": "Ausgeblendet (DEMO_MODE=false auf dem Server)."
+    },
+    "system": {
+      "title": "Systemzustand",
+      "description": "Ob die Hintergrundarbeit läuft (Tickets, SMS, Provisionen, Synchronisierung) und welche internen Ereignisse angehalten wurden.",
+      "workerTitle": "Hintergrundarbeit",
+      "workerOk": "Alles läuft.",
+      "workerStale": "Einige Aufgaben sind seit einer Weile nicht gelaufen. Prüfe, ob der Worker-Prozess läuft.",
+      "workerUnknown": "Die Hintergrundarbeit ist noch nie gelaufen. Starte den Worker-Prozess.",
+      "jobOk": "Läuft",
+      "jobFailed": "Letzter Lauf fehlgeschlagen",
+      "jobStale": "Angehalten",
+      "lastRun": "zuletzt: {when}",
+      "neverRun": "noch nicht gelaufen",
+      "eventsTitle": "Angehaltene Ereignisse ({count})",
+      "noEvents": "Keine angehaltenen Ereignisse. Alles wurde verarbeitet.",
+      "eventsHelp": "Diese Ereignisse sind 10-mal fehlgeschlagen und werden nicht mehr automatisch wiederholt. Das kann eine nicht erfasste Provision oder ein nicht gesendetes Ticket bedeuten. Behebe die Ursache (zum Beispiel antwortete das System des Anbieters nicht) und tippe dann auf Erneut versuchen.",
+      "noOperator": "Plattform",
+      "attempts": "Versuche: {count}",
+      "retry": "Erneut versuchen"
     }
   },
   "signup": {
@@ -1824,6 +1845,14 @@
       "company": "Unternehmen",
       "action": "Alle Anfragen ansehen",
       "sms": "{topic} von {name}: {contact}"
+    },
+    "systemAlert": {
+      "subject": "Achtung: Ereignis {type} angehalten",
+      "intro": "Das interne Ereignis {type} (Nr. {id}) ist 10-mal fehlgeschlagen und wird nicht mehr automatisch wiederholt.",
+      "error": "Letzter Fehler: {error}",
+      "next": "Behebe die Ursache und wiederhole das Ereignis dann im Admin-Bereich.",
+      "action": "Systemzustand öffnen",
+      "sms": "Achtung: Ereignis {type} angehalten. Siehe {url}"
     }
   },
   "catalog": {

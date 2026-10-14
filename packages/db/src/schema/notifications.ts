@@ -48,6 +48,8 @@ export const notifications = pgTable(
   (t) => [
     index('notifications_due').on(t.status, t.nextAttemptAt),
     index('notifications_tenant_created').on(t.tenantId, t.createdAt),
+    // Clean-up of old messages.
+    index('notifications_created').on(t.createdAt),
     uniqueIndex('notifications_dedupe_key').on(t.dedupeKey),
   ],
 );

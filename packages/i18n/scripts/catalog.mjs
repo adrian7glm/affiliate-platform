@@ -75,7 +75,9 @@ for (const [file, lines] of Object.entries(outputs)) {
   let current = '';
   try {
     current = readFileSync(target, 'utf8');
-  } catch {}
+  } catch {
+    // Not generated yet: write it below.
+  }
   if (current === content) continue;
   if (process.argv.includes('--check')) {
     console.error(`src/${file} is out of date: run \`pnpm --filter @ap/i18n catalog\``);

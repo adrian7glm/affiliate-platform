@@ -84,6 +84,7 @@ export function JoinFlow({ token }: { token: string }) {
     >
       <div className="mb-8 flex items-center justify-between gap-3">
         <Link href="/" className="flex min-h-12 items-center gap-2 text-lg font-bold">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-xl" />
           {t('common.appName')}
         </Link>
