@@ -340,7 +340,8 @@
       "tooMany": "You have already sent us several messages. We will answer soon."
     },
     "limits": {
-      "tooManyRequests": "too many attempts from this connection; wait a few minutes and try again"
+      "tooManyRequests": "too many attempts from this connection; wait a few minutes and try again",
+      "dailyMessages": "daily limit reached for messages to new contacts ({count} in 24 hours); try again tomorrow"
     },
     "account": {
       "challengeExpired": "signing in took too long; start again",

@@ -340,7 +340,8 @@
       "tooMany": "Sie haben uns bereits mehrere Nachrichten gesendet. Wir antworten Ihnen bald."
     },
     "limits": {
-      "tooManyRequests": "zu viele Versuche von dieser Verbindung; warte ein paar Minuten und versuche es erneut"
+      "tooManyRequests": "zu viele Versuche von dieser Verbindung; warte ein paar Minuten und versuche es erneut",
+      "dailyMessages": "Tageslimit für Nachrichten an neue Kontakte erreicht ({count} in 24 Stunden); bitte morgen erneut versuchen"
     },
     "account": {
       "challengeExpired": "die Anmeldung hat zu lange gedauert; beginnen Sie von vorn",

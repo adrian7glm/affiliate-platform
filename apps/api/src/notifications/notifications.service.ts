@@ -41,6 +41,15 @@ const BATCH = 25;
 export const channelOf = (to: string): 'email' | 'sms' => (to.includes('@') ? 'email' : 'sms');
 
 /**
+ * Messages an operator's people send to any address they type, per operator per 24 hours. They
+ * keep a fake operator account from sending SMS at the platform's cost to numbers of its choice.
+ */
+export const DAILY_QUOTAS = {
+  invites: { templates: ['affiliate_invite', 'scanner_invite'], limit: 50 },
+  paymentLinks: { templates: ['payment_link'], limit: 300 },
+} as const satisfies Record<string, { templates: readonly TemplateName[]; limit: number }>;
+
+/**
  * Sends SMS and email. Other modules decide what to send and when; this module renders the
  * templates, picks the channel from the recipient, and owns delivery and retries.
  */
@@ -78,6 +87,34 @@ export class NotificationsService {
       .onConflictDoNothing()
       .returning({ id: notifications.id });
     return inserted.length > 0;
+  }
+
+  /** Refuses when the operator already sent its daily allowance of this kind of message. */
+  async assertDailyQuota(
+    db: DbOrTx,
+    tenantId: string,
+    quota: keyof typeof DAILY_QUOTAS,
+  ): Promise<void> {
+    const { templates, limit } = DAILY_QUOTAS[quota];
+    const since = new Date(this.clock.now().getTime() - 24 * 3_600_000);
+    const [row] = await db
+      .select({ sent: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.tenantId, tenantId),
+          gte(notifications.createdAt, since),
+          inArray(notifications.template, [...templates]),
+        ),
+      );
+    if ((row?.sent ?? 0) >= limit) {
+      throw new DomainError(
+        'errors.limits.dailyMessages',
+        HttpStatus.TOO_MANY_REQUESTS,
+        { limit },
+        { count: limit },
+      );
+    }
   }
 
   /**

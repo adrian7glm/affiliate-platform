@@ -93,6 +93,7 @@ export class AffiliatesService {
     await this.subscriptions.assertCanAddAffiliate(tenantId);
     await this.commissionPlans.assertPlanBelongs(tenantId, body.commissionPlanId);
     if (body.parentAffiliateId) await this.get(tenantId, body.parentAffiliateId);
+    if (body.destination) await this.notifications.assertDailyQuota(this.db, tenantId, 'invites');
     const token = randomToken();
     const row = await this.db.transaction(async (tx) => {
       const [created] = await tx
