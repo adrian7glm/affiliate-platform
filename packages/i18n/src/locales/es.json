@@ -344,7 +344,8 @@
       "tooMany": "Ya nos ha enviado varios mensajes. Le responderemos pronto."
     },
     "limits": {
-      "tooManyRequests": "demasiados intentos desde esta conexión; espera unos minutos y vuelve a intentarlo"
+      "tooManyRequests": "demasiados intentos desde esta conexión; espera unos minutos y vuelve a intentarlo",
+      "dailyMessages": "se ha alcanzado el límite diario de mensajes a nuevos contactos ({count} en 24 horas); inténtalo de nuevo mañana"
     },
     "account": {
       "challengeExpired": "el inicio de sesión ha tardado demasiado; vuelve a empezar",

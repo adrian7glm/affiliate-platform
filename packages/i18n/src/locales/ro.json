@@ -344,7 +344,8 @@
       "tooMany": "Ne-ai trimis deja mai multe mesaje. Îți răspundem în curând."
     },
     "limits": {
-      "tooManyRequests": "prea multe încercări de pe această conexiune; așteaptă câteva minute și încearcă din nou"
+      "tooManyRequests": "prea multe încercări de pe această conexiune; așteaptă câteva minute și încearcă din nou",
+      "dailyMessages": "s-a atins limita zilnică de mesaje către contacte noi ({count} în 24 de ore); încearcă din nou mâine"
     },
     "account": {
       "challengeExpired": "conectarea a durat prea mult; începe din nou",

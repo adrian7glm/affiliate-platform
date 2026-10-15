@@ -89,12 +89,22 @@ export class AvailabilityService {
       .where(eq(slots.id, slotId));
   }
 
-  /** Re-reserves seats for a payment that arrived after its hold expired. Returns false if sold out. */
-  async reserveLate(db: DbOrTx, slotId: string, seats: number): Promise<boolean> {
+  /**
+   * Re-reserves seats for a payment that arrived after its hold expired. Returns false if the
+   * seats were sold meanwhile, or the departure was called off or has already left.
+   */
+  async reserveLate(db: DbOrTx, slotId: string, seats: number, now: Date): Promise<boolean> {
     const rows = await db
       .update(slots)
       .set({ reserved: sql`${slots.reserved} + ${seats}` })
-      .where(and(eq(slots.id, slotId), sql`${slots.capacity} - ${slots.reserved} >= ${seats}`))
+      .where(
+        and(
+          eq(slots.id, slotId),
+          eq(slots.closed, false),
+          gt(slots.startsAt, now),
+          sql`${slots.capacity} - ${slots.reserved} >= ${seats}`,
+        ),
+      )
       .returning({ id: slots.id });
     return rows.length > 0;
   }

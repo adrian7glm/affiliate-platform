@@ -155,6 +155,9 @@ export class BookingService {
     if (body.payment === 'on_site' && !tenant.allowPayOnSite) {
       throw new DomainError('errors.booking.noPayOnSite');
     }
+    if (body.payment !== 'on_site') {
+      await this.notifications.assertDailyQuota(this.db, tenantId, 'paymentLinks');
+    }
     const result = await this.create({
       tenant,
       slotId: body.slotId,
@@ -466,8 +469,20 @@ export class BookingService {
         const product = await this.catalog.product(booking.tenantId, booking.productId, tx);
         if (product.sourceId) {
           await this.availability.reserveCached(tx, booking.slotId, booking.seats);
-        } else if (!(await this.availability.reserveLate(tx, booking.slotId, booking.seats))) {
-          await this.audit(tx, booking, 'overbooked_after_late_payment', { seats: booking.seats });
+        } else if (!(await this.availability.reserveLate(tx, booking.slotId, booking.seats, now))) {
+          // Sold to someone else, called off or already gone while the customer was still on the
+          // payment page: no ticket, the money goes straight back and the customer is told.
+          await tx
+            .update(bookings)
+            .set({ status: 'refunded', cancelledAt: now })
+            .where(eq(bookings.id, booking.id));
+          await this.audit(tx, booking, 'late_payment_no_seats', {
+            seats: booking.seats,
+            paymentIntentId,
+          });
+          const tenant = await this.tenants.get(booking.tenantId);
+          await this.tickets.notifyCancelled(tx, tenant, booking, true);
+          return booking;
         }
       }
       await tx
@@ -495,8 +510,9 @@ export class BookingService {
   }
 
   /**
-   * The customer paid for a booking that was already cancelled (the trip was called off while
-   * they were on the payment page): the money goes straight back.
+   * The customer paid for a booking that was already cancelled, or whose seats were gone by the
+   * time the money arrived (the trip was called off or sold out while they were on the payment
+   * page): the money goes straight back.
    */
   private async refundLatePayment(booking: Booking): Promise<void> {
     const [payment] = await this.db
@@ -572,7 +588,10 @@ export class BookingService {
       .select()
       .from(payments)
       .where(and(eq(payments.bookingId, bookingId), eq(payments.status, 'succeeded')));
-    if (payment && current.status === 'confirmed' && !options.refundedByProvider) {
+    const refundedFirst = Boolean(
+      payment && current.status === 'confirmed' && !options.refundedByProvider,
+    );
+    if (payment && refundedFirst) {
       // Refund first: the provider call is idempotent per booking, the database update below is not lost.
       await this.gateway.refund(
         payment.paymentIntentId,
@@ -589,6 +608,15 @@ export class BookingService {
         .for('update');
       if (!booking || ['cancelled', 'refunded', 'expired'].includes(booking.status)) return null;
       const wasConfirmed = booking.status === 'confirmed';
+      if (wasConfirmed && !refundedFirst && !options.refundedByProvider) {
+        // The payment arrived between the first read and this lock: start again, so the money
+        // is refunded before the booking is marked cancelled.
+        const [paid] = await tx
+          .select({ id: payments.id })
+          .from(payments)
+          .where(and(eq(payments.bookingId, bookingId), eq(payments.status, 'succeeded')));
+        if (paid) return { retry: true as const };
+      }
       let externalHoldId: string | null = null;
       if (wasConfirmed) await this.availability.freeSeats(tx, booking.slotId, booking.seats);
       else if (booking.holdId)
@@ -625,6 +653,9 @@ export class BookingService {
       }
       return { productId: booking.productId, externalHoldId, lateRef };
     });
+    if (external && 'retry' in external) {
+      return this.cancel(tenantId, bookingId, reason, actorUserId, notice, options);
+    }
     if (external?.externalHoldId) {
       await this.sources.release(external.productId, external.externalHoldId);
     }

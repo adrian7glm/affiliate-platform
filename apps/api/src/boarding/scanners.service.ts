@@ -51,6 +51,7 @@ export class ScannersService {
 
   async add(tenantId: string, body: AddScannerBody): Promise<ScannerAccountDto> {
     const tenant = await this.tenants.get(tenantId);
+    await this.notifications.assertDailyQuota(this.db, tenantId, 'invites');
     const userId = await this.db.transaction(async (tx) => {
       const id = await this.identity.findOrCreateUser(tx, body.destination, body.name);
       await this.identity.nameIfMissing(tx, id, body.name);
