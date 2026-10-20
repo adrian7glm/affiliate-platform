@@ -90,6 +90,11 @@ export interface SubscriptionDto {
   platformFeeBps: number;
   feeBpsOverride: number | null;
   priceMinorOverride: number | null;
+  /**
+   * False with Stripe Billing: Stripe charges the plan's Stripe price, so a negotiated price
+   * needs its own plan rather than an override.
+   */
+  priceOverrideAllowed: boolean;
   maxAffiliates: number | null;
   /** True when Stripe Billing manages this subscription. */
   billedByStripe: boolean;

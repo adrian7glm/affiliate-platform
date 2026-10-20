@@ -296,6 +296,7 @@
       "planRetired": "questo piano non è più offerto",
       "stripeManaged": "Stripe gestisce questo abbonamento: pagamenti e disdetta avvengono in Stripe",
       "noStripePrice": "questo piano non ha un prezzo Stripe; aggiungine uno prima di spostare un cliente Stripe",
+      "priceOverrideStripe": "con la fatturazione Stripe gli operatori pagano il prezzo Stripe del piano; per un prezzo concordato, crea un piano separato",
       "onlyTrialExtend": "si può prolungare solo un periodo di prova",
       "noCardPayment": "questo piano non può ancora essere pagato con carta; contattaci",
       "noCardSubscription": "non c'è nessun abbonamento con carta da gestire",
@@ -344,7 +345,8 @@
       "tooMany": "Ci hai già inviato diversi messaggi. Ti risponderemo presto."
     },
     "limits": {
-      "tooManyRequests": "troppi tentativi da questa connessione; attendi qualche minuto e riprova"
+      "tooManyRequests": "troppi tentativi da questa connessione; attendi qualche minuto e riprova",
+      "dailyMessages": "raggiunto il limite giornaliero di messaggi verso nuovi contatti ({count} in 24 ore); riprova domani"
     },
     "account": {
       "challengeExpired": "l'accesso ha richiesto troppo tempo; ricomincia",
@@ -1804,6 +1806,7 @@
         "price": "Prezzo mensile concordato ({currency})",
         "priceHint": "Vuoto = il prezzo del piano.",
         "priceHintWith": "Vuoto = il prezzo del piano ({price}).",
+        "priceStripe": "Stripe addebita il prezzo del piano. Per un prezzo mensile concordato, crea un piano separato con il suo prezzo Stripe.",
         "feeError": "La tariffa è una percentuale tra 0 e 50.",
         "note": "La nuova tariffa si applica alle prenotazioni effettuate da ora in poi.",
         "save": "Salva"

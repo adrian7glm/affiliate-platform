@@ -527,6 +527,8 @@ function TariffDialog({
   const [fieldError, setFieldError] = useState<string | null>(null);
   const plan = plans.find((p) => p.id === planId);
   const currency = plan?.currency ?? sub?.currency ?? 'EUR';
+  // Stripe Billing charges the plan's Stripe price: a negotiated price needs its own plan.
+  const priceAllowed = sub?.priceOverrideAllowed ?? true;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -535,8 +537,8 @@ function TariffDialog({
       setFieldError(t('admin.operators.tariff.feeError'));
       return;
     }
-    const priceMinor = price.trim() ? parseMoneyInput(price, currency) : null;
-    if (price.trim() && priceMinor === null) {
+    const priceMinor = priceAllowed && price.trim() ? parseMoneyInput(price, currency) : null;
+    if (priceAllowed && price.trim() && priceMinor === null) {
       setFieldError(t('admin.validation.price'));
       return;
     }
@@ -544,7 +546,7 @@ function TariffDialog({
     onSave({
       ...(planId && planId !== sub?.planId ? { planId } : {}),
       feeBpsOverride: feeBps,
-      priceMinorOverride: priceMinor,
+      ...(priceAllowed ? { priceMinorOverride: priceMinor } : {}),
     });
   }
 
@@ -582,20 +584,25 @@ function TariffDialog({
           onChange={(e) => setFee(e.target.value)}
           placeholder={plan ? bpsToPercentInput(plan.platformFeeBps) : ''}
         />
-        <Field
-          label={t('admin.operators.tariff.price', { currency })}
-          hint={
-            plan
-              ? t('admin.operators.tariff.priceHintWith', {
-                  price: `${minorToInput(plan.monthlyPriceMinor, plan.currency)} ${plan.currency}`,
-                })
-              : t('admin.operators.tariff.priceHint')
-          }
-          inputMode="decimal"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          error={fieldError ?? undefined}
-        />
+        {priceAllowed ? (
+          <Field
+            label={t('admin.operators.tariff.price', { currency })}
+            hint={
+              plan
+                ? t('admin.operators.tariff.priceHintWith', {
+                    price: `${minorToInput(plan.monthlyPriceMinor, plan.currency)} ${plan.currency}`,
+                  })
+                : t('admin.operators.tariff.priceHint')
+            }
+            inputMode="decimal"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            error={fieldError ?? undefined}
+          />
+        ) : (
+          <p className="text-sm text-muted">{t('admin.operators.tariff.priceStripe')}</p>
+        )}
+        {!priceAllowed && fieldError ? <Alert tone="error">{fieldError}</Alert> : null}
         <p className="text-sm text-muted">{t('admin.operators.tariff.note')}</p>
         <Button type="submit" loading={busy} size="lg">
           {t('admin.operators.tariff.save')}

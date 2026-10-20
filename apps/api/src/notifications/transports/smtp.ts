@@ -21,7 +21,14 @@ export class SmtpEmailTransport extends EmailTransport {
     private readonly replyTo?: string,
   ) {
     super();
-    this.transporter = nodemailer.createTransport(smtpUrl);
+    this.transporter = nodemailer.createTransport({
+      url: smtpUrl,
+      // A server that hangs fails the attempt (retried later) instead of holding the worker
+      // past its lease on the message, after which another worker would send it again.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 30_000,
+    });
   }
 
   async send(email: OutgoingEmail): Promise<DeliveryReceipt> {

@@ -1,7 +1,7 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import type { AuthOptionsDto, MeDto, Role, SessionDto, VerifyOtpResultDto } from '@ap/contracts';
 import { type Database, affiliates, memberships, otpCodes, tenants, users } from '@ap/db';
-import { and, desc, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { Clock } from '../common/clock';
 import { isPlatformAdmin } from '../common/auth';
@@ -154,14 +154,22 @@ export class IdentityService {
       )
       .orderBy(desc(otpCodes.createdAt))
       .limit(1);
-    if (!otp || otp.attempts >= OTP_MAX_ATTEMPTS) {
-      throw new DomainError('errors.auth.codeExpired', HttpStatus.UNAUTHORIZED);
-    }
+    if (!otp) throw new DomainError('errors.auth.codeExpired', HttpStatus.UNAUTHORIZED);
+    // Each try is counted before the code is compared, in one statement, so many guesses sent
+    // at the same moment still get only OTP_MAX_ATTEMPTS chances between them.
+    const [counted] = await this.db
+      .update(otpCodes)
+      .set({ attempts: sql`${otpCodes.attempts} + 1` })
+      .where(
+        and(
+          eq(otpCodes.id, otp.id),
+          isNull(otpCodes.consumedAt),
+          lt(otpCodes.attempts, OTP_MAX_ATTEMPTS),
+        ),
+      )
+      .returning({ id: otpCodes.id });
+    if (!counted) throw new DomainError('errors.auth.codeExpired', HttpStatus.UNAUTHORIZED);
     if (otp.codeHash !== hashOtp(this.config.APP_SECRET, destination, code)) {
-      await this.db
-        .update(otpCodes)
-        .set({ attempts: sql`${otpCodes.attempts} + 1` })
-        .where(eq(otpCodes.id, otp.id));
       throw new DomainError('errors.auth.wrongCode', HttpStatus.UNAUTHORIZED);
     }
     const consumed = await this.db
@@ -203,7 +211,20 @@ export class IdentityService {
     if (!user.totpSecret || !user.totpEnabledAt) {
       throw new DomainError('errors.account.twoFactorNotOn', HttpStatus.CONFLICT);
     }
-    if (user.totpLockedUntil && user.totpLockedUntil > now) {
+    // Each try is counted before the code is checked, in one statement, so codes sent at the
+    // same moment cannot get past the limit together.
+    const [counted] = await this.db
+      .update(users)
+      .set({ totpFailedAttempts: sql`${users.totpFailedAttempts} + 1` })
+      .where(
+        and(
+          eq(users.id, user.id),
+          lt(users.totpFailedAttempts, MFA_MAX_FAILURES),
+          or(isNull(users.totpLockedUntil), lte(users.totpLockedUntil, now)),
+        ),
+      )
+      .returning({ tries: users.totpFailedAttempts });
+    if (!counted) {
       throw new DomainError('errors.account.twoFactorLocked', HttpStatus.TOO_MANY_REQUESTS);
     }
     const clean = code.replace(/\s/g, '');
@@ -234,17 +255,13 @@ export class IdentityService {
       accepted = updated.length > 0;
     }
     if (accepted) return;
-    const failures = user.totpFailedAttempts + 1;
-    await this.db
-      .update(users)
-      .set({
-        totpFailedAttempts: failures >= MFA_MAX_FAILURES ? 0 : failures,
-        totpLockedUntil:
-          failures >= MFA_MAX_FAILURES
-            ? new Date(now.getTime() + MFA_LOCK_MS)
-            : user.totpLockedUntil,
-      })
-      .where(eq(users.id, user.id));
+    const failures = counted.tries;
+    if (failures >= MFA_MAX_FAILURES) {
+      await this.db
+        .update(users)
+        .set({ totpFailedAttempts: 0, totpLockedUntil: new Date(now.getTime() + MFA_LOCK_MS) })
+        .where(eq(users.id, user.id));
+    }
     throw new DomainError(
       failures >= MFA_MAX_FAILURES
         ? 'errors.account.twoFactorLocked'

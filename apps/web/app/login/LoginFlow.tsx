@@ -275,8 +275,7 @@ export function LoginFlow({
     }
     const session: SessionDto = result;
     const profile: MeDto = { user: session.user, memberships: session.memberships };
-    saveSession(session.token, profile);
-    routeAfterLogin(profile, next);
+    void saveSession(session.token, profile).then(() => routeAfterLogin(profile, next));
   }
 
   function routeAfterLogin(session: MeDto, nextPath: string | null) {

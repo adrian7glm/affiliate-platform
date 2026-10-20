@@ -57,7 +57,7 @@ const schema = z.object({
    */
   DEMO_MODE: z.enum(['true', 'false']).optional(),
   /** text: readable lines (development). json: one JSON object per line, for log collectors. */
-  LOG_FORMAT: z.enum(['text', 'json']).optional(),
+  LOG_FORMAT: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['text', 'json']).optional()),
   /** Sentry project DSN: unexpected errors are reported there. Empty: only logged. */
   SENTRY_DSN: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
   /** true: apply pending database migrations when the process starts (Docker images do). */

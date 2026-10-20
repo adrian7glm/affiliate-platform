@@ -27,6 +27,26 @@ const RATE_LIMIT_KEY = 'rate-limit';
 export const RateLimit = (bucket: string, rule: RateLimitRule) =>
   SetMetadata(RATE_LIMIT_KEY, { bucket, ...rule });
 
+/**
+ * The part of an address that identifies one client. An IPv6 user usually gets a whole /64
+ * network and can pick any address in it, so IPv6 addresses are counted per /64.
+ */
+export function clientKey(ip: string): string {
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapped) return mapped[1]!;
+  if (!ip.includes(':')) return ip;
+  const [head = '', tail = ''] = ip.split('%')[0]!.toLowerCase().split('::');
+  const left = head ? head.split(':') : [];
+  const right = ip.includes('::') && tail ? tail.split(':') : [];
+  const groups = ip.includes('::')
+    ? [...left, ...Array<string>(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right]
+    : left;
+  return `${groups
+    .slice(0, 4)
+    .map((g) => g.replace(/^0+(?=.)/, ''))
+    .join(':')}::/64`;
+}
+
 interface Window {
   count: number;
   resetAt: number;
@@ -81,7 +101,7 @@ export class RateLimitGuard implements CanActivate {
     const http = context.switchToHttp();
     const request = http.getRequest<Request>();
     const ip = request.ip ?? request.socket.remoteAddress ?? 'unknown';
-    const retryAfter = this.limiter.hit(`${rule.bucket}:${ip}`, rule);
+    const retryAfter = this.limiter.hit(`${rule.bucket}:${clientKey(ip)}`, rule);
     if (retryAfter === null) return true;
     http.getResponse<Response>().setHeader('Retry-After', String(retryAfter));
     throw new DomainError('errors.limits.tooManyRequests', HttpStatus.TOO_MANY_REQUESTS);

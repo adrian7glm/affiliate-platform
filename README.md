@@ -106,6 +106,10 @@ Pentru trimitere reală, în `apps/api/.env`:
 
 Oricare canal poate fi oprit cu `disabled`. În producție `console` nu este permis.
 
+Ca un cont de operator fals să nu poată trimite SMS-uri pe banii platformei, fiecare operator poate
+trimite pe zi cel mult 50 de invitații (afiliați și lucrători la îmbarcare) și 300 de linkuri de plată
+(`DAILY_QUOTAS` în `apps/api/src/notifications/notifications.service.ts`).
+
 ## Limbi și traduceri
 
 Toate textele (ecranele afiliatului, ale operatorului și ale adminului, pagina publică de

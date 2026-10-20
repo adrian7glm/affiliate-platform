@@ -296,6 +296,7 @@
       "planRetired": "este plan ya no se ofrece",
       "stripeManaged": "Stripe gestiona esta suscripción: los pagos y la cancelación se hacen en Stripe",
       "noStripePrice": "este plan no tiene precio en Stripe; añade uno antes de mover a un cliente de Stripe",
+      "priceOverrideStripe": "con la facturación por Stripe, los operadores pagan el precio de Stripe del plan; para un precio negociado, crea un plan aparte",
       "onlyTrialExtend": "solo se puede ampliar un periodo de prueba",
       "noCardPayment": "este plan aún no se puede pagar con tarjeta; contáctanos",
       "noCardSubscription": "no hay ninguna suscripción con tarjeta que gestionar",
@@ -344,7 +345,8 @@
       "tooMany": "Ya nos ha enviado varios mensajes. Le responderemos pronto."
     },
     "limits": {
-      "tooManyRequests": "demasiados intentos desde esta conexión; espera unos minutos y vuelve a intentarlo"
+      "tooManyRequests": "demasiados intentos desde esta conexión; espera unos minutos y vuelve a intentarlo",
+      "dailyMessages": "se ha alcanzado el límite diario de mensajes a nuevos contactos ({count} en 24 horas); inténtalo de nuevo mañana"
     },
     "account": {
       "challengeExpired": "el inicio de sesión ha tardado demasiado; vuelve a empezar",
@@ -1804,6 +1806,7 @@
         "price": "Precio mensual negociado ({currency})",
         "priceHint": "Vacío = el precio del plan.",
         "priceHintWith": "Vacío = el precio del plan ({price}).",
+        "priceStripe": "Stripe cobra el precio del plan. Para un precio mensual negociado, crea un plan aparte con su propio precio en Stripe.",
         "feeError": "La comisión es un porcentaje entre 0 y 50.",
         "note": "La nueva comisión se aplica a las reservas hechas a partir de ahora.",
         "save": "Guardar"

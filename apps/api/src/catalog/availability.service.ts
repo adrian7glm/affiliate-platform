@@ -43,28 +43,38 @@ export class AvailabilityService {
   ): Promise<string> {
     this.assertBookable(slot, now);
     if (externalHoldId) {
-      await this.reserveCached(db, slot.id, seats);
+      if (!(await this.reserveCached(db, slot.id, seats, now))) await this.refuse(db, slot.id, now);
       return this.insertHold(db, slot, seats, expiresAt, externalHoldId);
     }
+    // The departure may have been called off, or have left, since it was read: checked again here.
     const reserved = await db
       .update(slots)
       .set({ reserved: sql`${slots.reserved} + ${seats}` })
-      .where(and(eq(slots.id, slot.id), sql`${slots.capacity} - ${slots.reserved} >= ${seats}`))
+      .where(
+        and(
+          eq(slots.id, slot.id),
+          eq(slots.closed, false),
+          gt(slots.startsAt, now),
+          sql`${slots.capacity} - ${slots.reserved} >= ${seats}`,
+        ),
+      )
       .returning({ id: slots.id });
-    if (reserved.length === 0) {
-      const [current] = await db
-        .select({ capacity: slots.capacity, reserved: slots.reserved })
-        .from(slots)
-        .where(eq(slots.id, slot.id));
-      const left = current ? Math.max(0, current.capacity - current.reserved) : 0;
-      throw new DomainError(
-        'errors.departures.seatsLeft',
-        HttpStatus.CONFLICT,
-        { available: left },
-        { count: left },
-      );
-    }
+    if (reserved.length === 0) await this.refuse(db, slot.id, now);
     return this.insertHold(db, slot, seats, expiresAt, null);
+  }
+
+  /** Why seats could not be reserved on a departure: closed, gone, or not enough seats left. */
+  private async refuse(db: DbOrTx, slotId: string, now: Date): Promise<never> {
+    const [current] = await db.select().from(slots).where(eq(slots.id, slotId));
+    if (!current) throw new NotFound('departure');
+    this.assertBookable(current, now);
+    const left = Math.max(0, current.capacity - current.reserved);
+    throw new DomainError(
+      'errors.departures.seatsLeft',
+      HttpStatus.CONFLICT,
+      { available: left },
+      { count: left },
+    );
   }
 
   private async insertHold(
@@ -81,20 +91,36 @@ export class AvailabilityService {
     return hold!.id;
   }
 
-  /** Counts seats taken in an external system in the local cache, without checking capacity. */
-  async reserveCached(db: DbOrTx, slotId: string, seats: number): Promise<void> {
-    await db
+  /**
+   * Counts seats taken in an external system in the local cache, without checking capacity: the
+   * operator's system already said they are free. Returns false if the departure was called off
+   * or has already left.
+   */
+  async reserveCached(db: DbOrTx, slotId: string, seats: number, now: Date): Promise<boolean> {
+    const rows = await db
       .update(slots)
       .set({ reserved: sql`least(${slots.reserved} + ${seats}, ${slots.capacity})` })
-      .where(eq(slots.id, slotId));
+      .where(and(eq(slots.id, slotId), eq(slots.closed, false), gt(slots.startsAt, now)))
+      .returning({ id: slots.id });
+    return rows.length > 0;
   }
 
-  /** Re-reserves seats for a payment that arrived after its hold expired. Returns false if sold out. */
-  async reserveLate(db: DbOrTx, slotId: string, seats: number): Promise<boolean> {
+  /**
+   * Re-reserves seats for a payment that arrived after its hold expired. Returns false if the
+   * seats were sold meanwhile, or the departure was called off or has already left.
+   */
+  async reserveLate(db: DbOrTx, slotId: string, seats: number, now: Date): Promise<boolean> {
     const rows = await db
       .update(slots)
       .set({ reserved: sql`${slots.reserved} + ${seats}` })
-      .where(and(eq(slots.id, slotId), sql`${slots.capacity} - ${slots.reserved} >= ${seats}`))
+      .where(
+        and(
+          eq(slots.id, slotId),
+          eq(slots.closed, false),
+          gt(slots.startsAt, now),
+          sql`${slots.capacity} - ${slots.reserved} >= ${seats}`,
+        ),
+      )
       .returning({ id: slots.id });
     return rows.length > 0;
   }

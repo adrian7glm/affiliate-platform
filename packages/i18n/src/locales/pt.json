@@ -296,6 +296,7 @@
       "planRetired": "este plano já não é oferecido",
       "stripeManaged": "o Stripe gere esta subscrição: os pagamentos e o cancelamento são feitos no Stripe",
       "noStripePrice": "este plano não tem preço no Stripe; adicione um antes de mudar um cliente Stripe",
+      "priceOverrideStripe": "com a faturação pelo Stripe, os operadores pagam o preço Stripe do plano; para um preço negociado, crie um plano à parte",
       "onlyTrialExtend": "só é possível prolongar um período de teste",
       "noCardPayment": "este plano ainda não pode ser pago com cartão; contacte-nos",
       "noCardSubscription": "não há nenhuma subscrição por cartão para gerir",
@@ -344,7 +345,8 @@
       "tooMany": "Já nos enviou várias mensagens. Responderemos em breve."
     },
     "limits": {
-      "tooManyRequests": "demasiadas tentativas a partir desta ligação; aguarda alguns minutos e tenta novamente"
+      "tooManyRequests": "demasiadas tentativas a partir desta ligação; aguarda alguns minutos e tenta novamente",
+      "dailyMessages": "atingido o limite diário de mensagens para novos contactos ({count} em 24 horas); tente novamente amanhã"
     },
     "account": {
       "challengeExpired": "o início de sessão demorou demasiado; comece de novo",
@@ -1804,6 +1806,7 @@
         "price": "Preço mensal negociado ({currency})",
         "priceHint": "Vazio = o preço do plano.",
         "priceHintWith": "Vazio = o preço do plano ({price}).",
+        "priceStripe": "O Stripe cobra o preço do plano. Para um preço mensal negociado, crie um plano à parte com o seu próprio preço no Stripe.",
         "feeError": "A taxa é uma percentagem entre 0 e 50.",
         "note": "A nova taxa aplica-se às reservas feitas a partir de agora.",
         "save": "Guardar"

@@ -40,11 +40,17 @@ export class BookingModule implements OnModuleInit {
   constructor(
     private readonly outbox: Outbox,
     private readonly tickets: TicketsService,
+    private readonly bookings: BookingService,
   ) {}
 
   onModuleInit(): void {
     this.outbox.on('booking.confirmed', 'tickets.issue', (event, tx) =>
       this.tickets.issue(tx, event.bookingId, event.tenantId),
     );
+    // Outside the event's transaction: the refund is a call to the payment provider, and
+    // cancelling twice is a no-op if the event is delivered again.
+    this.outbox.on('booking.seats_lost', 'booking.cancel-without-seats', async (event) => {
+      await this.bookings.cancel(event.tenantId, event.bookingId, 'sold_out_in_source', null);
+    });
   }
 }
