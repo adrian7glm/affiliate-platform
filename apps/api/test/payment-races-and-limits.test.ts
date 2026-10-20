@@ -1,8 +1,10 @@
 import type { CheckoutResultDto, ProductDto, SlotDto, TicketDto } from '@ap/contracts';
-import { bookings, createDb, notifications } from '@ap/db';
+import { type Database, bookings, createDb, notifications, otpCodes } from '@ap/db';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { BookingService } from '../src/booking/booking.service';
+import type { DomainError } from '../src/common/errors';
+import { IdentityService } from '../src/identity/identity.service';
 import { type Harness, databaseUrl, signIn, startHarness } from './harness';
 
 /**
@@ -162,14 +164,56 @@ describe.skipIf(!databaseUrl)('payment races and sending limits (needs TEST_DATA
     await h.http.post('/auth/otp/request').send({ destination }).expect(204);
     const code = /(\d{6})/.exec(h.messages.last(destination)?.text ?? '')![1]!;
     const wrong = code === '000000' ? '111111' : '000000';
-    const results = await Promise.all(
-      Array.from({ length: 20 }, () =>
-        h.http.post('/auth/otp/verify').send({ destination, code: wrong }),
-      ),
+
+    // Hold every guess right after it has looked the code up, until all 20 have, so they all
+    // see the same attempt count: the worst case for a check-then-count implementation.
+    const guesses = 20;
+    const identity = h.app.get(IdentityService);
+    const db = (identity as unknown as { db: Database }).db;
+    const originalSelect = db.select.bind(db);
+    let waiting = 0;
+    let release!: () => void;
+    const allRead = new Promise<void>((resolve) => (release = resolve));
+    const spy = vi.spyOn(db, 'select').mockImplementation(((
+      ...args: Parameters<Database['select']>
+    ) => {
+      const builder = originalSelect(...args);
+      const from = builder.from.bind(builder);
+      builder.from = ((table: unknown) => {
+        const query = from(table as typeof otpCodes);
+        if (table !== otpCodes) return query;
+        const limit = query.limit.bind(query);
+        query.limit = ((n: number) => {
+          const rows = limit(n);
+          return {
+            then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+              rows
+                .then(async (found: unknown) => {
+                  if (++waiting === guesses) release();
+                  await allRead;
+                  return found;
+                })
+                .then(resolve, reject),
+          };
+        }) as typeof query.limit;
+        return query;
+      }) as typeof builder.from;
+      return builder;
+    }) as Database['select']);
+    let results: PromiseSettledResult<void>[];
+    try {
+      results = await Promise.allSettled(
+        Array.from({ length: guesses }, () => identity.consumeOtp(destination, wrong)),
+      );
+    } finally {
+      spy.mockRestore();
+    }
+    const codes = results.map((r) =>
+      r.status === 'rejected' ? (r.reason as DomainError).code : 'ok',
     );
-    const wrongCode = results.filter((r) => r.body.code === 'errors.auth.wrongCode').length;
-    expect(wrongCode).toBeLessThanOrEqual(5);
-    expect(results.every((r) => r.status === 401)).toBe(true);
+    expect(codes.filter((c) => c === 'errors.auth.wrongCode')).toHaveLength(5);
+    expect(codes.filter((c) => c === 'errors.auth.codeExpired')).toHaveLength(guesses - 5);
+
     const right = await h.http.post('/auth/otp/verify').send({ destination, code });
     expect(right.status).toBe(401);
     expect(right.body.code).toBe('errors.auth.codeExpired');
