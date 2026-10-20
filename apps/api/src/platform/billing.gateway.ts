@@ -102,12 +102,19 @@ export class StripeBilling extends BillingGateway {
           previous.metadata?.stripePriceId === metadata.stripePriceId &&
           previous.metadata?.trialDays === metadata.trialDays;
         if (same && previous.url) return { url: previous.url, customerId };
-        await this.stripe.checkout.sessions.expire(previous.id).catch(async (error: unknown) => {
-          // Completed or expired in the meantime: nothing left to close. Still open (a timeout,
-          // a rate limit): stop here rather than leave the operator two checkouts to pay.
+        try {
+          await this.stripe.checkout.sessions.expire(previous.id);
+        } catch (error) {
           const again = await this.stripe.checkout.sessions.retrieve(previous.id);
+          // Still open (a timeout, a rate limit): stop rather than leave two checkouts to pay.
           if (again.status === 'open') throw error;
-        });
+          // Paid in another tab just now: the operator is subscribed, so no new checkout.
+          if (again.status === 'complete') {
+            const portal = await this.createPortal(customerId, input.cancelUrl);
+            return { url: portal.url, customerId };
+          }
+          // Expired in the meantime: nothing left to close.
+        }
       }
     }
     const session = await this.stripe.checkout.sessions.create({

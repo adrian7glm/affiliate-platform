@@ -27,7 +27,7 @@ import { Clock } from '../common/clock';
 import { DomainError, NotFound } from '../common/errors';
 import { col, sumMinor } from '../common/sql';
 import { APP_CONFIG, type AppConfig } from '../config';
-import { DB, type DbOrTx } from '../database/database.module';
+import { DB, type DbOrTx, type Tx } from '../database/database.module';
 import { BillingGateway } from './billing.gateway';
 
 type PlanRow = typeof platformPlans.$inferSelect;
@@ -553,16 +553,19 @@ export class SubscriptionsService {
   }
 
   /** Applies a Stripe subscription object (from a webhook) to the operator it belongs to. */
-  async applyStripeSubscription(input: {
-    tenantId: string | null;
-    customerId: string;
-    subscriptionId: string;
-    status: string;
-    priceId: string | null;
-    currentPeriodEnd: number | null;
-    trialEnd: number | null;
-  }): Promise<void> {
-    const [match] = await this.db
+  async applyStripeSubscription(
+    input: {
+      tenantId: string | null;
+      customerId: string;
+      subscriptionId: string;
+      status: string;
+      priceId: string | null;
+      currentPeriodEnd: number | null;
+      trialEnd: number | null;
+    },
+    tx: Tx,
+  ): Promise<void> {
+    const [match] = await tx
       .select({ id: tenantSubscriptions.id })
       .from(tenantSubscriptions)
       .where(
@@ -575,67 +578,67 @@ export class SubscriptionsService {
       return;
     }
     const [plan] = input.priceId
-      ? await this.db
+      ? await tx
           .select({ id: platformPlans.id })
           .from(platformPlans)
           .where(eq(platformPlans.stripePriceId, input.priceId))
       : [];
     const status = fromStripeStatus(input.status);
     const now = this.clock.now();
-    await this.db.transaction(async (tx) => {
-      // Locked, so two webhooks for the same operator apply one after the other.
-      const [locked] = await tx
-        .select()
-        .from(tenantSubscriptions)
-        .where(eq(tenantSubscriptions.id, match.id))
-        .for('update');
-      const row = locked!;
-      if (
-        row.stripeSubscriptionId &&
-        row.stripeSubscriptionId !== input.subscriptionId &&
-        row.status !== 'canceled'
-      ) {
-        // A second subscription for an operator who already has a live one (two checkouts
-        // completed): never let it replace the one we track, or canceling either would be
-        // misread. The platform owner refunds and cancels the duplicate in Stripe.
-        this.logger.warn(
-          `Stripe subscription ${input.subscriptionId} ignored: operator ${row.tenantId} already has ${row.stripeSubscriptionId}`,
-        );
-        await this.audit(
-          tx,
-          row.tenantId,
-          null,
-          'subscription.stripe_duplicate',
-          'tenant',
-          row.tenantId,
-          {
-            status: input.status,
-            subscriptionId: input.subscriptionId,
-            currentSubscriptionId: row.stripeSubscriptionId,
-          },
-        );
-        return;
-      }
-      await tx
-        .update(tenantSubscriptions)
-        .set({
-          stripeCustomerId: input.customerId,
-          stripeSubscriptionId: input.subscriptionId,
-          status,
-          ...(plan ? { planId: plan.id } : {}),
-          currentPeriodEnd: input.currentPeriodEnd ? new Date(input.currentPeriodEnd * 1000) : null,
-          trialEndsAt: input.trialEnd ? new Date(input.trialEnd * 1000) : row.trialEndsAt,
-          canceledAt: status === 'canceled' ? (row.canceledAt ?? now) : null,
-          // The first failed payment starts the grace period; later retries do not extend it.
-          pastDueSince: status === 'past_due' ? (row.pastDueSince ?? now) : null,
-          updatedAt: now,
-        })
-        .where(eq(tenantSubscriptions.id, row.id));
-      await this.syncFee(tx, row.tenantId);
-      await this.audit(tx, row.tenantId, null, 'subscription.stripe_sync', 'tenant', row.tenantId, {
-        status: input.status,
-        subscriptionId: input.subscriptionId,
-      });
+    // Locked, so two webhooks for the same operator apply one after the other. The caller's
+    // transaction: it already holds the webhook's lock, and a second connection here could
+    // wait forever on a pool used up by webhooks queued behind that lock.
+    const [locked] = await tx
+      .select()
+      .from(tenantSubscriptions)
+      .where(eq(tenantSubscriptions.id, match.id))
+      .for('update');
+    const row = locked!;
+    if (
+      row.stripeSubscriptionId &&
+      row.stripeSubscriptionId !== input.subscriptionId &&
+      row.status !== 'canceled'
+    ) {
+      // A second subscription for an operator who already has a live one (two checkouts
+      // completed): never let it replace the one we track, or canceling either would be
+      // misread. The platform owner refunds and cancels the duplicate in Stripe.
+      this.logger.warn(
+        `Stripe subscription ${input.subscriptionId} ignored: operator ${row.tenantId} already has ${row.stripeSubscriptionId}`,
+      );
+      await this.audit(
+        tx,
+        row.tenantId,
+        null,
+        'subscription.stripe_duplicate',
+        'tenant',
+        row.tenantId,
+        {
+          status: input.status,
+          subscriptionId: input.subscriptionId,
+          currentSubscriptionId: row.stripeSubscriptionId,
+        },
+      );
+      return;
+    }
+    await tx
+      .update(tenantSubscriptions)
+      .set({
+        stripeCustomerId: input.customerId,
+        stripeSubscriptionId: input.subscriptionId,
+        status,
+        ...(plan ? { planId: plan.id } : {}),
+        currentPeriodEnd: input.currentPeriodEnd ? new Date(input.currentPeriodEnd * 1000) : null,
+        trialEndsAt: input.trialEnd ? new Date(input.trialEnd * 1000) : row.trialEndsAt,
+        canceledAt: status === 'canceled' ? (row.canceledAt ?? now) : null,
+        // The first failed payment starts the grace period; later retries do not extend it.
+        pastDueSince: status === 'past_due' ? (row.pastDueSince ?? now) : null,
+        updatedAt: now,
+      })
+      .where(eq(tenantSubscriptions.id, row.id));
+    await this.syncFee(tx, row.tenantId);
+    await this.audit(tx, row.tenantId, null, 'subscription.stripe_sync', 'tenant', row.tenantId, {
+      status: input.status,
+      subscriptionId: input.subscriptionId,
     });
   }
 

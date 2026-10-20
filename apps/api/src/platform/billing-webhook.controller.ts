@@ -15,7 +15,7 @@ import type { Request } from 'express';
 import type Stripe from 'stripe';
 import { DomainError, NotFound } from '../common/errors';
 import { APP_CONFIG, type AppConfig } from '../config';
-import { DB } from '../database/database.module';
+import { DB, type Tx } from '../database/database.module';
 import { BillingGateway, StripeBilling } from './billing.gateway';
 import { SubscriptionsService } from './subscriptions.service';
 
@@ -109,7 +109,7 @@ export class BillingWebhookController {
         sql`select pg_advisory_xact_lock(hashtext(${`stripe-billing:${customerId ?? subscriptionId}`}))`,
       );
       const subscription = await billing.stripe.subscriptions.retrieve(subscriptionId);
-      await this.apply(subscription, tenantId);
+      await this.apply(subscription, tenantId, tx);
       if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
         // The operator may have canceled one of two subscriptions (two checkouts completed): if
         // another still bills, that one is now theirs, rather than the operator showing canceled.
@@ -117,21 +117,30 @@ export class BillingWebhookController {
           idOf(subscription.customer)!,
           subscription.id,
         );
-        if (other) await this.apply(await billing.stripe.subscriptions.retrieve(other), tenantId);
+        if (other) {
+          await this.apply(await billing.stripe.subscriptions.retrieve(other), tenantId, tx);
+        }
       }
     });
   }
 
-  private async apply(subscription: Stripe.Subscription, tenantId: string | null): Promise<void> {
+  private async apply(
+    subscription: Stripe.Subscription,
+    tenantId: string | null,
+    tx: Tx,
+  ): Promise<void> {
     const item = subscription.items.data[0];
-    await this.subscriptions.applyStripeSubscription({
-      tenantId: tenantId ?? subscription.metadata?.tenantId ?? null,
-      customerId: idOf(subscription.customer)!,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      priceId: item?.price.id ?? null,
-      currentPeriodEnd: item?.current_period_end ?? null,
-      trialEnd: subscription.trial_end,
-    });
+    await this.subscriptions.applyStripeSubscription(
+      {
+        tenantId: tenantId ?? subscription.metadata?.tenantId ?? null,
+        customerId: idOf(subscription.customer)!,
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        priceId: item?.price.id ?? null,
+        currentPeriodEnd: item?.current_period_end ?? null,
+        trialEnd: subscription.trial_end,
+      },
+      tx,
+    );
   }
 }

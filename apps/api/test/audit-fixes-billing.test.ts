@@ -48,6 +48,7 @@ describe.skipIf(!databaseUrl)('Stripe Billing for operators (needs TEST_DATABASE
   const created: Stripe.Checkout.SessionCreateParams[] = [];
   const subscriptions = new Map<string, object>();
   let expireFails = false;
+  let completedWhileExpiring = false;
   let slowRetrieve = false;
 
   const subscription = (id: string, status: string) => ({
@@ -99,6 +100,12 @@ describe.skipIf(!databaseUrl)('Stripe Billing for operators (needs TEST_DATABASE
         return session;
       },
       expire: async (id: string) => {
+        if (completedWhileExpiring) {
+          // The operator pays the old checkout in another tab just as it is being closed.
+          completedWhileExpiring = false;
+          sessions.find((s) => s.id === id)!.status = 'complete';
+          throw new Error('This Checkout Session is already complete');
+        }
         if (expireFails) throw new Error('Stripe timed out');
         const session = sessions.find((s) => s.id === id)!;
         session.status = 'expired';
@@ -253,6 +260,20 @@ describe.skipIf(!databaseUrl)('Stripe Billing for operators (needs TEST_DATABASE
     expect(sessions.map((s) => s.status)).toEqual(['expired', 'open']);
   });
 
+  it('sends the operator to the portal when the old checkout was paid while being closed', async () => {
+    const [pro] = await handle.db
+      .select()
+      .from(platformPlans)
+      .where(eq(platformPlans.code, 'stripe-pro'));
+    completedWhileExpiring = true;
+    const response = await op('post', '/operator/billing/checkout')
+      .send({ planId: pro!.id })
+      .expect(201);
+    expect(response.body.url).toBe('https://billing.stripe.test/portal');
+    expect(created).toHaveLength(2);
+    expect(sessions.map((s) => s.status)).toEqual(['expired', 'complete']);
+  });
+
   it('sends the operator to the portal once Stripe has their subscription', async () => {
     // The checkout was completed; its webhook has not arrived yet.
     sessions[1]!.status = 'complete';
@@ -315,6 +336,25 @@ describe.skipIf(!databaseUrl)('Stripe Billing for operators (needs TEST_DATABASE
     subscriptions.set('sub_B', subscription('sub_B', 'canceled'));
     const second = webhook('customer.subscription.deleted', subscription('sub_B', 'canceled'));
     await Promise.all([first, second]);
+    expect(await row()).toMatchObject({ stripeSubscriptionId: 'sub_B', status: 'canceled' });
+  });
+
+  it('handles many webhooks for one operator at once without running out of connections', async () => {
+    subscriptions.set('sub_B', subscription('sub_B', 'canceled'));
+    slowRetrieve = true;
+    // More at once than the API's 10 database connections.
+    const all = Array.from({ length: 12 }, () =>
+      webhook('customer.subscription.updated', subscription('sub_B', 'canceled')).then((r) => r),
+    );
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stuck = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('webhooks stuck waiting for connections')), 4000);
+    });
+    try {
+      await Promise.race([Promise.all(all), stuck]);
+    } finally {
+      clearTimeout(timer);
+    }
     expect(await row()).toMatchObject({ stripeSubscriptionId: 'sub_B', status: 'canceled' });
   });
 });
