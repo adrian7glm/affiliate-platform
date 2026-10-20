@@ -5,13 +5,13 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
-import type { Database } from '@ap/db';
+import type { Database, DbHandle } from '@ap/db';
 import { BookingService } from '../booking/booking.service';
 import { Clock } from '../common/clock';
 import { reportError } from '../common/error-reporting';
 import { CommissionLedgerService } from '../commissions/ledger.service';
 import { APP_CONFIG, type AppConfig } from '../config';
-import { DB } from '../database/database.module';
+import { DB, DB_HANDLE } from '../database/database.module';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../integrations/webhooks.service';
 import { Outbox } from '../outbox/outbox';
@@ -22,6 +22,20 @@ import { JOBS, type JobName, recordHeartbeat } from './jobs';
 
 /** A job's heartbeat is written at most this often (the outbox runs every 3 seconds). */
 const HEARTBEAT_EVERY_MS = 30_000;
+/**
+ * Held by the one worker process that runs the jobs. Run exactly one worker; a second one started
+ * by mistake (or during a rolling deploy) stands by and takes over only when the first one stops.
+ */
+const SCHEDULER_LOCK = 7_042_027;
+/** How often a standby worker tries to take over. */
+const STANDBY_RETRY_MS = 15_000;
+
+/** The pooled connection that holds the lock: the lock lasts as long as the connection. */
+interface LockConnection {
+  query(text: string, values: unknown[]): Promise<{ rows: { locked: boolean }[] }>;
+  on(event: 'error', listener: (error: Error) => void): unknown;
+  release(destroy?: boolean): void;
+}
 
 /**
  * Background work, run when WORKER_ENABLED=true: in the API process for local development, or in
@@ -33,10 +47,14 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
   private readonly logger = new Logger('Scheduler');
   private readonly timers: NodeJS.Timeout[] = [];
   private readonly lastHeartbeat = new Map<JobName, number>();
+  private lock: LockConnection | null = null;
+  private standby: NodeJS.Timeout | null = null;
+  private stopped = false;
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(DB) private readonly db: Database,
+    @Inject(DB_HANDLE) private readonly handle: DbHandle,
     private readonly clock: Clock,
     private readonly outbox: Outbox,
     private readonly bookingService: BookingService,
@@ -50,6 +68,53 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
 
   onApplicationBootstrap(): void {
     if (!this.config.WORKER_ENABLED) return;
+    void this.lead();
+  }
+
+  /**
+   * Starts the jobs once this process holds the scheduler lock, so two workers never run them
+   * side by side (two senders could each send a slow message whose lease ran out).
+   */
+  async lead(): Promise<boolean> {
+    if (this.stopped || this.lock) return this.lock !== null;
+    let connection: LockConnection | null = null;
+    try {
+      connection = (await this.handle.pool.connect()) as LockConnection;
+      const { rows } = await connection.query('select pg_try_advisory_lock($1) as locked', [
+        SCHEDULER_LOCK,
+      ]);
+      if (rows[0]?.locked && !this.stopped) {
+        if (this.standby) clearTimeout(this.standby);
+        const held = connection;
+        this.lock = held;
+        held.on('error', (error) => this.lostLock(held, error));
+        this.startJobs();
+        return true;
+      }
+      connection.release(true);
+    } catch (error) {
+      connection?.release(true);
+      this.logger.warn(`scheduler lock not taken: ${(error as Error).message}`);
+    }
+    if (!this.stopped) {
+      if (!this.standby) this.logger.log('another worker runs the background jobs; standing by');
+      this.standby = setTimeout(() => void this.lead(), STANDBY_RETRY_MS);
+      this.standby.unref();
+    }
+    return false;
+  }
+
+  /** The lock's connection broke, so the lock is gone: stop, and stand by to take it back. */
+  private lostLock(connection: LockConnection, error: Error): void {
+    if (this.lock !== connection) return;
+    this.logger.error(`scheduler lock lost: ${error.message}`);
+    this.stopJobs();
+    this.lock = null;
+    connection.release(true);
+    void this.lead();
+  }
+
+  private startJobs(): void {
     this.every('outbox', () => this.outbox.drain());
     this.every('send-notifications', () => this.notifications.deliverDue());
     this.every('send-webhooks', () => this.webhooks.deliverDue());
@@ -64,7 +129,17 @@ export class SchedulerService implements OnApplicationBootstrap, OnApplicationSh
   }
 
   onApplicationShutdown(): void {
+    this.stopped = true;
+    if (this.standby) clearTimeout(this.standby);
+    this.stopJobs();
+    // Closing the connection frees the lock for a standby worker.
+    this.lock?.release(true);
+    this.lock = null;
+  }
+
+  private stopJobs(): void {
     for (const timer of this.timers) clearInterval(timer);
+    this.timers.length = 0;
   }
 
   private every(name: JobName, job: () => Promise<unknown>): void {

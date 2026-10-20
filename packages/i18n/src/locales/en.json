@@ -293,6 +293,7 @@
       "planRetired": "this plan is no longer offered",
       "stripeManaged": "Stripe manages this subscription: payments and cancellation happen in Stripe",
       "noStripePrice": "this plan has no Stripe price; add one before moving a Stripe customer",
+      "priceOverrideStripe": "with Stripe billing operators pay the plan's Stripe price; for a negotiated price, create a separate plan",
       "onlyTrialExtend": "only a trial can be extended",
       "noCardPayment": "this plan cannot be paid by card yet; contact us",
       "noCardSubscription": "there is no card subscription to manage",
@@ -1751,6 +1752,7 @@
         "price": "Negotiated monthly price ({currency})",
         "priceHint": "Empty = the plan's price.",
         "priceHintWith": "Empty = the plan's price ({price}).",
+        "priceStripe": "Stripe charges the plan's price. For a negotiated monthly price, create a separate plan with its own Stripe price.",
         "feeError": "The fee is a percentage between 0 and 50.",
         "note": "The new fee applies to bookings made from now on.",
         "save": "Save"

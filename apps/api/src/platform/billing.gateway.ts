@@ -27,7 +27,15 @@ export abstract class BillingGateway {
   abstract createPortal(customerId: string, returnUrl: string): Promise<{ url: string }>;
   /** Moves an existing Stripe subscription to another price, prorated. */
   abstract changePrice(subscriptionId: string, stripePriceId: string): Promise<void>;
+  /**
+   * A subscription of this customer that still bills (or will), other than `except`: one a
+   * completed checkout created before its webhook arrived, or a duplicate. Null when none.
+   */
+  abstract liveSubscriptionId(customerId: string, except?: string): Promise<string | null>;
 }
+
+/** Stripe subscription statuses that are, or can still become, paid. */
+const LIVE_STATUSES = new Set(['trialing', 'active', 'past_due', 'unpaid', 'paused']);
 
 @Injectable()
 export class ManualBilling extends BillingGateway {
@@ -43,6 +51,10 @@ export class ManualBilling extends BillingGateway {
 
   async changePrice(): Promise<void> {
     // Nothing to tell anyone: the next invoice uses the new plan.
+  }
+
+  async liveSubscriptionId(): Promise<string | null> {
+    return null;
   }
 }
 
@@ -71,6 +83,30 @@ export class StripeBilling extends BillingGateway {
           { idempotencyKey: `customer-${input.tenantId}` },
         )
       ).id;
+    const metadata = {
+      tenantId: input.tenantId,
+      stripePriceId: input.stripePriceId,
+      trialDays: String(input.trialDays),
+    };
+    if (input.stripeCustomerId) {
+      // A checkout opened earlier (another tab, a double click) is reused when it sells the same
+      // thing, and closed otherwise, so the operator can never complete two of them.
+      const open = await this.stripe.checkout.sessions.list({
+        customer: customerId,
+        status: 'open',
+        limit: 10,
+      });
+      for (const previous of open.data) {
+        const same =
+          previous.client_reference_id === input.tenantId &&
+          previous.metadata?.stripePriceId === metadata.stripePriceId &&
+          previous.metadata?.trialDays === metadata.trialDays;
+        if (same && previous.url) return { url: previous.url, customerId };
+        await this.stripe.checkout.sessions.expire(previous.id).catch(() => {
+          // Completed or expired in the meantime: nothing left to close.
+        });
+      }
+    }
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
@@ -80,7 +116,7 @@ export class StripeBilling extends BillingGateway {
         metadata: { tenantId: input.tenantId },
         ...(input.trialDays > 0 ? { trial_period_days: input.trialDays } : {}),
       },
-      metadata: { tenantId: input.tenantId },
+      metadata,
       success_url: input.successUrl,
       cancel_url: input.cancelUrl,
     });
@@ -104,5 +140,16 @@ export class StripeBilling extends BillingGateway {
       items: [{ id: item.id, price: stripePriceId }],
       proration_behavior: 'create_prorations',
     });
+  }
+
+  async liveSubscriptionId(customerId: string, except?: string): Promise<string | null> {
+    const subscriptions = await this.stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 20,
+    });
+    return (
+      subscriptions.data.find((s) => s.id !== except && LIVE_STATUSES.has(s.status))?.id ?? null
+    );
   }
 }
