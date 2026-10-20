@@ -465,11 +465,13 @@ export class BookingService {
         : false;
       if (!confirmed) {
         // The hold expired before the money arrived: take the seats again if they are still free.
-        // For a trip from the operator's own system, their system decides (SourcesService.confirm).
+        // For a trip from the operator's own system, their system decides whether seats are left
+        // (SourcesService.confirm); here only a departure called off or gone is refused.
         const product = await this.catalog.product(booking.tenantId, booking.productId, tx);
-        if (product.sourceId) {
-          await this.availability.reserveCached(tx, booking.slotId, booking.seats);
-        } else if (!(await this.availability.reserveLate(tx, booking.slotId, booking.seats, now))) {
+        const seated = product.sourceId
+          ? await this.availability.reserveCached(tx, booking.slotId, booking.seats, now)
+          : await this.availability.reserveLate(tx, booking.slotId, booking.seats, now);
+        if (!seated) {
           // Sold to someone else, called off or already gone while the customer was still on the
           // payment page: no ticket, the money goes straight back and the customer is told.
           await tx

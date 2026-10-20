@@ -28,6 +28,16 @@ export const bookingSeatsConfirmedEvent = z.object({
   bookingId: z.string().uuid(),
 });
 
+/**
+ * The operator's own system had no seats left when a confirmed booking was to be booked there (the
+ * money arrived after its hold expired and the seats were sold meanwhile): it must be cancelled.
+ */
+export const bookingSeatsLostEvent = z.object({
+  type: z.literal('booking.seats_lost'),
+  tenantId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+});
+
 export const bookingCancelledEvent = z.object({
   type: z.literal('booking.cancelled'),
   tenantId: z.string().uuid(),
@@ -66,6 +76,7 @@ export const payoutPaidEvent = z.object({
 export const domainEvent = z.discriminatedUnion('type', [
   bookingConfirmedEvent,
   bookingSeatsConfirmedEvent,
+  bookingSeatsLostEvent,
   bookingCancelledEvent,
   ticketCheckedInEvent,
   ticketIssuedEvent,
