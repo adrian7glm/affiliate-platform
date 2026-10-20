@@ -67,9 +67,14 @@ export function reversalFor(
  * holds, and returns the adjustment entries that close the gap.
  */
 export function reconcile(expected: SaleCommission[], entries: LedgerEntry[]): NewLedgerEntry[] {
+  // Summed once: looking every booking up in the whole ledger is quadratic on busy months.
+  const earned = new Map<string, number>();
+  for (const entry of entries) {
+    earned.set(entry.bookingId, (earned.get(entry.bookingId) ?? 0) + entry.amountMinor);
+  }
   const adjustments: NewLedgerEntry[] = [];
   for (const target of expected) {
-    const delta = target.amountMinor - earnedOnBooking(entries, target.bookingId);
+    const delta = target.amountMinor - (earned.get(target.bookingId) ?? 0);
     if (delta === 0) continue;
     adjustments.push({
       bookingId: target.bookingId,
