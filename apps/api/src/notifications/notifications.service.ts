@@ -36,7 +36,13 @@ export const MAX_ATTEMPTS = 6;
 const BACKOFF_MS = [30_000, 2 * 60_000, 10 * 60_000, 30 * 60_000, 2 * 3_600_000];
 /** A message being sent is retried after this long if its worker died mid-send. */
 const LEASE_MS = 5 * 60_000;
-const BATCH = 25;
+/**
+ * A send is not started with less lease than this left: another worker may take the message
+ * once the lease ends. Longer than the SMTP and SMS timeouts together.
+ */
+const LEASE_MARGIN_MS = 90_000;
+/** Few at a time, so even slow providers send the whole batch well within the lease. */
+const BATCH = 5;
 
 export const channelOf = (to: string): 'email' | 'sms' => (to.includes('@') ? 'email' : 'sms');
 
@@ -183,11 +189,42 @@ export class NotificationsService {
     for (let round = 0; round < 40; round += 1) {
       const batch = await this.claim();
       if (!batch.length) break;
-      for (const row of batch) {
+      for (const [index, row] of batch.entries()) {
+        if (this.clock.now().getTime() > row.nextAttemptAt.getTime() - LEASE_MARGIN_MS) {
+          // Sending was slow: give the rest back rather than risk a second worker sending them too.
+          await this.release(batch.slice(index));
+          break;
+        }
         if (await this.deliverRow(row)) sent += 1;
       }
     }
     return sent;
+  }
+
+  /** Hands claimed messages back unsent, without spending one of their attempts. */
+  private async release(rows: NotificationRow[]): Promise<void> {
+    for (const row of rows) {
+      await this.db
+        .update(notifications)
+        .set({
+          status: 'queued',
+          attempts: row.attempts - 1,
+          nextAttemptAt: this.clock.now(),
+        })
+        .where(this.stillClaimed(row));
+    }
+  }
+
+  /**
+   * The claim this worker holds on a message: nobody re-claimed it after the lease ended (each
+   * claim adds an attempt), so the attempt count works as a fencing token.
+   */
+  private stillClaimed(row: NotificationRow) {
+    return and(
+      eq(notifications.id, row.id),
+      eq(notifications.status, 'sending'),
+      eq(notifications.attempts, row.attempts),
+    );
   }
 
   /** Takes due messages for this worker: concurrent workers never take the same one. */
@@ -242,7 +279,7 @@ export class NotificationsService {
         row.locale,
         row.params as TemplateParams[TemplateName],
       );
-      await this.db
+      const updated = await this.db
         .update(notifications)
         .set({
           status: 'sent',
@@ -251,7 +288,9 @@ export class NotificationsService {
           providerMessageId: receipt.messageId,
           lastError: null,
         })
-        .where(eq(notifications.id, row.id));
+        .where(this.stillClaimed(row))
+        .returning({ id: notifications.id });
+      if (!updated.length) this.leaseLost(row);
       return true;
     } catch (error) {
       const failure = asDeliveryError(error);
@@ -260,16 +299,25 @@ export class NotificationsService {
       this.logger.error(
         `${row.template} ${row.id} to ${mask(row.recipient)} failed (attempt ${row.attempts}${final ? ', giving up' : ''}): ${failure.message}`,
       );
-      await this.db
+      const updated = await this.db
         .update(notifications)
         .set({
           status: final ? 'failed' : 'queued',
           lastError: failure.message,
           nextAttemptAt: new Date(this.clock.now().getTime() + (final ? 0 : wait)),
         })
-        .where(eq(notifications.id, row.id));
+        .where(this.stillClaimed(row))
+        .returning({ id: notifications.id });
+      if (!updated.length) this.leaseLost(row);
       return false;
     }
+  }
+
+  /** The send outlived its lease and another worker took the message: its result stands. */
+  private leaseLost(row: NotificationRow): void {
+    this.logger.warn(
+      `${row.template} ${row.id}: lease expired while sending; another worker took it over`,
+    );
   }
 
   private async deliver(

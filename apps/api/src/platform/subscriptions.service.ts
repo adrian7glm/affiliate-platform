@@ -301,18 +301,28 @@ export class SubscriptionsService {
     }
   }
 
+  /**
+   * Stripe Billing charges the plan's Stripe price, whatever was negotiated, so with Stripe a
+   * different price needs its own plan; negotiated prices only apply to hand-invoiced billing.
+   */
+  get priceOverrideAllowed(): boolean {
+    return this.billing.name === 'manual';
+  }
+
   toDto(row: SubscriptionRow, plan: PlanRow): SubscriptionDto {
+    const priceOverride = this.priceOverrideAllowed ? row.priceMinorOverride : null;
     return {
       planId: plan.id,
       planName: plan.name,
       status: this.effectiveStatus(row),
       trialEndsAt: row.trialEndsAt?.toISOString() ?? null,
       currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
-      monthlyPriceMinor: row.priceMinorOverride ?? plan.monthlyPriceMinor,
+      monthlyPriceMinor: priceOverride ?? plan.monthlyPriceMinor,
       currency: plan.currency,
       platformFeeBps: row.feeBpsOverride ?? plan.platformFeeBps,
       feeBpsOverride: row.feeBpsOverride,
-      priceMinorOverride: row.priceMinorOverride,
+      priceMinorOverride: priceOverride,
+      priceOverrideAllowed: this.priceOverrideAllowed,
       maxAffiliates: plan.maxAffiliates,
       billedByStripe: row.stripeSubscriptionId !== null,
       salesPauseAt: this.salesPauseAt(row)?.toISOString() ?? null,
@@ -395,6 +405,9 @@ export class SubscriptionsService {
     body: UpdateTenantBillingBody,
     actorUserId: string,
   ): Promise<SubscriptionDto> {
+    if (body.priceMinorOverride != null && !this.priceOverrideAllowed) {
+      throw new DomainError('errors.platform.priceOverrideStripe');
+    }
     const current = await this.row(tenantId);
     const stripeManaged = current?.stripeSubscriptionId != null;
     if (stripeManaged && (body.paidUntil || body.cancel)) {
@@ -477,45 +490,62 @@ export class SubscriptionsService {
       return { url: `${returnUrl}?chosen=1` };
     }
 
-    if (current.stripeSubscriptionId) {
-      // Already paying through Stripe: plan changes and card updates happen in the portal.
-      return this.portal(tenantId);
-    }
     if (!plan.stripePriceId) {
       throw new DomainError('errors.platform.noCardPayment');
     }
-    const [tenant] = await this.db.select().from(tenants).where(eq(tenants.id, tenantId));
-    const [owner] = await this.db
-      .select({ email: users.email })
-      .from(memberships)
-      .innerJoin(users, eq(users.id, memberships.userId))
-      .where(and(eq(memberships.tenantId, tenantId), eq(memberships.role, 'owner')))
-      .orderBy(asc(memberships.createdAt))
-      .limit(1);
-    const now = this.clock.now();
-    const trialLeft =
-      current.status === 'trialing' && current.trialEndsAt && current.trialEndsAt > now
-        ? Math.ceil((current.trialEndsAt.getTime() - now.getTime()) / DAY_MS)
-        : 0;
-    const session = await this.billing.createCheckout({
-      tenantId,
-      tenantName: tenant!.name,
-      email: owner?.email ?? null,
-      stripeCustomerId: current.stripeCustomerId,
-      stripePriceId: plan.stripePriceId,
-      trialDays: trialLeft,
-      successUrl: `${returnUrl}?subscribed=1`,
-      cancelUrl: returnUrl,
+    const stripePriceId = plan.stripePriceId;
+    // One checkout at a time per operator: a double click or a second tab waits for the first
+    // and then gets the same Stripe Checkout back, so the operator cannot subscribe twice.
+    return this.db.transaction(async (tx) => {
+      const [locked] = await tx
+        .select()
+        .from(tenantSubscriptions)
+        .where(eq(tenantSubscriptions.tenantId, tenantId))
+        .for('update');
+      const row = locked!;
+      if (row.stripeSubscriptionId) {
+        // Already paying through Stripe: plan changes and card updates happen in the portal.
+        return this.portal(tenantId, tx);
+      }
+      if (row.stripeCustomerId && (await this.billing.liveSubscriptionId(row.stripeCustomerId))) {
+        // A checkout was completed and its webhook has not arrived yet.
+        return this.portal(tenantId, tx);
+      }
+      const [tenant] = await tx.select().from(tenants).where(eq(tenants.id, tenantId));
+      const [owner] = await tx
+        .select({ email: users.email })
+        .from(memberships)
+        .innerJoin(users, eq(users.id, memberships.userId))
+        .where(and(eq(memberships.tenantId, tenantId), eq(memberships.role, 'owner')))
+        .orderBy(asc(memberships.createdAt))
+        .limit(1);
+      const now = this.clock.now();
+      const trialLeft =
+        row.status === 'trialing' && row.trialEndsAt && row.trialEndsAt > now
+          ? Math.ceil((row.trialEndsAt.getTime() - now.getTime()) / DAY_MS)
+          : 0;
+      const session = await this.billing.createCheckout({
+        tenantId,
+        tenantName: tenant!.name,
+        email: owner?.email ?? null,
+        stripeCustomerId: row.stripeCustomerId,
+        stripePriceId,
+        trialDays: trialLeft,
+        successUrl: `${returnUrl}?subscribed=1`,
+        cancelUrl: returnUrl,
+      });
+      if (session.customerId !== row.stripeCustomerId) {
+        await tx
+          .update(tenantSubscriptions)
+          .set({ stripeCustomerId: session.customerId, updatedAt: now })
+          .where(eq(tenantSubscriptions.tenantId, tenantId));
+      }
+      return { url: session.url };
     });
-    await this.db
-      .update(tenantSubscriptions)
-      .set({ stripeCustomerId: session.customerId, updatedAt: now })
-      .where(eq(tenantSubscriptions.tenantId, tenantId));
-    return { url: session.url };
   }
 
-  async portal(tenantId: string): Promise<BillingRedirectDto> {
-    const current = await this.row(tenantId);
+  async portal(tenantId: string, db: DbOrTx = this.db): Promise<BillingRedirectDto> {
+    const current = await this.row(tenantId, db);
     if (this.billing.name !== 'stripe' || !current?.stripeCustomerId) {
       throw new DomainError('errors.platform.noCardSubscription', HttpStatus.CONFLICT);
     }
@@ -532,15 +562,15 @@ export class SubscriptionsService {
     currentPeriodEnd: number | null;
     trialEnd: number | null;
   }): Promise<void> {
-    const [row] = await this.db
-      .select()
+    const [match] = await this.db
+      .select({ id: tenantSubscriptions.id })
       .from(tenantSubscriptions)
       .where(
         input.tenantId
           ? eq(tenantSubscriptions.tenantId, input.tenantId)
           : eq(tenantSubscriptions.stripeCustomerId, input.customerId),
       );
-    if (!row) {
+    if (!match) {
       this.logger.warn(`Stripe subscription ${input.subscriptionId} matches no operator`);
       return;
     }
@@ -553,6 +583,39 @@ export class SubscriptionsService {
     const status = fromStripeStatus(input.status);
     const now = this.clock.now();
     await this.db.transaction(async (tx) => {
+      // Locked, so two webhooks for the same operator apply one after the other.
+      const [locked] = await tx
+        .select()
+        .from(tenantSubscriptions)
+        .where(eq(tenantSubscriptions.id, match.id))
+        .for('update');
+      const row = locked!;
+      if (
+        row.stripeSubscriptionId &&
+        row.stripeSubscriptionId !== input.subscriptionId &&
+        row.status !== 'canceled'
+      ) {
+        // A second subscription for an operator who already has a live one (two checkouts
+        // completed): never let it replace the one we track, or canceling either would be
+        // misread. The platform owner refunds and cancels the duplicate in Stripe.
+        this.logger.warn(
+          `Stripe subscription ${input.subscriptionId} ignored: operator ${row.tenantId} already has ${row.stripeSubscriptionId}`,
+        );
+        await this.audit(
+          tx,
+          row.tenantId,
+          null,
+          'subscription.stripe_duplicate',
+          'tenant',
+          row.tenantId,
+          {
+            status: input.status,
+            subscriptionId: input.subscriptionId,
+            currentSubscriptionId: row.stripeSubscriptionId,
+          },
+        );
+        return;
+      }
       await tx
         .update(tenantSubscriptions)
         .set({

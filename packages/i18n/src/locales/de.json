@@ -293,6 +293,7 @@
       "planRetired": "dieser Plan wird nicht mehr angeboten",
       "stripeManaged": "Stripe verwaltet dieses Abo: Zahlungen und Kündigung erfolgen in Stripe",
       "noStripePrice": "dieser Plan hat keinen Stripe-Preis; fügen Sie einen hinzu, bevor Sie einen Stripe-Kunden wechseln",
+      "priceOverrideStripe": "bei Abrechnung über Stripe zahlen Betreiber den Stripe-Preis des Plans; legen Sie für einen ausgehandelten Preis einen eigenen Plan an",
       "onlyTrialExtend": "nur eine Testphase kann verlängert werden",
       "noCardPayment": "dieser Plan kann noch nicht per Karte bezahlt werden; kontaktieren Sie uns",
       "noCardSubscription": "es gibt kein Kartenabo zu verwalten",
@@ -1751,6 +1752,7 @@
         "price": "Ausgehandelter Monatspreis ({currency})",
         "priceHint": "Leer = Preis des Plans.",
         "priceHintWith": "Leer = Preis des Plans ({price}).",
+        "priceStripe": "Stripe berechnet den Preis des Plans. Legen Sie für einen ausgehandelten Monatspreis einen eigenen Plan mit eigenem Stripe-Preis an.",
         "feeError": "Die Gebühr ist ein Prozentsatz zwischen 0 und 50.",
         "note": "Die neue Gebühr gilt für ab jetzt getätigte Buchungen.",
         "save": "Speichern"

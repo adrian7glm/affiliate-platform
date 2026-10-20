@@ -66,15 +66,16 @@ export class BillingWebhookController {
         const session = event.data.object;
         const subscriptionId = idOf(session.subscription);
         if (session.mode === 'subscription' && subscriptionId) {
-          const subscription = await this.billing.stripe.subscriptions.retrieve(subscriptionId);
-          await this.apply(subscription, session.client_reference_id);
+          await this.sync(this.billing, subscriptionId, session.client_reference_id);
         }
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
-        await this.apply(event.data.object, null);
+        // Stripe does not deliver events in order and retries them for days: an old "updated
+        // (active)" can arrive after "deleted". The subscription as Stripe has it now is the truth.
+        await this.sync(this.billing, event.data.object.id, null);
         break;
       default:
         this.logger.debug(`ignored Stripe event ${event.type}`);
@@ -85,6 +86,23 @@ export class BillingWebhookController {
       .values({ id: event.id, type: event.type })
       .onConflictDoNothing();
     return { received: true };
+  }
+
+  /** Applies the subscription as Stripe has it now, not as an event described it then. */
+  private async sync(
+    billing: StripeBilling,
+    subscriptionId: string,
+    tenantId: string | null,
+  ): Promise<void> {
+    const subscription = await billing.stripe.subscriptions.retrieve(subscriptionId);
+    await this.apply(subscription, tenantId);
+    if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
+      // The operator may have canceled one of two subscriptions (two checkouts completed): if
+      // another still bills, that one is now theirs, rather than the operator showing canceled.
+      const customerId = idOf(subscription.customer)!;
+      const other = await billing.liveSubscriptionId(customerId, subscription.id);
+      if (other) await this.apply(await billing.stripe.subscriptions.retrieve(other), tenantId);
+    }
   }
 
   private async apply(subscription: Stripe.Subscription, tenantId: string | null): Promise<void> {
