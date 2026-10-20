@@ -47,12 +47,12 @@ async function renderTicket(ticketKey: string) {
 }
 
 describe('TicketView offline copy', () => {
-  it('is not shown for a different key and is dropped after a refusal', async () => {
+  it("is not shown for a different key, and that refusal keeps the real holder's copy", async () => {
     localStorage.setItem('ap.ticket.b1', JSON.stringify({ key: 'RIGHT', ticket }));
     vi.mocked(publicApi.ticket).mockRejectedValue(new ApiError(404, 'not_found', 'nope'));
     await renderTicket('WRONG');
     await waitFor(() => expect(screen.queryByText(/Secret Customer/)).toBeNull());
-    expect(localStorage.getItem('ap.ticket.b1')).toBeNull();
+    expect(localStorage.getItem('ap.ticket.b1')).not.toBeNull();
   });
 
   it('is dropped when the API refuses the same key (booking gone)', async () => {

@@ -67,8 +67,9 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
       } catch (err) {
         if (signal?.aborted) return;
         if (isApiError(err) && (err.isNotFound || err.status === 403 || err.status === 400)) {
-          // A definitive refusal (wrong key, booking gone): forget the saved copy too.
-          removeKey(cacheKey(bookingId));
+          // A definitive refusal: forget the saved copy, but only if it was saved with this same
+          // key, so a mistyped or forged link can't wipe the real holder's offline ticket.
+          if (readCachedTicket(bookingId, ticketKey)) removeKey(cacheKey(bookingId));
           setTicket(null);
           statusRef.current = null;
           setError('not_found');
