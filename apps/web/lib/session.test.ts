@@ -64,6 +64,14 @@ describe('active company per tab', () => {
     localStorage.setItem(STORAGE_KEYS.tenantId, 'tenant-B');
     expect(getTenantId()).toBe('tenant-B');
   });
+
+  it('keeps the inherited company when another tab switches later', () => {
+    // A new tab starts on the shared default without anyone picking a company in it.
+    localStorage.setItem(STORAGE_KEYS.tenantId, 'tenant-A');
+    expect(getTenantId()).toBe('tenant-A');
+    localStorage.setItem(STORAGE_KEYS.tenantId, 'tenant-B');
+    expect(getTenantId()).toBe('tenant-A');
+  });
 });
 
 describe('saveSession', () => {

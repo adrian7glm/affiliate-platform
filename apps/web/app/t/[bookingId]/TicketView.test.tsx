@@ -81,4 +81,20 @@ describe('TicketView offline copy', () => {
       }),
     );
   });
+
+  it('drops the previous ticket when the key changes and the network is down', async () => {
+    vi.mocked(publicApi.ticket).mockResolvedValueOnce(ticket);
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(<TicketView bookingId="b1" ticketKey="RIGHT" />);
+    });
+    await screen.findByText(/Secret Customer/);
+
+    vi.mocked(publicApi.ticket).mockRejectedValue(new ApiError(0, 'network_error', 'offline'));
+    await act(async () => {
+      view.rerender(<TicketView bookingId="b1" ticketKey="OTHER" />);
+    });
+    await waitFor(() => expect(publicApi.ticket).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/Secret Customer/)).toBeNull();
+  });
 });

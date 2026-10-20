@@ -84,13 +84,14 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
     [bookingId, ticketKey, lang],
   );
 
-  // Show the saved copy at once, then refresh from the API.
+  // Show the saved copy at once, then refresh from the API. A different booking or key starts
+  // from scratch, so nothing from the previous ticket stays on screen if the network is down.
   useEffect(() => {
     const cached = readCachedTicket(bookingId, ticketKey);
-    if (cached) {
-      setTicket(cached);
-      statusRef.current = cached.status;
-    }
+    setTicket(cached);
+    statusRef.current = cached?.status ?? null;
+    setError(null);
+    setLoading(true);
     const controller = new AbortController();
     void load(controller.signal);
     return () => controller.abort();

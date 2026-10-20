@@ -1,5 +1,5 @@
 import type { CheckoutResultDto, ProductDto, SlotDto, TicketDto } from '@ap/contracts';
-import { type Database, bookings, createDb, notifications, otpCodes } from '@ap/db';
+import { type Database, bookings, createDb, notifications, otpCodes, tickets } from '@ap/db';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { BookingService } from '../src/booking/booking.service';
@@ -157,6 +157,32 @@ describe.skipIf(!databaseUrl)('payment races and sending limits (needs TEST_DATA
     expect(h.payments.refunds.slice(refundsBefore)).toEqual([
       { paymentIntentId: 'pi_race', amountMinor: 10_000 },
     ]);
+  });
+
+  it('issues no ticket when a confirmation is handled after the booking was cancelled', async () => {
+    h.clock.set('2026-10-05T12:00:00Z');
+    const slot = await slotOn('2026-10-08');
+    const booked = await book(slot, 1, 'retried@example.com');
+    // Paid, but the confirmation event is still queued (e.g. it failed and waits for a retry)
+    // when the operator cancels and refunds the booking.
+    await h.http
+      .post(`/public/dev-payments/${booked.booking.id}/succeed?k=${keyOf(booked)}`)
+      .expect(204);
+    await h.app.get(BookingService).cancel(h.tenantId, booked.booking.id, 'operator', null);
+    await h.outbox.drain();
+
+    const handle = createDb(databaseUrl!, { max: 1 });
+    const issued = await handle.db
+      .select({ status: tickets.status })
+      .from(tickets)
+      .where(eq(tickets.bookingId, booked.booking.id));
+    const queued = await handle.db
+      .select({ template: notifications.template })
+      .from(notifications)
+      .where(eq(notifications.recipient, 'retried@example.com'));
+    await handle.close();
+    expect(issued.filter((t) => t.status === 'valid')).toEqual([]);
+    expect(queued.map((n) => n.template)).not.toContain('ticket');
   });
 
   it('gives a login code only 5 guesses, even when they are sent all at once', async () => {

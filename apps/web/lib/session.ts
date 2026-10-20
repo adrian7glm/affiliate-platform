@@ -75,7 +75,13 @@ function writeTabTenant(tenantId: string | null): void {
 }
 
 export function getTenantId(): string | null {
-  return tabTenantId ?? readTabTenant() ?? readString(STORAGE_KEYS.tenantId);
+  const own = tabTenantId ?? readTabTenant();
+  if (own) return own;
+  // A new tab starts from the last company chosen anywhere, then keeps it as its own, so a later
+  // switch in another tab does not move this one.
+  const fallback = readString(STORAGE_KEYS.tenantId);
+  if (fallback) writeTabTenant(fallback);
+  return fallback;
 }
 
 export function setTenantId(tenantId: string): void {
