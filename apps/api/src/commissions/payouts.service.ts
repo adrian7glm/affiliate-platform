@@ -123,11 +123,7 @@ export class CommissionPayoutsService {
 
     for (const { id: affiliateId } of affiliateIds) {
       adjustmentsCreated += await this.db.transaction(async (tx) => {
-        await tx
-          .select({ id: affiliates.id })
-          .from(affiliates)
-          .where(eq(affiliates.id, affiliateId))
-          .for('update');
+        await this.ledger.lockAffiliate(tx, affiliateId);
         const entryRows = await tx
           .select()
           .from(commissionEntries)
@@ -150,6 +146,13 @@ export class CommissionPayoutsService {
               lt(bookings.paidAt, end),
             ),
           );
+        // Looked up once per booking: an affiliate's month can hold thousands of entries.
+        const saleByBooking = new Map<string, (typeof entryRows)[number]>();
+        for (const e of entryRows) {
+          if (e.kind === 'sale' && !saleByBooking.has(e.bookingId))
+            saleByBooking.set(e.bookingId, e);
+        }
+        const bookedIds = new Set(entryRows.map((e) => e.bookingId));
         const sales: Sale[] = bookingRows.map((b) => ({
           bookingId: b.id,
           paidAt: b.paidAt!,
@@ -157,19 +160,16 @@ export class CommissionPayoutsService {
           taxMinor: b.commissionTaxMinor ?? b.taxMinor,
           cancelled: b.status !== 'confirmed',
           // The trip rate frozen when the sale was recorded.
-          tripRateBps:
-            entryRows.find((e) => e.bookingId === b.id && e.kind === 'sale')?.tripRateBps ?? null,
+          tripRateBps: saleByBooking.get(b.id)?.tripRateBps ?? null,
         }));
         // The rules frozen with the month's first sale apply to the whole month.
         const plan = firstSale.planSnapshot as CommissionPlan;
         const expected = computePeriodCommissions(plan, sales).filter((c) =>
-          entryRows.some((e) => e.bookingId === c.bookingId),
+          bookedIds.has(c.bookingId),
         );
         const adjustments = reconcile(expected, entryRows.map(toLedgerEntry));
         for (const adjustment of adjustments) {
-          const saleRow =
-            entryRows.find((e) => e.bookingId === adjustment.bookingId && e.kind === 'sale') ??
-            firstSale;
+          const saleRow = saleByBooking.get(adjustment.bookingId) ?? firstSale;
           const approved = saleRow.status !== 'pending';
           await this.ledger.insertEntries(
             tx,
@@ -177,6 +177,22 @@ export class CommissionPayoutsService {
             [adjustment],
             approved ? 'approved' : 'pending',
           );
+        }
+        // A cancelled booking now nets to zero: settle its pending entries together with the
+        // clawback, or the sale would stay pending forever while the clawback is paid out.
+        const cancelledIds = sales
+          .filter((s) => s.cancelled && bookedIds.has(s.bookingId))
+          .map((s) => s.bookingId);
+        if (cancelledIds.length > 0) {
+          await tx
+            .update(commissionEntries)
+            .set({ status: 'approved', approvedAt: this.clock.now() })
+            .where(
+              and(
+                inArray(commissionEntries.bookingId, cancelledIds),
+                eq(commissionEntries.status, 'pending'),
+              ),
+            );
         }
         return adjustments.length;
       });
@@ -200,11 +216,7 @@ export class CommissionPayoutsService {
       );
     for (const { id: affiliateId } of affiliateIds) {
       await this.db.transaction(async (tx) => {
-        await tx
-          .select({ id: affiliates.id })
-          .from(affiliates)
-          .where(eq(affiliates.id, affiliateId))
-          .for('update');
+        await this.ledger.lockAffiliate(tx, affiliateId);
         const rows = await tx
           .select()
           .from(commissionEntries)
