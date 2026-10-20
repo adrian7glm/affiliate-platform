@@ -3,6 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["API_INTERNAL_URL", "NEXT_PUBLIC_*"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "typecheck": {
@@ -17,7 +19,34 @@
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "API_INTERNAL_URL",
+        "API_URL",
+        "APP_SECRET",
+        "BILLING_*",
+        "DATABASE_URL",
+        "DEMO_MODE",
+        "EMAIL_*",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "HOLD_MINUTES",
+        "LOG_FORMAT",
+        "MIGRATE_ON_START",
+        "NEXT_PUBLIC_*",
+        "PAYMENTS_PROVIDER",
+        "PLATFORM_ADMIN_EMAILS",
+        "PORT",
+        "RATE_LIMITS",
+        "SELF_SIGNUP",
+        "SENTRY_DSN",
+        "SMS_PROVIDER",
+        "SMTP_URL",
+        "STRIPE_*",
+        "TWILIO_*",
+        "WEB_URL",
+        "WORKER_ENABLED"
+      ]
     }
   }
 }
