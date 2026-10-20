@@ -45,7 +45,6 @@ import { useAffiliateHome } from '@/lib/useAffiliateHome';
 import { errorMessage, useApi } from '@/lib/useApi';
 import { BookingResult } from './BookingResult';
 
-const TZ = DEFAULT_TIMEZONE;
 const STEP_KEYS = [
   'affiliate.book.stepTrip',
   'affiliate.book.stepTickets',
@@ -78,13 +77,15 @@ export function BookFlow() {
   const urlStep = Math.min(3, Math.max(1, Number(searchParams.get('step')) || 1)) as Step;
   const home = useAffiliateHome();
   const allowPayOnSite = home.data?.tenant.allowPayOnSite ?? false;
+  // Days and departure times are the operator's, wherever the affiliate's phone is set.
+  const tz = home.data?.tenant.timezone ?? DEFAULT_TIMEZONE;
 
   const products = useApi('affiliate-products', (signal) => affiliateApi.products({ signal }));
   const [productId, setProductId] = useState<string | null>(null);
   const product: ProductDto | null = products.data?.find((p) => p.id === productId) ?? null;
 
-  const days = useMemo(() => nextDays(14, TZ), []);
-  const slots = useApi(product ? `affiliate-slots:${product.id}` : null, (signal) =>
+  const days = useMemo(() => nextDays(14, tz), [tz]);
+  const slots = useApi(product ? `affiliate-slots:${product.id}:${days[0]}` : null, (signal) =>
     affiliateApi.slots(product!.id, { from: days[0], to: days[days.length - 1] }, { signal }),
   );
   const upcoming = useMemo(() => upcomingSlots(slots.data ?? []), [slots.data]);
@@ -126,7 +127,7 @@ export function BookFlow() {
   // When departures load, preselect the first day that still has seats.
   useEffect(() => {
     if (!slots.data) return;
-    const byDay = groupSlotsByDay(upcoming, TZ);
+    const byDay = groupSlotsByDay(upcoming, tz);
     const first = days.find((d) => (byDay.get(d) ?? []).some((s) => s.available > 0));
     setDate((current) => current ?? first ?? days[0] ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,6 +267,7 @@ export function BookFlow() {
           customerPhone={normalizePhone(phone) || null}
           customerName={name.trim()}
           locale={locale}
+          timezone={tz}
           onNewBooking={startOver}
         />
       </div>
@@ -394,7 +396,7 @@ export function BookFlow() {
               <SlotPicker
                 days={days}
                 slots={upcoming}
-                timezone={TZ}
+                timezone={tz}
                 t={i18n}
                 date={date}
                 onDateChange={(d) => {
@@ -426,7 +428,7 @@ export function BookFlow() {
 
       {step === 2 && product && slot ? (
         <>
-          <SlotSummary product={product} slot={slot} onChange={() => goTo(1)} />
+          <SlotSummary product={product} slot={slot} timezone={tz} onChange={() => goTo(1)} />
           <Card>
             <TicketQuantities
               prices={product.prices}
@@ -467,6 +469,7 @@ export function BookFlow() {
           <SlotSummary
             product={product}
             slot={slot}
+            timezone={tz}
             onChange={() => goTo(1)}
             extra={
               <span className="flex items-center justify-between gap-2">
@@ -622,16 +625,18 @@ export function BookFlow() {
 function SlotSummary({
   product,
   slot,
+  timezone,
   onChange,
   extra,
 }: {
   product: ProductDto;
   slot: SlotDto;
+  timezone: string;
   onChange: () => void;
   extra?: ReactNode;
 }) {
   const { t, lang } = useT();
-  const dayKey = dateKeyInTz(slot.startsAt, TZ);
+  const dayKey = dateKeyInTz(slot.startsAt, timezone);
   return (
     <div className="flex flex-col gap-2 rounded-2xl bg-surface-2 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -640,7 +645,7 @@ function SlotSummary({
           <p className="text-muted">
             {t('affiliate.book.slotWhen', {
               day: formatDayLong(dayKey, lang),
-              time: formatTime(slot.startsAt, TZ, lang),
+              time: formatTime(slot.startsAt, timezone, lang),
             })}
           </p>
         </div>

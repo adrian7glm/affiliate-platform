@@ -17,7 +17,7 @@ import { googleCalendarUrl } from '@/lib/calendar';
 import { formatDateTime } from '@/lib/dates';
 import { publicApi } from '@/lib/endpoints';
 import type { MessageKey } from '@/lib/i18n';
-import { readJson, writeJson } from '@/lib/storage';
+import { readJson, removeKey, writeJson } from '@/lib/storage';
 import { useWakeLock } from '@/lib/useWakeLock';
 
 const POLL_MS = 3000;
@@ -29,8 +29,21 @@ const STATUS: Record<TicketDto['status'], { label: MessageKey; text?: MessageKey
   pending_payment: { label: 'ticket.statusPending', text: 'ticket.pendingText', tone: 'warning' },
 };
 
-/** Copy of the ticket kept on the phone, shown when the network is gone (at sea, in a basement). */
+/**
+ * Copy of the ticket kept on the phone, shown when the network is gone (at sea, in a basement).
+ * Stored with the link's key, so it is only ever shown to someone holding that same link.
+ */
 const cacheKey = (bookingId: string) => `ap.ticket.${bookingId}`;
+
+interface CachedTicket {
+  key: string;
+  ticket: TicketDto;
+}
+
+function readCachedTicket(bookingId: string, ticketKey: string): TicketDto | null {
+  const cached = readJson<Partial<CachedTicket>>(cacheKey(bookingId));
+  return cached?.key === ticketKey && cached.ticket ? cached.ticket : null;
+}
 
 export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticketKey: string }) {
   const t = useT();
@@ -50,12 +63,16 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
         statusRef.current = next.status;
         setOffline(false);
         setError(null);
-        writeJson(cacheKey(bookingId), next);
+        writeJson(cacheKey(bookingId), { key: ticketKey, ticket: next } satisfies CachedTicket);
       } catch (err) {
         if (signal?.aborted) return;
-        if (isApiError(err) && (err.isNotFound || err.status === 403 || err.status === 400))
+        if (isApiError(err) && (err.isNotFound || err.status === 403 || err.status === 400)) {
+          // A definitive refusal (wrong key, booking gone): forget the saved copy too.
+          removeKey(cacheKey(bookingId));
+          setTicket(null);
+          statusRef.current = null;
           setError('not_found');
-        else if (isApiError(err) && err.isNetwork) {
+        } else if (isApiError(err) && err.isNetwork) {
           setOffline(true);
           setError('network');
         } else setError('other');
@@ -68,7 +85,7 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
 
   // Show the saved copy at once, then refresh from the API.
   useEffect(() => {
-    const cached = readJson<TicketDto>(cacheKey(bookingId));
+    const cached = readCachedTicket(bookingId, ticketKey);
     if (cached) {
       setTicket(cached);
       statusRef.current = cached.status;
@@ -76,7 +93,7 @@ export function TicketView({ bookingId, ticketKey }: { bookingId: string; ticket
     const controller = new AbortController();
     void load(controller.signal);
     return () => controller.abort();
-  }, [bookingId, load]);
+  }, [bookingId, ticketKey, load]);
 
   // While the payment is being confirmed, check every few seconds (only while the page is visible).
   const pending = ticket?.status === 'pending_payment';

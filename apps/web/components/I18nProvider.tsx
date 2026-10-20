@@ -101,6 +101,11 @@ export function I18nProvider({
   const [overrides, setOverrides] = useState<Record<Lang, Messages>>(
     fixedLang && initialOverrides ? { [fixedLang]: initialOverrides } : {},
   );
+  // Public pages switch language by navigating to `?lang=`, which passes new overrides to this
+  // same instance (remounting would wipe a half-filled form): adopt them as they arrive.
+  if (fixedLang && initialOverrides && overrides[fixedLang] !== initialOverrides) {
+    setOverrides((all) => ({ ...all, [fixedLang]: initialOverrides }));
+  }
   // Before the first render, so server and browser render the same texts.
   if (fixedLang && file) addLanguageFile(fixedLang, file);
   const wanted = fixedLang ?? chosen;
