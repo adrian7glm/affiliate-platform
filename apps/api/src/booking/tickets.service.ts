@@ -61,6 +61,14 @@ export class TicketsService {
 
   /** Creates the booking's ticket once and sends it to the customer. Idempotent. */
   async issue(tx: DbOrTx, bookingId: string, tenantId: string): Promise<void> {
+    // Locked like a cancellation locks it: a confirmation handled late (a retried event) must not
+    // issue a ticket for a booking that was cancelled or refunded meanwhile.
+    const [current] = await tx
+      .select({ status: bookings.status })
+      .from(bookings)
+      .where(eq(bookings.id, bookingId))
+      .for('update');
+    if (current?.status !== 'confirmed') return;
     const [ticket] = await tx
       .insert(tickets)
       .values({ tenantId, bookingId })

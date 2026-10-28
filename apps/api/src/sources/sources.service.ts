@@ -24,6 +24,7 @@ import { openSecret, sealSecret } from '../common/crypto';
 import { DomainError, NotFound } from '../common/errors';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { DB, type DbOrTx, type Tx } from '../database/database.module';
+import { Outbox } from '../outbox/outbox';
 import { publicFetch } from './public-fetch';
 
 type Source = typeof availabilitySources.$inferSelect;
@@ -101,6 +102,7 @@ export class SourcesService {
     @Inject(DB) private readonly db: Database,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly clock: Clock,
+    private readonly outbox: Outbox,
   ) {}
 
   // ---------------------------------------------------------------------------------------------
@@ -238,17 +240,17 @@ export class SourcesService {
     }
   }
 
+  /** A trip is known by its system and its id there: two systems may well use the same ids. */
   private async upsertProduct(source: Source, item: ProviderProduct): Promise<Product> {
     const [existing] = await this.db
       .select()
       .from(products)
-      .where(and(eq(products.tenantId, source.tenantId), eq(products.externalId, item.externalId)));
+      .where(and(eq(products.sourceId, source.id), eq(products.externalId, item.externalId)));
     let product: Product;
     if (existing) {
       [product] = (await this.db
         .update(products)
         .set({
-          sourceId: source.id,
           name: item.name,
           durationMinutes: item.durationMinutes,
           active: true,
@@ -475,6 +477,8 @@ export class SourcesService {
         ({ externalRef } = await provider.confirm({ holdId: again.holdId, ...request }));
       } catch (late) {
         if (!(late instanceof SoldOutError)) throw late;
+        // Sold at the operator's desk meanwhile: the booking is cancelled and refunded once this
+        // transaction commits (BookingService.cancel calls the payment provider).
         this.logger.warn(`booking ${booking.id} was paid but the departure is now full`);
         await tx.insert(auditLog).values({
           tenantId: booking.tenantId,
@@ -482,6 +486,11 @@ export class SourcesService {
           entityType: 'booking',
           entityId: booking.id,
           data: { seats: booking.seats, available: late.available, sourceId: product.sourceId },
+        });
+        await this.outbox.publish(tx, {
+          type: 'booking.seats_lost',
+          tenantId: booking.tenantId,
+          bookingId: booking.id,
         });
         return;
       }

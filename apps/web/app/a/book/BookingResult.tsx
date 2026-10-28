@@ -9,7 +9,7 @@ import { IconChat, IconCheck, IconExternal, IconMessage, IconPlus } from '@/comp
 import { MoneyText } from '@/components/MoneyText';
 import { QrCode } from '@/components/QrCode';
 import { ShareActions } from '@/components/ShareActions';
-import { DEFAULT_TIMEZONE, dateKeyInTz, formatDayLong, formatTime } from '@/lib/dates';
+import { dateKeyInTz, formatDayLong, formatTime } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
 import { isLang, type Lang, type Translator } from '@/lib/i18n';
 import { parseTicketUrl, ticketPath } from '@/lib/links';
@@ -21,6 +21,8 @@ interface BookingResultProps {
   customerName: string;
   customerPhone: string | null;
   locale: Locale;
+  /** The operator's timezone: the departure is shown in it. */
+  timezone: string;
   onNewBooking: () => void;
 }
 
@@ -33,13 +35,13 @@ export function customerLang(locale: Locale): Lang {
 export function customerMessage(
   kind: 'pay' | 'ticket',
   { t, lang }: Pick<Translator, 't' | 'lang'>,
-  data: { name: string; product: string; startsAt: string; url: string },
+  data: { name: string; product: string; startsAt: string; timezone: string; url: string },
 ): string {
   const vars = {
     name: data.name.split(' ')[0] ?? data.name,
     product: data.product,
-    day: formatDayLong(dateKeyInTz(data.startsAt, DEFAULT_TIMEZONE), lang),
-    time: formatTime(data.startsAt, DEFAULT_TIMEZONE, lang),
+    day: formatDayLong(dateKeyInTz(data.startsAt, data.timezone), lang),
+    time: formatTime(data.startsAt, data.timezone, lang),
     url: data.url,
   };
   return kind === 'pay'
@@ -53,6 +55,7 @@ export function BookingResult({
   customerName,
   customerPhone,
   locale,
+  timezone,
   onNewBooking,
 }: BookingResultProps) {
   const { t, lang } = useT();
@@ -67,13 +70,14 @@ export function BookingResult({
     name: customerName,
     product: productName,
     startsAt: booking.startsAt,
+    timezone,
     url: shareUrl,
   });
   const ticket = parseTicketUrl(ticketUrl);
   const ticketHref = ticket
     ? ticketPath(ticket.bookingId, ticket.key, customerLang(locale))
     : ticketUrl;
-  const dayKey = dateKeyInTz(booking.startsAt, DEFAULT_TIMEZONE);
+  const dayKey = dateKeyInTz(booking.startsAt, timezone);
 
   return (
     <div className="flex flex-col gap-4 pt-4">
@@ -89,7 +93,7 @@ export function BookingResult({
             {t('affiliate.result.summary', {
               product: productName,
               day: formatDayLong(dayKey, lang),
-              time: formatTime(booking.startsAt, DEFAULT_TIMEZONE, lang),
+              time: formatTime(booking.startsAt, timezone, lang),
               customer: booking.customerName,
               reference: booking.reference,
             })}

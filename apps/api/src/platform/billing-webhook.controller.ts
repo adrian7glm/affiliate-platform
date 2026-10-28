@@ -10,12 +10,12 @@ import {
   Req,
 } from '@nestjs/common';
 import { type Database, processedWebhookEvents } from '@ap/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Request } from 'express';
 import type Stripe from 'stripe';
 import { DomainError, NotFound } from '../common/errors';
 import { APP_CONFIG, type AppConfig } from '../config';
-import { DB } from '../database/database.module';
+import { DB, type Tx } from '../database/database.module';
 import { BillingGateway, StripeBilling } from './billing.gateway';
 import { SubscriptionsService } from './subscriptions.service';
 
@@ -66,15 +66,21 @@ export class BillingWebhookController {
         const session = event.data.object;
         const subscriptionId = idOf(session.subscription);
         if (session.mode === 'subscription' && subscriptionId) {
-          const subscription = await this.billing.stripe.subscriptions.retrieve(subscriptionId);
-          await this.apply(subscription, session.client_reference_id);
+          await this.sync(
+            this.billing,
+            idOf(session.customer),
+            subscriptionId,
+            session.client_reference_id,
+          );
         }
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
-        await this.apply(event.data.object, null);
+        // Stripe does not deliver events in order and retries them for days: an old "updated
+        // (active)" can arrive after "deleted". The subscription as Stripe has it now is the truth.
+        await this.sync(this.billing, idOf(event.data.object.customer), event.data.object.id, null);
         break;
       default:
         this.logger.debug(`ignored Stripe event ${event.type}`);
@@ -87,16 +93,54 @@ export class BillingWebhookController {
     return { received: true };
   }
 
-  private async apply(subscription: Stripe.Subscription, tenantId: string | null): Promise<void> {
-    const item = subscription.items.data[0];
-    await this.subscriptions.applyStripeSubscription({
-      tenantId: tenantId ?? subscription.metadata?.tenantId ?? null,
-      customerId: idOf(subscription.customer)!,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      priceId: item?.price.id ?? null,
-      currentPeriodEnd: item?.current_period_end ?? null,
-      trialEnd: subscription.trial_end,
+  /**
+   * Applies the subscription as Stripe has it now, not as an event described it then. Webhooks
+   * for the same customer take turns from reading Stripe to saving, so one that read earlier
+   * cannot save its older copy over what another read later.
+   */
+  private async sync(
+    billing: StripeBilling,
+    customerId: string | null,
+    subscriptionId: string,
+    tenantId: string | null,
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${`stripe-billing:${customerId ?? subscriptionId}`}))`,
+      );
+      const subscription = await billing.stripe.subscriptions.retrieve(subscriptionId);
+      await this.apply(subscription, tenantId, tx);
+      if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') {
+        // The operator may have canceled one of two subscriptions (two checkouts completed): if
+        // another still bills, that one is now theirs, rather than the operator showing canceled.
+        const other = await billing.liveSubscriptionId(
+          idOf(subscription.customer)!,
+          subscription.id,
+        );
+        if (other) {
+          await this.apply(await billing.stripe.subscriptions.retrieve(other), tenantId, tx);
+        }
+      }
     });
+  }
+
+  private async apply(
+    subscription: Stripe.Subscription,
+    tenantId: string | null,
+    tx: Tx,
+  ): Promise<void> {
+    const item = subscription.items.data[0];
+    await this.subscriptions.applyStripeSubscription(
+      {
+        tenantId: tenantId ?? subscription.metadata?.tenantId ?? null,
+        customerId: idOf(subscription.customer)!,
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        priceId: item?.price.id ?? null,
+        currentPeriodEnd: item?.current_period_end ?? null,
+        trialEnd: subscription.trial_end,
+      },
+      tx,
+    );
   }
 }

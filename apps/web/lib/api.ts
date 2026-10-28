@@ -1,5 +1,6 @@
 import type { ApiError as ApiErrorBody } from '@ap/contracts';
 import { getActiveLang } from './i18n';
+import { getTenantId } from './session';
 import { STORAGE_KEYS, readString } from './storage';
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(
@@ -102,8 +103,9 @@ function parseErrorBody(status: number, body: unknown, fallback: string): ApiErr
 }
 
 /**
- * Typed fetch wrapper. Adds `Authorization: Bearer <token>` and `X-Tenant-Id` from
- * localStorage, parses JSON, maps 204 to `undefined` and throws `ApiError` otherwise.
+ * Typed fetch wrapper. Adds `Authorization: Bearer <token>` from localStorage and the
+ * `X-Tenant-Id` of the company this tab works for, parses JSON, maps 204 to `undefined`
+ * and throws `ApiError` otherwise.
  */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, query, auth = true, signal } = options;
@@ -119,8 +121,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     if (token) headers.Authorization = `Bearer ${token}`;
   }
   if (sendTenant) {
-    const tenantId =
-      options.tenantId !== undefined ? options.tenantId : readString(STORAGE_KEYS.tenantId);
+    const tenantId = options.tenantId !== undefined ? options.tenantId : getTenantId();
     if (tenantId) headers['X-Tenant-Id'] = tenantId;
   }
 

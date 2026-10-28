@@ -86,7 +86,7 @@ export const products = pgTable(
   },
   (t) => [
     uniqueIndex('products_tenant_slug').on(t.tenantId, t.slug),
-    uniqueIndex('products_tenant_external').on(t.tenantId, t.externalId),
+    uniqueIndex('products_tenant_source_external').on(t.tenantId, t.sourceId, t.externalId),
   ],
 );
 

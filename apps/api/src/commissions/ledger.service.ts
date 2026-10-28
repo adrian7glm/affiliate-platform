@@ -61,11 +61,14 @@ export class CommissionLedgerService implements OnModuleInit {
   async recordSale(event: EventOfType<'booking.confirmed'>, tx: Tx): Promise<void> {
     if (!event.affiliateId) return;
     // Serialize sales of one affiliate so two simultaneous payments get sale #4 and #5, not #4 twice.
-    await tx
-      .select({ id: affiliates.id })
-      .from(affiliates)
-      .where(eq(affiliates.id, event.affiliateId))
-      .for('update');
+    await this.lockAffiliate(tx, event.affiliateId);
+    // A retried confirmation can arrive after the cancellation was handled: a booking that is no
+    // longer confirmed earns nothing (its reversal already ran and found nothing to cancel).
+    const [booking] = await tx
+      .select({ status: bookings.status })
+      .from(bookings)
+      .where(eq(bookings.id, event.bookingId));
+    if (booking?.status !== 'confirmed') return;
     const resolved = await this.plans.planFor(tx, event.affiliateId);
     if (!resolved) {
       this.logger.warn(
@@ -139,28 +142,32 @@ export class CommissionLedgerService implements OnModuleInit {
    *  their reversal so they net out to zero in the next payout. */
   async reverse(event: EventOfType<'booking.cancelled'>, tx: Tx): Promise<void> {
     if (!event.affiliateId) return;
+    // The same lock as recordSale and month close, so a reconciliation of this booking cannot
+    // slip in between reading the balance and writing the reversal (it would be cancelled twice).
+    await this.lockAffiliate(tx, event.affiliateId);
     const rows = await tx
       .select()
       .from(commissionEntries)
       .where(eq(commissionEntries.bookingId, event.bookingId));
+    if (rows.length === 0) return;
     const reversal = reversalFor(
       rows.map(toLedgerEntry),
       event.bookingId,
       `booking cancelled: ${event.reason}`,
     );
-    if (!reversal) return;
-    const now = this.clock.now();
-    const first = rows[0]!;
+    // Approved even when month close already zeroed the booking: a pending sale of a cancelled
+    // booking is never approved later, so it would stay unpaid while its clawback is deducted.
+    await this.approveBooking(tx, event.bookingId);
+    if (reversal) await this.insertEntries(tx, rows[0]!, [reversal], 'approved');
+  }
+
+  /** Serializes ledger writes of one affiliate (sales, reversals, month close, payouts). */
+  async lockAffiliate(tx: Tx, affiliateId: string): Promise<void> {
     await tx
-      .update(commissionEntries)
-      .set({ status: 'approved', approvedAt: now })
-      .where(
-        and(
-          eq(commissionEntries.bookingId, event.bookingId),
-          eq(commissionEntries.status, 'pending'),
-        ),
-      );
-    await this.insertEntries(tx, first, [reversal], 'approved');
+      .select({ id: affiliates.id })
+      .from(affiliates)
+      .where(eq(affiliates.id, affiliateId))
+      .for('update');
   }
 
   async insertEntries(

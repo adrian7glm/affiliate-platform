@@ -296,6 +296,7 @@
       "planRetired": "acest plan nu mai este oferit",
       "stripeManaged": "acest abonament este administrat de Stripe: plățile și anularea se fac în Stripe",
       "noStripePrice": "acest plan nu are un preț în Stripe; adaugă unul înainte să muți un client Stripe",
+      "priceOverrideStripe": "cu plata prin Stripe, operatorii plătesc prețul din Stripe al planului; pentru un preț negociat, creează un plan separat",
       "onlyTrialExtend": "doar o perioadă de probă poate fi prelungită",
       "noCardPayment": "acest plan nu poate fi plătit încă cu cardul; contactează-ne",
       "noCardSubscription": "nu există un abonament plătit cu cardul de administrat",
@@ -344,7 +345,8 @@
       "tooMany": "Ne-ai trimis deja mai multe mesaje. Îți răspundem în curând."
     },
     "limits": {
-      "tooManyRequests": "prea multe încercări de pe această conexiune; așteaptă câteva minute și încearcă din nou"
+      "tooManyRequests": "prea multe încercări de pe această conexiune; așteaptă câteva minute și încearcă din nou",
+      "dailyMessages": "s-a atins limita zilnică de mesaje către contacte noi ({count} în 24 de ore); încearcă din nou mâine"
     },
     "account": {
       "challengeExpired": "conectarea a durat prea mult; începe din nou",
@@ -1804,6 +1806,7 @@
         "price": "Preț lunar negociat ({currency})",
         "priceHint": "Gol = prețul planului.",
         "priceHintWith": "Gol = prețul planului ({price}).",
+        "priceStripe": "Stripe încasează prețul planului. Pentru un preț lunar negociat, creează un plan separat, cu propriul preț în Stripe.",
         "feeError": "Comisionul este un procent între 0 și 50.",
         "note": "Comisionul nou se aplică rezervărilor făcute de acum înainte.",
         "save": "Salvează"

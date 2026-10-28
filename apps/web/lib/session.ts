@@ -46,11 +46,46 @@ export function getToken(): string | null {
   return readString(STORAGE_KEYS.token);
 }
 
+/**
+ * The company this tab works for. Kept per tab so that switching company in one tab does not
+ * silently change the company another open tab sends its requests to; localStorage only holds
+ * the last choice, used as the default for new tabs.
+ */
+let tabTenantId: string | null = null;
+
+function readTabTenant(): string | null {
+  try {
+    return typeof window === 'undefined'
+      ? null
+      : window.sessionStorage.getItem(STORAGE_KEYS.tenantId);
+  } catch {
+    return null;
+  }
+}
+
+function writeTabTenant(tenantId: string | null): void {
+  tabTenantId = tenantId;
+  try {
+    if (typeof window === 'undefined') return;
+    if (tenantId) window.sessionStorage.setItem(STORAGE_KEYS.tenantId, tenantId);
+    else window.sessionStorage.removeItem(STORAGE_KEYS.tenantId);
+  } catch {
+    // sessionStorage blocked: the module variable still keeps the tab's choice.
+  }
+}
+
 export function getTenantId(): string | null {
-  return readString(STORAGE_KEYS.tenantId);
+  const own = tabTenantId ?? readTabTenant();
+  if (own) return own;
+  // A new tab starts from the last company chosen anywhere, then keeps it as its own, so a later
+  // switch in another tab does not move this one.
+  const fallback = readString(STORAGE_KEYS.tenantId);
+  if (fallback) writeTabTenant(fallback);
+  return fallback;
 }
 
 export function setTenantId(tenantId: string): void {
+  writeTabTenant(tenantId);
   writeString(STORAGE_KEYS.tenantId, tenantId);
 }
 
@@ -62,7 +97,14 @@ export function setCachedMe(me: MeDto): void {
   writeJson(STORAGE_KEYS.me, me);
 }
 
-export function saveSession(token: string, me: MeDto): void {
+/**
+ * Stores a fresh login. Signing in over another person's session (e.g. `/login?next=…` skips the
+ * account chooser) must not leave their cached data behind, so it is all cleared first:
+ * affiliate home, profile, chosen company and the service worker's API cache.
+ */
+export async function saveSession(token: string, me: MeDto): Promise<void> {
+  const previous = getCachedMe();
+  if ((getToken() || previous) && previous?.user.id !== me.user.id) await clearSession();
   writeString(STORAGE_KEYS.token, token);
   setCachedMe(me);
 }
@@ -85,6 +127,7 @@ export function homePathFor(me: MeDto | null): string {
 /** Forgets the session and every cached response (localStorage and service worker cache). */
 export async function clearSession(): Promise<void> {
   clearAppStorage();
+  writeTabTenant(null);
   try {
     if (typeof caches !== 'undefined') {
       const names = await caches.keys();
@@ -113,11 +156,24 @@ export function pickMembership(
   return fitting[0] ?? null;
 }
 
-/** Only same-origin absolute paths are accepted as a post-login destination. */
+/**
+ * Only same-origin absolute paths are accepted as a post-login destination. Browsers drop tabs
+ * and line breaks and read `\` as `/`, so `/\t/evil.com` would become `//evil.com`: such
+ * characters are refused outright, and the result is the path as the browser resolves it.
+ */
 export function safeNextPath(next: string | null | undefined): string | null {
   if (!next) return null;
-  if (!next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return null;
-  return next;
+  // eslint-disable-next-line no-control-regex
+  if (!next.startsWith('/') || /[\u0000-\u001f\u007f\\]/.test(next)) return null;
+  const base = 'https://app.invalid';
+  let url: URL;
+  try {
+    url = new URL(next, base);
+  } catch {
+    return null;
+  }
+  if (url.origin !== base) return null;
+  return url.pathname + url.search + url.hash;
 }
 
 /** "Administrator" / "Staff" / "Affiliate" / "Ticket scanning" in the page language. */

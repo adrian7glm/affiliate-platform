@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../config';
-import { smtpError } from './smtp';
+import { SmtpEmailTransport, smtpError } from './smtp';
 import { DeliveryError } from './transport';
 import { TwilioSmsTransport } from './twilio';
 
@@ -95,6 +95,20 @@ describe('SMTP errors', () => {
     expect(smtpError({ code: 'ECONNECTION', message: 'refused' }).permanent).toBe(false);
     expect(smtpError({ code: 'EAUTH', responseCode: 535 }).permanent).toBe(false);
     expect(smtpError({ code: 'EMESSAGE', responseCode: 451 }).permanent).toBe(false);
+  });
+
+  it('gives up on a server that hangs, well within a message lease', () => {
+    const smtp = new SmtpEmailTransport('smtps://user:pass@smtp.example.com:465', 'a@b.test');
+    const options = (smtp as unknown as { transporter: { options: Record<string, unknown> } })
+      .transporter.options;
+    expect(options).toMatchObject({
+      host: 'smtp.example.com',
+      port: 465,
+      secure: true,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 30_000,
+    });
   });
 });
 

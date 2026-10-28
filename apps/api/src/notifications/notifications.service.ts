@@ -36,9 +36,24 @@ export const MAX_ATTEMPTS = 6;
 const BACKOFF_MS = [30_000, 2 * 60_000, 10 * 60_000, 30 * 60_000, 2 * 3_600_000];
 /** A message being sent is retried after this long if its worker died mid-send. */
 const LEASE_MS = 5 * 60_000;
-const BATCH = 25;
+/**
+ * A send is not started with less lease than this left: another worker may take the message
+ * once the lease ends. Longer than the SMTP and SMS timeouts together.
+ */
+const LEASE_MARGIN_MS = 90_000;
+/** Few at a time, so even slow providers send the whole batch well within the lease. */
+const BATCH = 5;
 
 export const channelOf = (to: string): 'email' | 'sms' => (to.includes('@') ? 'email' : 'sms');
+
+/**
+ * Messages an operator's people send to any address they type, per operator per 24 hours. They
+ * keep a fake operator account from sending SMS at the platform's cost to numbers of its choice.
+ */
+export const DAILY_QUOTAS = {
+  invites: { templates: ['affiliate_invite', 'scanner_invite'], limit: 50 },
+  paymentLinks: { templates: ['payment_link'], limit: 300 },
+} as const satisfies Record<string, { templates: readonly TemplateName[]; limit: number }>;
 
 /**
  * Sends SMS and email. Other modules decide what to send and when; this module renders the
@@ -78,6 +93,34 @@ export class NotificationsService {
       .onConflictDoNothing()
       .returning({ id: notifications.id });
     return inserted.length > 0;
+  }
+
+  /** Refuses when the operator already sent its daily allowance of this kind of message. */
+  async assertDailyQuota(
+    db: DbOrTx,
+    tenantId: string,
+    quota: keyof typeof DAILY_QUOTAS,
+  ): Promise<void> {
+    const { templates, limit } = DAILY_QUOTAS[quota];
+    const since = new Date(this.clock.now().getTime() - 24 * 3_600_000);
+    const [row] = await db
+      .select({ sent: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.tenantId, tenantId),
+          gte(notifications.createdAt, since),
+          inArray(notifications.template, [...templates]),
+        ),
+      );
+    if ((row?.sent ?? 0) >= limit) {
+      throw new DomainError(
+        'errors.limits.dailyMessages',
+        HttpStatus.TOO_MANY_REQUESTS,
+        { limit },
+        { count: limit },
+      );
+    }
   }
 
   /**
@@ -146,11 +189,42 @@ export class NotificationsService {
     for (let round = 0; round < 40; round += 1) {
       const batch = await this.claim();
       if (!batch.length) break;
-      for (const row of batch) {
+      for (const [index, row] of batch.entries()) {
+        if (this.clock.now().getTime() > row.nextAttemptAt.getTime() - LEASE_MARGIN_MS) {
+          // Sending was slow: give the rest back rather than risk a second worker sending them too.
+          await this.release(batch.slice(index));
+          break;
+        }
         if (await this.deliverRow(row)) sent += 1;
       }
     }
     return sent;
+  }
+
+  /** Hands claimed messages back unsent, without spending one of their attempts. */
+  private async release(rows: NotificationRow[]): Promise<void> {
+    for (const row of rows) {
+      await this.db
+        .update(notifications)
+        .set({
+          status: 'queued',
+          attempts: row.attempts - 1,
+          nextAttemptAt: this.clock.now(),
+        })
+        .where(this.stillClaimed(row));
+    }
+  }
+
+  /**
+   * The claim this worker holds on a message: nobody re-claimed it after the lease ended (each
+   * claim adds an attempt), so the attempt count works as a fencing token.
+   */
+  private stillClaimed(row: NotificationRow) {
+    return and(
+      eq(notifications.id, row.id),
+      eq(notifications.status, 'sending'),
+      eq(notifications.attempts, row.attempts),
+    );
   }
 
   /** Takes due messages for this worker: concurrent workers never take the same one. */
@@ -205,7 +279,7 @@ export class NotificationsService {
         row.locale,
         row.params as TemplateParams[TemplateName],
       );
-      await this.db
+      const updated = await this.db
         .update(notifications)
         .set({
           status: 'sent',
@@ -214,7 +288,9 @@ export class NotificationsService {
           providerMessageId: receipt.messageId,
           lastError: null,
         })
-        .where(eq(notifications.id, row.id));
+        .where(this.stillClaimed(row))
+        .returning({ id: notifications.id });
+      if (!updated.length) this.leaseLost(row);
       return true;
     } catch (error) {
       const failure = asDeliveryError(error);
@@ -223,16 +299,25 @@ export class NotificationsService {
       this.logger.error(
         `${row.template} ${row.id} to ${mask(row.recipient)} failed (attempt ${row.attempts}${final ? ', giving up' : ''}): ${failure.message}`,
       );
-      await this.db
+      const updated = await this.db
         .update(notifications)
         .set({
           status: final ? 'failed' : 'queued',
           lastError: failure.message,
           nextAttemptAt: new Date(this.clock.now().getTime() + (final ? 0 : wait)),
         })
-        .where(eq(notifications.id, row.id));
+        .where(this.stillClaimed(row))
+        .returning({ id: notifications.id });
+      if (!updated.length) this.leaseLost(row);
       return false;
     }
+  }
+
+  /** The send outlived its lease and another worker took the message: its result stands. */
+  private leaseLost(row: NotificationRow): void {
+    this.logger.warn(
+      `${row.template} ${row.id}: lease expired while sending; another worker took it over`,
+    );
   }
 
   private async deliver(

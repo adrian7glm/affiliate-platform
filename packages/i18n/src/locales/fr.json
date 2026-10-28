@@ -296,6 +296,7 @@
       "planRetired": "cette formule n'est plus proposée",
       "stripeManaged": "Stripe gère cet abonnement : les paiements et la résiliation se font dans Stripe",
       "noStripePrice": "cette formule n'a pas de prix Stripe ; ajoutez-en un avant de transférer un client Stripe",
+      "priceOverrideStripe": "avec la facturation Stripe, les opérateurs paient le prix Stripe de la formule ; pour un prix négocié, créez une formule distincte",
       "onlyTrialExtend": "seule une période d'essai peut être prolongée",
       "noCardPayment": "cette formule ne peut pas encore être payée par carte ; contactez-nous",
       "noCardSubscription": "il n'y a aucun abonnement par carte à gérer",
@@ -344,7 +345,8 @@
       "tooMany": "Vous nous avez déjà envoyé plusieurs messages. Nous vous répondrons bientôt."
     },
     "limits": {
-      "tooManyRequests": "trop de tentatives depuis cette connexion ; attends quelques minutes et réessaie"
+      "tooManyRequests": "trop de tentatives depuis cette connexion ; attends quelques minutes et réessaie",
+      "dailyMessages": "limite quotidienne de messages vers de nouveaux contacts atteinte ({count} en 24 heures) ; réessayez demain"
     },
     "account": {
       "challengeExpired": "la connexion a pris trop de temps ; recommencez",
@@ -1804,6 +1806,7 @@
         "price": "Prix mensuel négocié ({currency})",
         "priceHint": "Vide = le prix de la formule.",
         "priceHintWith": "Vide = le prix de la formule ({price}).",
+        "priceStripe": "Stripe facture le prix de la formule. Pour un prix mensuel négocié, créez une formule distincte avec son propre prix Stripe.",
         "feeError": "Les frais sont un pourcentage entre 0 et 50.",
         "note": "Les nouveaux frais s'appliquent aux réservations effectuées à partir de maintenant.",
         "save": "Enregistrer"
